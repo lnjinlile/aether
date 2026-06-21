@@ -201,6 +201,15 @@ class OrderExecutionEngine:
                     price=order_price,
                     reduce_only=False,
                 )
+                # Validate fill: testnet ccxt sometimes returns phantom "success"
+                # with no order ID and no filled quantity — treat as failure
+                order_id = order.get("id", order.get("orderId"))
+                executed_qty = float(order.get("filled", order.get("executedQty", 0)) or 0)
+                if not order_id or (executed_qty == 0 and order_type == "market"):
+                    raise ValueError(
+                        f"Phantom fill detected: orderId={order_id}, "
+                        f"executedQty={executed_qty}. Likely testnet ccxt desync."
+                    )
                 return {
                     "success": True,
                     "action": action,
@@ -253,6 +262,14 @@ class OrderExecutionEngine:
                     price=order_price,
                     reduce_only=True,
                 )
+                # Validate fill (same phantom-fill guard as _open_position)
+                order_id = order.get("id", order.get("orderId"))
+                executed_qty = float(order.get("filled", order.get("executedQty", 0)) or 0)
+                if not order_id or (executed_qty == 0 and order_type == "market"):
+                    raise ValueError(
+                        f"Phantom fill on close: orderId={order_id}, "
+                        f"executedQty={executed_qty}"
+                    )
                 return {
                     "success": True,
                     "action": action,

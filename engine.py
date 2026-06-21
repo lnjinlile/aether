@@ -164,29 +164,29 @@ def run_signal_check():
 
 
 def sync_agent_states():
-    """Update all agent state files with latest engine results."""
+    """Update agent state files — MERGE with existing, preserve tasks."""
     try:
-        # Oracle: pipeline health
-        pipe = load_json(os.path.join(STATE_DIR, "pipeline.json"))
-        write_json("oracle.json", {"status": pipe.get("status","unknown"), "data_fresh": True, "last_pipeline": pipe.get("last_run","")})
+        def merge_state(agent, updates):
+            existing = load_json(os.path.join(STATE_DIR, f"{agent}.json"))
+            existing.update(updates)
+            write_json(f"{agent}.json", existing)
 
-        # Athena: backtest summary
+        pipe = load_json(os.path.join(STATE_DIR, "pipeline.json"))
+        merge_state("oracle", {"status": pipe.get("status","unknown"), "data_fresh": True, "last_pipeline": pipe.get("last_run","")})
+
         bt = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
         strat_summary = {}
         for name, s in bt.get("strategies", {}).items():
             strat_summary[name] = {"signals": s.get("signals_count",0), "status": s.get("status","?")}
-        write_json("athena.json", {"status": "ok", "strategies": strat_summary})
+        merge_state("athena", {"status": "ok", "strategies": strat_summary})
 
-        # Guardian: risk snapshot
         risk = load_json(os.path.join(STATE_DIR, "risk_check.json"))
-        write_json("guardian.json", {"status": "ok", "balance": risk.get("balance",0), "risk_level": risk.get("risk_level","?"), "positions": risk.get("positions_count",0)})
+        merge_state("guardian", {"status": "ok", "balance": risk.get("balance",0), "risk_level": risk.get("risk_level","?"), "positions": risk.get("positions_count",0)})
 
-        # Mercury: signal + trade summary
         sig = load_json(os.path.join(STATE_DIR, "signals.json"))
-        write_json("mercury.json", {"status": "ok", "signals_active": len(sig.get("signals",{})), "signals": sig.get("signals",{})})
+        merge_state("mercury", {"status": "ok", "signals_active": len(sig.get("signals",{})), "signals": sig.get("signals",{})})
 
-        # Prometheus: optimization status
-        write_json("prometheus.json", {"status": "active", "dgt_deployed": True, "dgt_btc_pnl": "+22.8%", "dgt_eth_pnl": "+5.4%", "next": "anti_overfitting"})
+        merge_state("prometheus", {"status": "active", "dgt_deployed": True, "dgt_btc_pnl": "+22.8%", "dgt_eth_pnl": "+5.4%", "next": "anti_overfitting"})
     except Exception as e:
         logger.error("State sync error: %s", e)
 

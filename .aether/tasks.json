@@ -1,0 +1,72 @@
+{
+  "oracle": [
+    {
+      "title": "监控数据质量与异常",
+      "status": "in_progress"
+    },
+    {
+      "title": "处理其他专员数据请求",
+      "status": "queued"
+    }
+  ],
+  "athena": [
+    {
+      "title": "评估DynamicGrid策略表现",
+      "status": "in_progress"
+    },
+    {
+      "title": "分析MLAlpha是否需要调整",
+      "status": "queued"
+    },
+    {
+      "title": "研究论文新策略方向",
+      "status": "queued"
+    }
+  ],
+  "guardian": [
+    {
+      "title": "监控仓位风险与强平距离",
+      "status": "in_progress"
+    },
+    {
+      "title": "优化风控参数",
+      "status": "queued"
+    }
+  ],
+  "mercury": [
+    {
+      "title": "审查引擎信号并执行交易",
+      "status": "in_progress"
+    },
+    {
+      "title": "管理现有持仓",
+      "status": "queued"
+    },
+    {
+      "title": "优化下单执行模块",
+      "status": "queued"
+    }
+  ],
+  "prometheus": [
+    {
+      "title": "实现动态网格交易策略(DGT)",
+      "status": "done"
+    },
+    {
+      "title": "回测验证DGT盈利能力",
+      "status": "done"
+    },
+    {
+      "title": "搭建防过拟合检验框架(DSR)",
+      "status": "in_progress"
+    },
+    {
+      "title": "波动率预测ML模型",
+      "status": "queued"
+    },
+    {
+      "title": "参数网格扫描优化DGT",
+      "status": "queued"
+    }
+  ]
+}
