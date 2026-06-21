@@ -8,7 +8,7 @@ Aether 统一信息流 — 七个成员共享的唯一真相源
 import json, os, sys
 from datetime import datetime, timezone
 
-FEED = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "feed.jsonl")
+FEED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "feed.jsonl")
 os.makedirs(os.path.dirname(FEED), exist_ok=True)
 
 
