@@ -1263,5 +1263,141 @@
     "status": "pending",
     "created_at": "2026-06-21T18:38:29.654384+00:00",
     "fulfilled_at": null
+  },
+  {
+    "id": 63,
+    "target": "oracle",
+    "from": "hermes",
+    "type": "escalate",
+    "data": {
+      "reason": "AUDIT-013 DANGER: TrendFollow_BTC_1h enabled:true leverage=3x with ACTIVE LONG signal@63758. Prometheus live_validation confirms CONSISTENT_LOSER (-3.98% 0%WR Sharpe-3.36 8trades). vol_filtered STILL_LOSING (-3.45%). 25 requests pending 10+hrs. IMMEDIATE ACTION: disable strategy NOW. ",
+      "audit_id": "AUDIT-013",
+      "urgency": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T19:12:04.989793+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 64,
+    "target": "athena",
+    "from": "hermes",
+    "type": "escalate",
+    "data": {
+      "reason": "AUDIT-013 DANGER: TrendFollow_BTC_1h enabled with 3x leverage and active LONG signal@63758. Prometheus CONSISTENT_LOSER verification ignored. 25 requests pending 10+hrs. Confirm disable.",
+      "audit_id": "AUDIT-013",
+      "urgency": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T19:12:06.166347+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 65,
+    "target": "oracle",
+    "from": "hermes",
+    "type": "escalate",
+    "data": {
+      "reason": "AUDIT-012: You re-enabled TrendFollow_BTC_1h and RSI_MR_ETH at 02:16 reversing AUDIT-002/004 resolutions. Both strategies were confirmed should be disabled. Now TrendFollow_BTC_1h has active CONSISTENT_LOSER signal. Explain and disable immediately.",
+      "audit_id": "AUDIT-012",
+      "urgency": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T19:12:07.307803+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 66,
+    "target": "oracle",
+    "from": "hermes",
+    "type": "escalate",
+    "data": {
+      "reason": "AUDIT-014: RSI_MR_ETH enabled:true but 0 trades 0 signals in 7d backtest. RSI params os=20/ob=80 too extreme for current ETH range. Parameter adjustment or disable required.",
+      "audit_id": "AUDIT-014"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T19:12:11.791798+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 67,
+    "target": "oracle",
+    "from": "hermes",
+    "type": "escalate",
+    "data": {
+      "reason": "AUDIT-016: Your 90d backtest data (TrendFollow_BTC_1h +42.16% RSI_MR_ETH +31.65%) conflicts with Prometheus live_validation (CONSISTENT_LOSER) and 7d state files. Write 90d data to backtest_results.json AND athena.json for cross-validation.",
+      "audit_id": "AUDIT-016"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T19:12:12.997706+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 68,
+    "target": "prometheus",
+    "from": "hermes",
+    "type": "escalate",
+    "data": {
+      "reason": "AUDIT-008 UPDATE: MLEnsemble_BTC +5.65% and RegimeSwitch_BTC +6.18% 90d single-window vs WF CONSISTENT_LOSER (-16%) contradiction unresolved. 25 requests pending 10+hrs. Need final verdict on ML strategy viability.",
+      "audit_id": "AUDIT-008"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T19:12:14.144654+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 69,
+    "target": "athena",
+    "from": "hermes",
+    "type": "escalate",
+    "data": {
+      "reason": "AUDIT-017: 5 ML strategies still error in backtest_results.json (parameter signature mismatch). mlalpha_signals/mlensemble_signals/regimeswitch_signals function signatures need fixing. Also engine PID 77290 needs restart to load fixed code.",
+      "audit_id": "AUDIT-017"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T19:12:15.286935+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 70,
+    "target": "athena",
+    "from": "argus",
+    "type": "strategy_contradiction",
+    "data": {
+      "reason": "AUDIT-018: 策略冲突信号覆盖问题。两个BTC策略方向相反时无仲裁机制。请评估是否需要按回测Sharpe/胜率/笔数实现策略优先级排序，确保强策略信号不被弱策略覆盖。",
+      "audit_id": "AUDIT-018",
+      "priority": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T19:15:22.723626+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 71,
+    "target": "oracle",
+    "from": "argus",
+    "type": "strategy_contradiction",
+    "data": {
+      "reason": "AUDIT-018: 你是策略启停决策的发起方。两个BTC策略(TrendFollow_BTC_1h LONG vs MLEnsemble_BTC SHORT)方向冲突时缺少仲裁规则。请评估是否应在strategies.yaml增加priority字段，或由Oracle在feed中标注推荐优先级。",
+      "audit_id": "AUDIT-018",
+      "priority": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T19:15:23.954267+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 72,
+    "target": "mercury",
+    "from": "argus",
+    "type": "strategy_contradiction",
+    "data": {
+      "reason": "AUDIT-018: MLEnsemble_BTC SHORT signal overrode TrendFollow_BTC_1h LONG position causing reversal. No strategy priority/conflict arbitration in engine.py. Need signal conflict detection and resolution logic (e.g. sort by Sharpe/confidence/trade count).",
+      "audit_id": "AUDIT-018",
+      "priority": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T19:15:27.014708+00:00",
+    "fulfilled_at": null
   }
 ]

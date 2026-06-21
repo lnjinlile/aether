@@ -1,5 +1,5 @@
 {
-  "run_time": "2026-06-21T18:51:07.772975+00:00",
+  "run_time": "2026-06-21T19:00:12.640012+00:00",
   "data_range_days": 90,
   "db_total_klines": 92710,
   "strategies": [
@@ -10,18 +10,18 @@
       "tf": "15m",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -65.6,
-        "sharpe_ratio": -0.8607,
+        "total_return_pct": -66.1,
+        "sharpe_ratio": -0.8763,
         "max_drawdown_pct": 67.13,
         "win_rate": 39.96,
-        "profit_factor": 0.5762,
+        "profit_factor": 0.5701,
         "total_trades": 553,
-        "avg_win_pct": 0.64,
+        "avg_win_pct": 0.63,
         "avg_loss_pct": 0.74
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.861)",
-        "\u26a0\ufe0f LARGE LOSS (-65.60%)",
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.876)",
+        "\u26a0\ufe0f LARGE LOSS (-66.10%)",
         "\u26a0\ufe0f HIGH DRAWDOWN (67.1%)"
       ],
       "bars": 8641
@@ -56,17 +56,17 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -3.89,
-        "sharpe_ratio": -0.0641,
+        "total_return_pct": -3.42,
+        "sharpe_ratio": -0.052,
         "max_drawdown_pct": 9.95,
-        "win_rate": 34.48,
-        "profit_factor": 0.9406,
+        "win_rate": 37.93,
+        "profit_factor": 0.9517,
         "total_trades": 29,
-        "avg_win_pct": 4.11,
-        "avg_loss_pct": 2.3
+        "avg_win_pct": 3.78,
+        "avg_loss_pct": 2.43
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.064)"
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.052)"
       ],
       "bars": 2161
     },
@@ -77,17 +77,17 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -6.73,
-        "sharpe_ratio": 0.0314,
+        "total_return_pct": -9.02,
+        "sharpe_ratio": 0.0099,
         "max_drawdown_pct": 41.23,
         "win_rate": 30.0,
-        "profit_factor": 1.0255,
+        "profit_factor": 1.008,
         "total_trades": 60,
         "avg_win_pct": 7.97,
-        "avg_loss_pct": 3.33
+        "avg_loss_pct": 3.39
       },
       "flags": [
-        "\u26a0\ufe0f LARGE LOSS (-6.73%)",
+        "\u26a0\ufe0f LARGE LOSS (-9.02%)",
         "\u26a0\ufe0f HIGH DRAWDOWN (41.2%)"
       ],
       "bars": 2161
@@ -99,18 +99,18 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -17.6,
-        "sharpe_ratio": 0.0142,
+        "total_return_pct": -18.19,
+        "sharpe_ratio": 0.0099,
         "max_drawdown_pct": 50.14,
         "win_rate": 29.73,
-        "profit_factor": 1.011,
+        "profit_factor": 1.0076,
         "total_trades": 74,
         "avg_win_pct": 9.85,
-        "avg_loss_pct": 4.12
+        "avg_loss_pct": 4.13
       },
       "flags": [
         "\u26a0\ufe0f LOW WINRATE (30% < 30%)",
-        "\u26a0\ufe0f LARGE LOSS (-17.60%)",
+        "\u26a0\ufe0f LARGE LOSS (-18.19%)",
         "\u26a0\ufe0f HIGH DRAWDOWN (50.1%)"
       ],
       "bars": 2161
@@ -122,13 +122,13 @@
       "tf": "15m",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -0.4,
-        "sharpe_ratio": 0.0422,
+        "total_return_pct": -1.86,
+        "sharpe_ratio": 0.0352,
         "max_drawdown_pct": 55.46,
-        "win_rate": 30.8,
-        "profit_factor": 1.035,
+        "win_rate": 30.36,
+        "profit_factor": 1.0291,
         "total_trades": 224,
-        "avg_win_pct": 3.83,
+        "avg_win_pct": 3.89,
         "avg_loss_pct": 1.65
       },
       "flags": [
@@ -230,13 +230,13 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": 5.65,
-        "sharpe_ratio": 0.1737,
+        "total_return_pct": 3.09,
+        "sharpe_ratio": 0.1157,
         "max_drawdown_pct": 15.42,
         "win_rate": 70.0,
-        "profit_factor": 1.394,
+        "profit_factor": 1.2409,
         "total_trades": 10,
-        "avg_win_pct": 3.44,
+        "avg_win_pct": 3.06,
         "avg_loss_pct": 5.75
       },
       "flags": [
@@ -251,18 +251,18 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -11.14,
-        "sharpe_ratio": -0.1518,
+        "total_return_pct": -10.76,
+        "sharpe_ratio": -0.1444,
         "max_drawdown_pct": 25.66,
         "win_rate": 56.0,
-        "profit_factor": 0.8204,
+        "profit_factor": 0.829,
         "total_trades": 25,
-        "avg_win_pct": 2.9,
+        "avg_win_pct": 2.93,
         "avg_loss_pct": 4.49
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.152)",
-        "\u26a0\ufe0f LARGE LOSS (-11.14%)",
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.144)",
+        "\u26a0\ufe0f LARGE LOSS (-10.76%)",
         "\u26a0\ufe0f HIGH DRAWDOWN (25.7%)"
       ],
       "bars": 2161
@@ -382,8 +382,8 @@
   "recommendations": [
     "\u2713 KEEP TrendFollow_BTC_1h: Sharpe=+0.42 WR=35% Net=+42.16%",
     "\u2713 KEEP RSI_MR_ETH: Sharpe=+0.60 WR=78% Net=+31.65%",
-    "\u2713 KEEP MLEnsemble_BTC: Sharpe=+0.17 WR=70% Net=+5.65%",
+    "\u2713 KEEP MLEnsemble_BTC: Sharpe=+0.12 WR=70% Net=+3.09%",
     "\u2713 KEEP RegimeSwitch_BTC: Sharpe=+0.20 WR=57% Net=+6.18%"
   ],
-  "timestamp": "2026-06-21 18:51 UTC"
+  "timestamp": "2026-06-21 19:00 UTC"
 }
