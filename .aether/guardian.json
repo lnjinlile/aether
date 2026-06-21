@@ -1,38 +1,39 @@
 {
-  "timestamp": "2026-06-21T10:47:00Z",
+  "timestamp": "2026-06-21T11:20:00Z",
   "account": {
-    "balance": 4995.28,
-    "available": 4973.83,
-    "margin_used": 21.45,
-    "unrealized_pnl": -0.69,
-    "daily_pnl_pct": -0.108,
-    "total_equity_all_assets": 10638.63
+    "balance": 4996.04,
+    "available": 4974.31,
+    "margin_used": 21.73,
+    "unrealized_pnl": 0.37,
+    "daily_realized_pnl": -0.25,
+    "daily_net_pnl_pct": 0.0024,
+    "margin_utilization_pct": 0.44
   },
   "positions": [
     {
       "symbol": "BTCUSDT",
-      "side": "SHORT",
+      "side": "LONG",
       "contracts": 0.001,
-      "entry_price": 63646.9,
-      "mark_price": 64335.0,
-      "unrealized_pnl": -0.69,
-      "position_pnl_pct": -3.2,
-      "liquidation_price": 5039453.52,
-      "notional": 64.34,
+      "entry_price": 63836.9,
+      "mark_price": 64203.6,
+      "unrealized_pnl": 0.37,
+      "position_pnl_pct": 0.57,
+      "liquidation_price": "effective_infinite",
+      "notional": 64.20,
       "leverage_setting": 1,
       "effective_leverage": 0.013,
       "margin_type": "cross",
-      "liq_distance_pct": 7733.1
+      "liq_distance_pct": 999.0
     }
   ],
   "risk_metrics": {
-    "position_utilization_pct": 0.43,
+    "position_utilization_pct": 1.29,
     "position_utilization_limit": 80,
     "position_utilization_status": "OK",
-    "daily_pnl_pct": -0.108,
+    "daily_pnl_pct": 0.0024,
     "daily_pnl_limit": 3.0,
     "daily_pnl_status": "OK",
-    "liquidation_distance_pct": 7733.1,
+    "liquidation_distance_pct": 999.0,
     "liquidation_threshold": 5.0,
     "liquidation_status": "OK",
     "effective_leverage": 0.013,
@@ -41,25 +42,20 @@
   },
   "alerts": [
     {
-      "severity": "RESOLVED",
-      "type": "DUPLICATE_GUARD_FIXED",
-      "detail": "先前 0.006 BTC 重复开仓已通过 Mercury 强制平仓纠正。当前仅持有 1 笔 0.001 BTC SHORT。重复开仓守卫现已生效。"
-    },
-    {
-      "severity": "RESOLVED",
-      "type": "ATHENA_GOVERNANCE_RESTORED",
-      "detail": "Mercury 已遵守 Athena PAUSE 指令 — TrendFollow_BTC (15m) 被拦截，仅 TrendFollow_BTC_1h 活跃。治理链路已恢复。"
+      "severity": "YELLOW",
+      "type": "ATHENA_PAUSE_NOT_APPLIED",
+      "detail": "TrendFollow_BTC (15m) remains enabled:true in strategies.yaml despite Athena P0 PAUSE. Mercury sidestepped the trade via timeframe-conflict logic, not governance compliance. Third cycle Athena has issued this directive."
     },
     {
       "severity": "YELLOW",
       "type": "NO_SLTP_ORDERS",
-      "detail": "0.001 BTC SHORT 仓位无交易所级止损/止盈订单保护。Mercury 输出 SL/TP 逻辑值但未在 Binance 创建实际订单。风险敞口虽小（名义价值 ~64 USDT），但流程完整性需修复。"
+      "detail": "LONG BTCUSDT 0.001 has no exchange-level SL/TP orders. Mercury outputs SL=62,942.3 / TP=67,095.8 but does not place them on Binance."
     },
     {
       "severity": "INFO",
-      "type": "POSITION_UNDERWATER",
-      "detail": "当前 SHORT 仓位浮亏 -0.69 USDT (-3.2%)，入场 63,646.9，市价 64,335。仓位极小，风险可控。"
+      "type": "TESTNET_SIMULATION",
+      "detail": "模拟盘运行中，无实际风险敞口。全部仓位在 Binance 测试网上运行。"
     }
   ],
-  "notes": "测试网模拟盘运行中，无实际风险敞口。总资产 ~10,639 USDT（含 5,000 USDC + 4,995 USDT + 0.01 BTC 现货）。唯一期货仓位 0.001 BTC SHORT，全仓模式下强平价超过 500 万 USDT，实际不可触发。三大流程问题中两项已修复（重复开仓守卫、Athena 治理链路），SL/TP 下单仍待实现。"
+  "notes": "Mercury 10:55 执行: 平仓SHORT(亏-0.25) + 开仓LONG(0.001@63,836.9)。仓位仅占组合1.29%，有效杠杆0.013x，强平不可能触发。唯一的流程风险: Athena PAUSE指令仍未写入strategies.yaml，TrendFollow_BTC(15m)仍为enabled。"
 }

@@ -1,7 +1,20 @@
 strategies:
+# ── ML Alpha (replaces old EMA strategies) ──────────────────
+- name: MLAlpha_BTC
+  class: ml_alpha.strategy.MLAlphaStrategy
+  enabled: true
+  params:
+    model_path: ml_alpha/model.pkl
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+    confidence_threshold: 0.55
+
+# ── Legacy EMA strategies (disabled) ─────────────────────────
 - name: TrendFollow_BTC
   class: strategy.examples.trend_follow.TrendFollow
-  enabled: true
+  enabled: false
   params:
     symbols:
     - BTC/USDT
@@ -13,7 +26,7 @@ strategies:
     cooldown_bars: 8
 - name: TrendFollow_ETH
   class: strategy.examples.trend_follow.TrendFollow
-  enabled: true
+  enabled: false
   params:
     symbols:
     - ETH/USDT
@@ -40,7 +53,7 @@ strategies:
     cooldown_bars: 5
 - name: TrendFollow_BTC_1h
   class: strategy.examples.trend_follow.TrendFollow
-  enabled: true
+  enabled: false
   params:
     symbols:
     - BTC/USDT

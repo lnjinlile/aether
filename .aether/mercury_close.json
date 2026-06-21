@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-06-21T11:22:30.927323+00:00",
+  "close_actions": [
+    {
+      "action": "CLOSE",
+      "symbol": "BTC/USDT",
+      "side": "long",
+      "entry": 63836.9,
+      "exit": 63813.3,
+      "qty": 0.001,
+      "pnl": -0.023599999999998546,
+      "pnl_pct": -0.03696921373061434,
+      "reason": "\u8d8b\u52bf\u53cd\u8f6c\u4e3aSHORT (TrendFollow_BTC: Downtrend)",
+      "time": "2026-06-21T11:22:30.927323+00:00"
+    }
+  ],
+  "positions_after_close": []
+}

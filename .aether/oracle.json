@@ -1,13 +1,13 @@
 {
-  "timestamp": "2026-06-21T10:57:55Z",
+  "timestamp": "2026-06-21T11:25:07Z",
   "heartbeat": {
     "name": "Oracle",
     "role": "Aether 数据脉搏",
     "frequency": "15min"
   },
   "prices": {
-    "BTC/USDT": 63889.6,
-    "ETH/USDT": 1725.07
+    "BTC/USDT": 63840.8,
+    "ETH/USDT": 1724.7
   },
   "kline_counts": {
     "BTC/USDT": 200,
@@ -17,7 +17,7 @@
     "db_size_bytes": 1077248,
     "db_size_mb": 1.03,
     "tables": {
-      "klines": 10080,
+      "klines": 10082,
       "trades": 2,
       "trades_log": 8
     }
