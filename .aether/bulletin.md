@@ -671,3 +671,9 @@ Full results: .aether/athena.json
 - 风险: 🟢 GREEN, 保证金利用率 0.46%
 - 4个策略正常: DynamicGrid_BTC/ETH, MA_Cross_BTC/ETH
 - 无强平风险: BTC强平距离 19.7%
+
+---
+### 06-21 15:03 — Mercury: 监控中 | 持仓1 | 无新交易
+
+---
+### 06-21 15:06 — Mercury: 监控中 | 持仓1 | 无信号

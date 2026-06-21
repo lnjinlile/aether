@@ -97,6 +97,44 @@ class OrderExecutionEngine:
         return round(price // tick_size * tick_size, precision)
 
     # ------------------------------------------------------------------
+    # Phantom-fill recovery
+    # ------------------------------------------------------------------
+
+    def _find_leaked_order(
+        self, symbol: str, side: str, qty: float, price: Optional[float]
+    ) -> Optional[Dict[str, Any]]:
+        """Check exchange for a limit order that was silently created despite
+        ccxt returning a phantom response (no orderId).
+
+        Returns the order dict if found, None otherwise.
+        """
+        try:
+            open_orders = self._client.get_open_orders(symbol)
+        except Exception as e:
+            logger.warning("Failed to check open orders for leaked order: %s", e)
+            return None
+        if not open_orders:
+            return None
+        # Match by side, approximate quantity, and approximate price
+        for o in open_orders:
+            o_side = str(o.get("side", "")).lower()
+            o_qty = float(o.get("amount", o.get("origQty", 0)) or 0)
+            o_price = float(o.get("price", 0) or 0)
+            o_type = str(o.get("type", "")).lower()
+            if o_side != side:
+                continue
+            if o_type != "limit":
+                continue
+            if abs(o_qty - qty) / max(qty, 1e-8) > 0.01:  # within 1%
+                continue
+            if price and o_price > 0:
+                if abs(o_price - price) / max(price, 1e-8) > 0.001:  # within 0.1%
+                    continue
+            # Found a match
+            return o
+        return None
+
+    # ------------------------------------------------------------------
     # Main entry point
     # ------------------------------------------------------------------
 
@@ -202,11 +240,33 @@ class OrderExecutionEngine:
                     reduce_only=False,
                 )
                 # Validate fill: testnet ccxt sometimes returns phantom "success"
-                # with no order ID and no filled quantity — treat as failure.
-                # Phantom fills are NOT transient: retrying creates duplicate orders.
+                # with no order ID and no filled quantity.
                 order_id = order.get("id", order.get("orderId"))
                 executed_qty = float(order.get("filled", order.get("executedQty", 0)) or 0)
-                if not order_id or (executed_qty == 0 and order_type == "market"):
+                is_phantom = not order_id or (executed_qty == 0 and order_type == "market")
+                if is_phantom:
+                    # For market orders: phantom fill is dangerous to retry (duplicate fills).
+                    # For limit orders: verify exchange — if order wasn't created, retry is safe.
+                    if order_type == "limit":
+                        logger.info(
+                            "Phantom response on LIMIT order (orderId=%s, executedQty=%s) — "
+                            "verifying exchange for silent creation...",
+                            order_id, executed_qty,
+                        )
+                        leaked = self._find_leaked_order(symbol, side, qty, order_price)
+                        if leaked:
+                            logger.info("Found leaked limit order: %s", leaked.get("id", leaked.get("orderId")))
+                            return {
+                                "success": True,
+                                "action": action,
+                                "order": leaked,
+                                "error": None,
+                                "retries": attempt,
+                            }
+                        # No order leaked — safe to retry placement
+                        logger.info("No leaked order found, retrying limit order placement...")
+                        continue
+                    # Market order phantom: do NOT retry (risk of duplicate fills)
                     return {
                         "success": False,
                         "action": action,
@@ -271,10 +331,28 @@ class OrderExecutionEngine:
                     reduce_only=True,
                 )
                 # Validate fill (same phantom-fill guard as _open_position).
-                # Phantom fills are NOT transient: retrying creates duplicate orders.
                 order_id = order.get("id", order.get("orderId"))
                 executed_qty = float(order.get("filled", order.get("executedQty", 0)) or 0)
-                if not order_id or (executed_qty == 0 and order_type == "market"):
+                is_phantom = not order_id or (executed_qty == 0 and order_type == "market")
+                if is_phantom:
+                    if order_type == "limit":
+                        logger.info(
+                            "Phantom response on CLOSE LIMIT (orderId=%s) — "
+                            "verifying exchange...",
+                            order_id,
+                        )
+                        leaked = self._find_leaked_order(symbol, side, qty, order_price)
+                        if leaked:
+                            logger.info("Found leaked close order: %s", leaked.get("id", leaked.get("orderId")))
+                            return {
+                                "success": True,
+                                "action": action,
+                                "order": leaked,
+                                "error": None,
+                                "retries": attempt,
+                            }
+                        logger.info("No leaked close order found, retrying...")
+                        continue
                     return {
                         "success": False,
                         "action": action,
