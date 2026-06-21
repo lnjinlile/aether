@@ -12,8 +12,11 @@
       "reason": "Athena: 1h backtest needs 300+ warmup bars",
       "_from": "athena"
     },
-    "status": "pending",
+    "status": "fulfilled",
     "created_at": "2026-06-21T11:20:30.374109+00:00",
-    "fulfilled_at": null
+    "fulfilled_at": "2026-06-21T11:35:18.711559+00:00",
+    "result": {
+      "rows": 2160
+    }
   }
 ]
