@@ -357,6 +357,316 @@ def ma_cross_signals(df: pd.DataFrame, fast_period: int, slow_period: int,
 
 
 # ══════════════════════════════════════════════════════════════════════
+# ML Strategy Signal Generators
+# ══════════════════════════════════════════════════════════════════════
+
+def mlalpha_signals(df: pd.DataFrame, model_path: str, confidence_threshold: float = 0.55,
+                    sl_pct: float = 0.02, tp_pct: float = 0.04) -> pd.Series:
+    """MLAlpha (LightGBM) signal generator — loads pre-trained model, generates signals with SL/TP."""
+    from ml_alpha.features import FeatureEngineer
+    from ml_alpha.trainer import AlphaModel
+
+    engineer = FeatureEngineer()
+    X_full, _ = engineer.build_features(df)
+    if X_full.empty or len(X_full) < 50:
+        return pd.Series(np.zeros(len(df), dtype=int), index=df.index)
+
+    model = AlphaModel()
+    model.load(model_path)
+
+    close = df['close'].astype(float).loc[X_full.index]
+    n = len(X_full)
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    entry_price = 0.0
+
+    for i in range(n):
+        row = X_full.iloc[[i]]
+        price = float(close.iloc[i])
+        try:
+            prob = float(model.predict(row)[0])
+        except Exception:
+            if pos != 0:
+                signals[i] = pos
+            continue
+
+        # Exit logic
+        if pos == 1:
+            if price <= entry_price * (1 - sl_pct):
+                pos = 0; continue
+            elif price >= entry_price * (1 + tp_pct):
+                pos = 0; continue
+            signals[i] = 1; continue
+        elif pos == -1:
+            if price >= entry_price * (1 + sl_pct):
+                pos = 0; continue
+            elif price <= entry_price * (1 - tp_pct):
+                pos = 0; continue
+            signals[i] = -1; continue
+
+        # Entry
+        if pos == 0:
+            if prob > confidence_threshold:
+                pos = 1; entry_price = price; signals[i] = 1
+            elif prob < (1 - confidence_threshold):
+                pos = -1; entry_price = price; signals[i] = -1
+
+    full_signals = np.zeros(len(df), dtype=int)
+    full_signals[-n:] = signals
+    return pd.Series(full_signals, index=df.index)
+
+
+def mlensemble_signals(df: pd.DataFrame, prediction_horizon: int = 5,
+                       confidence_threshold: float = 0.60,
+                       min_train_samples: int = 200,
+                       sl_pct: float = 0.02, tp_pct: float = 0.03) -> pd.Series:
+    """MLEnsemble (LightGBM+XGBoost+RF) — train on first 70%, generate signals on last 30%."""
+    try:
+        from lightgbm import LGBMClassifier
+        from xgboost import XGBClassifier
+        from sklearn.ensemble import RandomForestClassifier
+    except ImportError as e:
+        print(f"  ⚠️ MLEnsemble: import failed ({e})")
+        return pd.Series(np.zeros(len(df), dtype=int), index=df.index)
+
+    close = df['close'].values.astype(float)
+    high = df['high'].values.astype(float)
+    low = df['low'].values.astype(float)
+    volume = df.get('volume', pd.Series(1.0, index=df.index)).values.astype(float)
+    n = len(df)
+
+    if n < min_train_samples + 20:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # Build features (replicating ml_ensemble.compute_features logic)
+    feats = pd.DataFrame(index=df.index)
+    feats['log_return_1'] = np.log(close / np.roll(close, 1))
+    feats['log_return_3'] = np.log(close / np.roll(close, 3))
+    feats['log_return_5'] = np.log(close / np.roll(close, 5))
+    feats['volatility_10'] = feats['log_return_1'].rolling(10).std()
+    feats['volatility_20'] = feats['log_return_1'].rolling(20).std()
+    feats['hilo_pct'] = (high - low) / close * 100
+    feats['volume_ratio_5'] = volume / pd.Series(volume).rolling(5).mean().values
+
+    # Momentum features
+    feats['price_ma5'] = pd.Series(close).rolling(5).mean()
+    feats['price_ma20'] = pd.Series(close).rolling(20).mean()
+    feats['ma5_div_ma20'] = feats['price_ma5'] / feats['price_ma20'] - 1.0
+    feats['price_div_ma50'] = close / pd.Series(close).rolling(50).mean().values - 1.0
+
+    # RSI
+    delta = pd.Series(close).diff()
+    gain = delta.clip(lower=0)
+    loss = (-delta).clip(lower=0)
+    avg_gain = gain.ewm(span=14, adjust=False).mean()
+    avg_loss = loss.ewm(span=14, adjust=False).mean()
+    rs = avg_gain / avg_loss.replace(0, np.nan)
+    feats['rsi_14'] = 100 - (100 / (1 + rs))
+
+    feats = feats.replace([np.inf, -np.inf], np.nan).ffill().fillna(0.0)
+
+    # Build labels: 3-class (UP=2, FLAT=1, DOWN=0)
+    future_close = np.roll(close, -prediction_horizon)
+    future_close[-prediction_horizon:] = np.nan
+    pct_change = (future_close - close) / close
+    labels = np.full(n, 1, dtype=int)  # FLAT=1
+    labels[pct_change > 0.003] = 2      # UP=2
+    labels[pct_change < -0.003] = 0     # DOWN=0
+    labels[-prediction_horizon:] = 1
+
+    # Train/test split
+    train_end = int(n * 0.70)
+    if train_end < min_train_samples:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    X_all = feats.values.astype(float)
+    y_all = labels
+
+    # Train models on training portion
+    X_train = X_all[:train_end]
+    y_train = y_all[:train_end]
+
+    try:
+        lgb = LGBMClassifier(n_estimators=100, max_depth=5, learning_rate=0.05, verbosity=-1, random_state=42, force_col_wise=True)
+        xgb = XGBClassifier(n_estimators=100, max_depth=5, learning_rate=0.05, verbosity=0, random_state=42, eval_metric='mlogloss')
+        rf = RandomForestClassifier(n_estimators=100, max_depth=8, random_state=42, n_jobs=-1)
+
+        lgb.fit(X_train, y_train)
+        xgb.fit(X_train, y_train)
+        rf.fit(X_train, y_train)
+    except Exception as e:
+        print(f"  ⚠️ MLEnsemble train failed: {e}")
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # Generate signals on test portion
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    entry_price = 0.0
+
+    for i in range(train_end, n):
+        row = X_all[i:i+1]
+        price = close[i]
+        try:
+            prob_lgb = lgb.predict_proba(row)
+            prob_xgb = xgb.predict_proba(row)
+            prob_rf = rf.predict_proba(row)
+            avg_prob = (prob_lgb + prob_xgb + prob_rf) / 3.0
+            pred_class = int(np.argmax(avg_prob, axis=1)[0])
+            confidence = float(np.max(avg_prob))
+        except Exception:
+            if pos != 0:
+                signals[i] = pos
+            continue
+
+        # Remap: 0=DOWN->SHORT(-1), 1=FLAT->HOLD(0), 2=UP->LONG(1)
+        direction = pred_class - 1  # 0->-1, 1->0, 2->1
+
+        # Exit
+        if pos == 1:
+            if direction == -1 or price <= entry_price * (1 - sl_pct) or price >= entry_price * (1 + tp_pct):
+                pos = 0; continue
+            signals[i] = 1; continue
+        elif pos == -1:
+            if direction == 1 or price >= entry_price * (1 + sl_pct) or price <= entry_price * (1 - tp_pct):
+                pos = 0; continue
+            signals[i] = -1; continue
+
+        # Entry
+        if pos == 0 and confidence >= confidence_threshold:
+            if direction == 1:
+                pos = 1; entry_price = price; signals[i] = 1
+            elif direction == -1:
+                pos = -1; entry_price = price; signals[i] = -1
+
+    return pd.Series(signals, index=df.index)
+
+
+def regimeswitch_signals(df: pd.DataFrame,
+                         trend_ema_period: int = 50, trend_sl_pct: float = 0.02, trend_tp_pct: float = 0.05,
+                         mr_rsi_period: int = 14, mr_oversold: int = 30, mr_overbought: int = 70,
+                         mr_sl_pct: float = 0.02, mr_tp_pct: float = 0.04,
+                         vol_window: int = 20, regime_lookback: int = 100,
+                         cooldown_bars: int = 5, high_vol_capital_pct: float = 0.25) -> pd.Series:
+    """RegimeSwitch — heuristic regime detection + sub-strategy dispatch."""
+    close = df['close'].values.astype(float)
+    high = df['high'].values.astype(float)
+    low = df['low'].values.astype(float)
+    n = len(close)
+
+    if n < max(regime_lookback, trend_ema_period, mr_rsi_period) + 10:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # Compute regime features
+    returns = np.diff(np.log(close))
+    returns = np.insert(returns, 0, 0.0)
+    vol = pd.Series(returns).rolling(vol_window).std().fillna(0).values
+
+    # EMA slope for trend
+    ema = pd.Series(close).ewm(span=trend_ema_period, adjust=False).mean().values
+    ema_slope = np.zeros(n)
+    ema_slope[5:] = ema[5:] - ema[:-5]
+
+    # RSI for MR
+    delta = pd.Series(close).diff()
+    gain = delta.clip(lower=0)
+    loss = (-delta).clip(lower=0)
+    avg_gain = gain.ewm(alpha=1/mr_rsi_period, adjust=False).mean().values
+    avg_loss = loss.ewm(alpha=1/mr_rsi_period, adjust=False).mean().values
+    rs = np.divide(avg_gain, avg_loss, out=np.full_like(avg_gain, np.inf), where=avg_loss != 0)
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+    rsi[avg_loss == 0] = 100.0
+    rsi[avg_gain == 0] = 0.0
+
+    # MA cross for trend strength
+    ma20 = pd.Series(close).rolling(20).mean().values
+    ma50 = pd.Series(close).rolling(50).mean().values
+
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    entry_price = 0.0
+    bars_since_trade = cooldown_bars + 1
+    min_bars = max(regime_lookback, trend_ema_period, mr_rsi_period)
+
+    for i in range(min_bars, n):
+        bars_since_trade += 1
+        price = close[i]
+
+        # Determine regime
+        median_vol = np.nanmedian(vol[max(0, i-regime_lookback):i+1])
+        current_vol = vol[i]
+        trend_strength = abs(ma20[i] - ma50[i]) / price if not np.isnan(ma20[i]) and not np.isnan(ma50[i]) else 0
+        slope_dir = ema_slope[i]
+
+        if current_vol > median_vol * 1.5:
+            regime = 'HIGH_VOL'
+        elif trend_strength > 0.02 or abs(slope_dir / price) > 0.005:
+            regime = 'TRENDING'
+        elif current_vol < median_vol * 0.5:
+            regime = 'LOW_VOL'
+        else:
+            regime = 'RANGING'
+
+        # HIGH_VOL: hold or reduce position
+        if regime == 'HIGH_VOL':
+            if pos != 0:
+                signals[i] = 0; pos = 0
+                bars_since_trade = 0
+            continue
+
+        # Exit logic
+        if pos == 1:
+            exit_trigger = False
+            if regime == 'TRENDING':
+                if ema_slope[i] <= 0:
+                    exit_trigger = True
+            elif price <= entry_price * (1 - trend_sl_pct if regime == 'TRENDING' else mr_sl_pct):
+                exit_trigger = True
+            elif price >= entry_price * (1 + trend_tp_pct if regime == 'TRENDING' else mr_tp_pct):
+                exit_trigger = True
+            if exit_trigger:
+                signals[i] = 0; pos = 0
+                bars_since_trade = 0
+                continue
+
+        elif pos == -1:
+            exit_trigger = False
+            if regime == 'TRENDING':
+                if ema_slope[i] >= 0:
+                    exit_trigger = True
+            elif price >= entry_price * (1 + trend_sl_pct if regime == 'TRENDING' else mr_sl_pct):
+                exit_trigger = True
+            elif price <= entry_price * (1 - trend_tp_pct if regime == 'TRENDING' else mr_tp_pct):
+                exit_trigger = True
+            if exit_trigger:
+                signals[i] = 0; pos = 0
+                bars_since_trade = 0
+                continue
+
+        if pos != 0:
+            signals[i] = pos
+            continue
+
+        # Entry
+        if pos == 0 and bars_since_trade > cooldown_bars:
+            if regime == 'TRENDING':
+                if ema_slope[i] > 0:
+                    pos = 1; entry_price = price; signals[i] = 1
+                    bars_since_trade = 0
+                elif ema_slope[i] < 0:
+                    pos = -1; entry_price = price; signals[i] = -1
+                    bars_since_trade = 0
+            elif regime in ('RANGING', 'LOW_VOL'):
+                if rsi[i] < mr_oversold:
+                    pos = 1; entry_price = price; signals[i] = 1
+                    bars_since_trade = 0
+                elif rsi[i] > mr_overbought:
+                    pos = -1; entry_price = price; signals[i] = -1
+                    bars_since_trade = 0
+
+    return pd.Series(signals, index=df.index)
+
+
+# ══════════════════════════════════════════════════════════════════════
 # Load data
 # ══════════════════════════════════════════════════════════════════════
 
@@ -440,6 +750,29 @@ for s in strategies_list:
         signals = dynamic_grid_signals(df, p['grid_range_pct'], p['num_levels'],
                                         p['qty_per_level'], p['rebalance_interval_bars'],
                                         p['min_spread_pct'], p.get('leverage', 3))
+    elif strategy_type == 'MLAlphaStrategy':
+        signals = mlalpha_signals(df, p.get('model_path', 'ml_alpha/model.pkl'),
+                                  p.get('confidence_threshold', 0.55))
+    elif strategy_type == 'MLEnsembleStrategy':
+        signals = mlensemble_signals(df,
+                                     p.get('prediction_horizon', 5),
+                                     p.get('confidence_threshold', 0.60),
+                                     p.get('min_train_samples', 200),
+                                     p.get('atr_sl_mult', 2.0) * 0.01,
+                                     p.get('atr_tp_mult', 3.0) * 0.01)
+    elif strategy_type == 'RegimeSwitchStrategy':
+        signals = regimeswitch_signals(df,
+                                       p.get('trend_ema_period', 50),
+                                       p.get('trend_sl_pct', 0.02),
+                                       p.get('trend_tp_pct', 0.05),
+                                       p.get('mr_rsi_period', 14),
+                                       p.get('mr_oversold', 30),
+                                       p.get('mr_overbought', 70),
+                                       p.get('mr_sl_pct', 0.02),
+                                       p.get('mr_tp_pct', 0.04),
+                                       p.get('vol_window', 20),
+                                       p.get('regime_lookback', 100),
+                                       p.get('cooldown_bars', 5))
     else:
         print(f"\n  ⚠️ {name}: unknown strategy type {strategy_type} — skipping")
         results_summary.append({

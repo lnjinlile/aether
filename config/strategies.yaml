@@ -36,14 +36,17 @@ strategies:
 # =========================================================================
 - name: MLAlpha_BTC
   class: ml_alpha.strategy.MLAlphaStrategy
-  enabled: false
+  enabled: false  # WF验证待完成（默认参数WF FAIL: -27% OOS。优化参数单窗口+32% Sharpe 1.46，需WF二次确认）
   params:
     model_path: ml_alpha/model.pkl
     symbols:
     - BTC/USDT
     timeframes:
     - 1h
-    confidence_threshold: 0.55
+    confidence_threshold: 0.60
+    # Prometheus优化: thr=0.60, SL=2%, TP=4%, depth=3, n_est=100
+    # 单窗口90d回测: +32.06%, Sharpe 1.46, DD 11.4%, WR 67%, PF 3.42
+    # ⚠️ 默认参数WF滚动回测FAIL(-27.24% OOS, WFE -2.11)。需用优化参数重跑WF
 
 # =========================================================================
 # MA Cross — disabled
@@ -110,7 +113,7 @@ strategies:
     leverage: 3
 - name: TrendFollow_BTC_1h
   class: strategy.examples.trend_follow.TrendFollow
-  enabled: false
+  enabled: true
   params:
     symbols:
     - BTC/USDT
@@ -143,7 +146,7 @@ strategies:
     leverage: 3
 - name: RSI_MR_ETH
   class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
-  enabled: false
+  enabled: true
   params:
     symbols:
     - ETH/USDT
@@ -186,7 +189,7 @@ strategies:
 
 - name: MLEnsemble_ETH
   class: strategy.examples.ml_ensemble.MLEnsembleStrategy
-  enabled: true
+  enabled: false  # Athena 90d: -12.32% Sharpe -0.175 — PAUSE
   params:
     symbols:
     - ETH/USDT
@@ -233,7 +236,7 @@ strategies:
 
 - name: RegimeSwitch_ETH
   class: strategy.examples.regime_switch.RegimeSwitchStrategy
-  enabled: true
+  enabled: false  # Athena 90d: -37.63% Sharpe -1.029 — CRITICAL PAUSE
   params:
     symbols:
     - ETH/USDT

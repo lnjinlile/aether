@@ -251,6 +251,49 @@ class BinanceDataCollector:
             limit=lookback_bars,
         )
 
+    def fetch_orderbook(self, symbol: str, depth: int = 20) -> dict:
+        """
+        Fetch order book depth data from Binance Futures.
+
+        Args:
+            symbol: Trading symbol (e.g. 'BTC/USDT').
+            depth: Number of price levels to fetch per side (default 20).
+
+        Returns:
+            dict with keys: bids, asks, timestamp.
+            bids/asks are lists of [price, quantity] pairs.
+        """
+        ob = self.exchange.fetch_order_book(symbol, depth)
+        return {
+            "bids": ob["bids"],
+            "asks": ob["asks"],
+            "timestamp": ob.get("timestamp") or ob.get("datetime") or (time.time() * 1000),
+        }
+
+    def fetch_funding_rate(self, symbol: str, limit: int = 100) -> list:
+        """
+        Fetch historical funding rates from Binance Futures.
+
+        Uses ccxt's fetch_funding_rate_history which hits
+        GET /fapi/v1/fundingRate under the hood.
+
+        Args:
+            symbol: Trading symbol (e.g. 'BTC/USDT').
+            limit: Max number of funding rate records to fetch.
+
+        Returns:
+            List of dicts, each with keys: fundingTime, fundingRate, markPrice.
+        """
+        rates = self.exchange.fetch_funding_rate_history(symbol, limit=limit)
+        result = []
+        for r in rates:
+            result.append({
+                "fundingTime": r.get("timestamp", r.get("fundingTime", 0)),
+                "fundingRate": r.get("fundingRate", r.get("rate", 0.0)),
+                "markPrice": r.get("markPrice", 0.0),
+            })
+        return result
+
     @staticmethod
     def _timeframe_to_ms(timeframe: str) -> int:
         """Convert a timeframe string (e.g. '1h', '5m') to milliseconds."""
