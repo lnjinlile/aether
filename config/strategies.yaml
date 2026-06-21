@@ -27,13 +27,13 @@ strategies:
     num_levels: 5
     qty_per_level: 0.01
     rebalance_interval_bars: 16
-    min_spread_pct: 0.3
+    min_spread_pct: 0.2
     leverage: 3
 
 # ── ML Alpha (replaces old EMA strategies) ──────────────────
 - name: MLAlpha_BTC
   class: ml_alpha.strategy.MLAlphaStrategy
-  enabled: true
+  enabled: false
   params:
     model_path: ml_alpha/model.pkl
     symbols:
@@ -41,6 +41,37 @@ strategies:
     timeframes:
     - 1h
     confidence_threshold: 0.55
+
+# ── MA Cross (optimized by Prometheus sweep) ──────────────
+- name: MA_Cross_BTC
+  class: strategy.examples.ma_cross.MACrossoverStrategy
+  enabled: true
+  params:
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+    fast_period: 12
+    slow_period: 26
+    atr_period: 14
+    atr_sl_mult: 2.0
+    atr_tp_mult: 3.0
+    cooldown_bars: 5
+
+- name: MA_Cross_ETH
+  class: strategy.examples.ma_cross.MACrossoverStrategy
+  enabled: true
+  params:
+    symbols:
+    - ETH/USDT
+    timeframes:
+    - 1h
+    fast_period: 5
+    slow_period: 13
+    atr_period: 14
+    atr_sl_mult: 2.0
+    atr_tp_mult: 3.0
+    cooldown_bars: 5
 
 # ── Legacy EMA strategies (disabled) ─────────────────────────
 - name: TrendFollow_BTC
@@ -94,17 +125,3 @@ strategies:
     stop_loss_pct: 0.015
     take_profit_pct: 0.06
     cooldown_bars: 8
-- name: MA_Cross
-  class: strategy.examples.ma_cross.MACrossoverStrategy
-  enabled: false
-  params:
-    symbols:
-    - BTC/USDT
-    timeframes:
-    - 1h
-    fast_period: 7
-    slow_period: 25
-    atr_period: 14
-    atr_sl_mult: 2.0
-    atr_tp_mult: 3.0
-    cooldown_bars: 5

@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-06-21T12:37:46.032264+00:00",
+  "actions": [
+    {
+      "type": "SKIP_SLTP",
+      "reason": "existing orders present"
+    }
+  ],
+  "signals_reviewed": [
+    {
+      "strategy": "DynamicGrid_BTC",
+      "symbol": "BTC/USDT",
+      "signal": "LONG",
+      "verdict": "EXECUTED",
+      "order_id": "15866134846",
+      "price": 0.0
+    },
+    {
+      "strategy": "DynamicGrid_ETH",
+      "symbol": "ETH/USDT",
+      "signal": "LONG",
+      "verdict": "EXECUTED",
+      "order_id": "N/A",
+      "price": 0.0
+    }
+  ]
+}
