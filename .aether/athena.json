@@ -1,7 +1,7 @@
 {
-  "run_time": "2026-06-21T15:37:46.370698+00:00",
+  "run_time": "2026-06-21T16:29:16.002864+00:00",
   "data_range_days": 7,
-  "db_total_klines": 10134,
+  "db_total_klines": 10142,
   "strategies": [
     {
       "name": "DynamicGrid_BTC",
@@ -10,17 +10,19 @@
       "tf": "15m",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -4.45,
-        "sharpe_ratio": -1.0062,
-        "max_drawdown_pct": 7.02,
-        "win_rate": 37.1,
-        "profit_factor": 0.596,
-        "total_trades": 62,
-        "avg_win_pct": 0.29,
-        "avg_loss_pct": 0.29
+        "total_return_pct": -17.73,
+        "sharpe_ratio": -1.5883,
+        "max_drawdown_pct": 20.37,
+        "win_rate": 30.77,
+        "profit_factor": 0.4349,
+        "total_trades": 65,
+        "avg_win_pct": 0.74,
+        "avg_loss_pct": 0.75
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-1.006)"
+        "\u26a0\ufe0f NEGATIVE SHARPE (-1.588)",
+        "\u26a0\ufe0f LARGE LOSS (-17.73%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (20.4%)"
       ],
       "bars": 673
     },
@@ -31,18 +33,18 @@
       "tf": "15m",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -7.78,
-        "sharpe_ratio": -1.7763,
-        "max_drawdown_pct": 8.23,
-        "win_rate": 42.11,
-        "profit_factor": 0.3263,
-        "total_trades": 57,
-        "avg_win_pct": 0.16,
-        "avg_loss_pct": 0.36
+        "total_return_pct": -8.29,
+        "sharpe_ratio": -0.6485,
+        "max_drawdown_pct": 8.74,
+        "win_rate": 51.92,
+        "profit_factor": 0.6829,
+        "total_trades": 52,
+        "avg_win_pct": 0.65,
+        "avg_loss_pct": 1.04
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-1.776)",
-        "\u26a0\ufe0f LARGE LOSS (-7.78%)"
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.648)",
+        "\u26a0\ufe0f LARGE LOSS (-8.29%)"
       ],
       "bars": 673
     },
@@ -60,14 +62,14 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": 2.42,
-        "sharpe_ratio": 1.3782,
-        "max_drawdown_pct": 0.16,
+        "total_return_pct": 12.82,
+        "sharpe_ratio": 1.4319,
+        "max_drawdown_pct": 0.37,
         "win_rate": 33.33,
-        "profit_factor": 15.7059,
+        "profit_factor": 35.6819,
         "total_trades": 3,
-        "avg_win_pct": 2.58,
-        "avg_loss_pct": 0.08
+        "avg_win_pct": 13.24,
+        "avg_loss_pct": 0.19
       },
       "flags": [],
       "bars": 169
@@ -79,16 +81,18 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": 5.33,
-        "sharpe_ratio": 1.2549,
-        "max_drawdown_pct": 2.48,
+        "total_return_pct": 31.73,
+        "sharpe_ratio": 1.4682,
+        "max_drawdown_pct": 11.51,
         "win_rate": 60.0,
-        "profit_factor": 3.1558,
+        "profit_factor": 3.7031,
         "total_trades": 5,
-        "avg_win_pct": 2.63,
-        "avg_loss_pct": 1.25
+        "avg_win_pct": 14.63,
+        "avg_loss_pct": 5.93
       },
-      "flags": [],
+      "flags": [
+        "\u26a0\ufe0f HIGH DRAWDOWN (11.5%)"
+      ],
       "bars": 169
     },
     {
@@ -98,14 +102,14 @@
       "tf": "15m",
       "status": "OK",
       "metrics": {
-        "total_return_pct": 0.66,
-        "sharpe_ratio": 0.1703,
-        "max_drawdown_pct": 1.31,
+        "total_return_pct": 3.65,
+        "sharpe_ratio": 0.323,
+        "max_drawdown_pct": 3.47,
         "win_rate": 36.36,
-        "profit_factor": 1.1854,
+        "profit_factor": 1.3969,
         "total_trades": 11,
-        "avg_win_pct": 1.12,
-        "avg_loss_pct": 0.54
+        "avg_win_pct": 3.51,
+        "avg_loss_pct": 1.44
       },
       "flags": [],
       "bars": 673
@@ -117,16 +121,18 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -2.89,
-        "sharpe_ratio": -2.0899,
-        "max_drawdown_pct": 2.89,
+        "total_return_pct": -7.51,
+        "sharpe_ratio": -2.0723,
+        "max_drawdown_pct": 7.51,
         "win_rate": 0.0,
         "profit_factor": 0.0,
         "total_trades": 2,
         "avg_win_pct": 0,
-        "avg_loss_pct": 1.46
+        "avg_loss_pct": 3.83
       },
-      "flags": [],
+      "flags": [
+        "\u26a0\ufe0f LARGE LOSS (-7.51%)"
+      ],
       "bars": 169
     },
     {
@@ -136,13 +142,13 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": 1.92,
-        "sharpe_ratio": 2.0417,
+        "total_return_pct": 6.14,
+        "sharpe_ratio": 2.0466,
         "max_drawdown_pct": 0.0,
         "win_rate": 100.0,
-        "profit_factor": Infinity,
+        "profit_factor": 999.0,
         "total_trades": 2,
-        "avg_win_pct": 0.96,
+        "avg_win_pct": 3.03,
         "avg_loss_pct": 0
       },
       "flags": [],
@@ -155,33 +161,33 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": 7.68,
-        "sharpe_ratio": 3.7995,
-        "max_drawdown_pct": 0.0,
-        "win_rate": 100.0,
-        "profit_factor": Infinity,
+        "total_return_pct": 23.46,
+        "sharpe_ratio": 3.5204,
+        "max_drawdown_pct": 0.66,
+        "win_rate": 87.5,
+        "profit_factor": 33.4957,
         "total_trades": 8,
-        "avg_win_pct": 0.93,
-        "avg_loss_pct": 0
+        "avg_win_pct": 3.16,
+        "avg_loss_pct": 0.66
       },
       "flags": [],
       "bars": 169
     },
     {
       "name": "TrendFollow_BTC_1h",
-      "enabled": true,
+      "enabled": false,
       "symbol": "BTC/USDT",
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -1.17,
-        "sharpe_ratio": -1.9313,
-        "max_drawdown_pct": 1.17,
+        "total_return_pct": -2.55,
+        "sharpe_ratio": -1.99,
+        "max_drawdown_pct": 2.55,
         "win_rate": 0.0,
         "profit_factor": 0.0,
         "total_trades": 2,
         "avg_win_pct": 0,
-        "avg_loss_pct": 0.59
+        "avg_loss_pct": 1.28
       },
       "flags": [],
       "bars": 169
@@ -194,11 +200,11 @@
       "slow": 13,
       "atr_sl": 2.0,
       "atr_tp": 3.0,
-      "net": 5.33,
-      "sharpe": 1.2549,
-      "dd": 2.48,
+      "net": 31.73,
+      "sharpe": 1.4682,
+      "dd": 11.51,
       "wr": 60.0,
-      "pf": 3.1558,
+      "pf": 3.7031,
       "trades": 5
     },
     {
@@ -207,11 +213,11 @@
       "slow": 13,
       "atr_sl": 1.5,
       "atr_tp": 3.0,
-      "net": 4.54,
-      "sharpe": 1.051,
-      "dd": 3.22,
+      "net": 26.54,
+      "sharpe": 1.2635,
+      "dd": 14.99,
       "wr": 60.0,
-      "pf": 2.4323,
+      "pf": 2.8193,
       "trades": 5
     },
     {
@@ -220,11 +226,11 @@
       "slow": 13,
       "atr_sl": 2.0,
       "atr_tp": 4.0,
-      "net": 4.33,
-      "sharpe": 1.0682,
-      "dd": 2.48,
+      "net": 21.31,
+      "sharpe": 1.1215,
+      "dd": 11.51,
       "wr": 50.0,
-      "pf": 2.7681,
+      "pf": 2.9715,
       "trades": 4
     },
     {
@@ -233,11 +239,11 @@
       "slow": 13,
       "atr_sl": 2.5,
       "atr_tp": 4.0,
-      "net": 4.33,
-      "sharpe": 1.0682,
-      "dd": 2.48,
+      "net": 21.31,
+      "sharpe": 1.1215,
+      "dd": 11.51,
       "wr": 50.0,
-      "pf": 2.7681,
+      "pf": 2.9715,
       "trades": 4
     },
     {
@@ -246,21 +252,20 @@
       "slow": 30,
       "atr_sl": 2.0,
       "atr_tp": 3.0,
-      "net": 4.04,
-      "sharpe": 1.2369,
-      "dd": 0.72,
+      "net": 20.21,
+      "sharpe": 1.2618,
+      "dd": 3.29,
       "wr": 50.0,
-      "pf": 6.6398,
+      "pf": 7.3822,
       "trades": 2
     }
   ],
   "recommendations": [
-    "\u2713 KEEP MA_Cross_BTC: Sharpe=+1.38 WR=33% Net=+2.42%",
-    "\u2713 KEEP MA_Cross_ETH: Sharpe=+1.25 WR=60% Net=+5.33%",
-    "\u2713 KEEP TrendFollow_BTC: Sharpe=+0.17 WR=36% Net=+0.66%",
-    "\u2713 KEEP RSI_MR_ETH: Sharpe=+3.80 WR=100% Net=+7.68%",
-    "\u2713 KEEP TrendFollow_BTC_1h: Sharpe=-1.93 WR=0% Net=-1.17%",
-    "\ud83d\udca1 CONSIDER MA_Cross on BTC 1h: fast=5 slow=20 slm=2.0x tpm=4.0x \u2192 net=+2.42% sharpe=+1.38"
+    "\u2713 KEEP MA_Cross_BTC: Sharpe=+1.43 WR=33% Net=+12.82%",
+    "\u2713 KEEP MA_Cross_ETH: Sharpe=+1.47 WR=60% Net=+31.73%",
+    "\u2713 KEEP TrendFollow_BTC: Sharpe=+0.32 WR=36% Net=+3.65%",
+    "\u2713 KEEP RSI_MR_ETH: Sharpe=+3.52 WR=88% Net=+23.46%",
+    "\ud83d\udca1 CONSIDER MA_Cross on BTC 1h: fast=5 slow=20 slm=2.0x tpm=4.0x \u2192 net=+12.82% sharpe=+1.43"
   ],
-  "timestamp": "2026-06-21 15:37 UTC"
+  "timestamp": "2026-06-21 16:29 UTC"
 }
