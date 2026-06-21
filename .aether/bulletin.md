@@ -747,3 +747,235 @@ Full results: .aether/athena.json
 | RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
 | RSI_MR_ETH | 🔴 -13.88% | SR=-0.33 | WR=69.6% | 102t |
 | TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 15:43 — 🟢 Oracle 心跳 — BTC=64,320.3 | ETH=1,729.0 | K线(200/200) 
+
+---
+### 06-21 15:44 — Engine ♡ | 风控 normal | long BTCUSDT 0.0009 @ 64099.9 | uPNL 🟢 +0.18
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.69% | SR=-1.26 | WR=37.3% | 241t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.30% | SR=-0.13 | WR=28.3% | 60t |
+| MA_Cross_ETH | 🔴 -4.99% | SR=-0.13 | WR=29.7% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.62 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -13.68% | SR=-0.33 | WR=69.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 15:47 — Mercury: 监控中 | 持仓1 | 无信号
+
+---
+### 06-21 15:48 — Mercury: 监控中 | 持仓1 | 无信号
+
+---
+### 06-21 15:49 — Engine ♡ | 风控 normal | long BTC/USDT:USDT 0.0009 @ 64099.9 | uPNL 🟢 +0.14
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.69% | SR=-1.26 | WR=37.3% | 241t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.30% | SR=-0.13 | WR=28.3% | 60t |
+| MA_Cross_ETH | 🔴 -4.99% | SR=-0.13 | WR=29.7% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.62 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -13.68% | SR=-0.33 | WR=69.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 15:49 — Mercury: 监控中 | 持仓0 | 无新交易
+
+---
+### 06-21 15:54 — Engine ♡ | 风控 normal | long BTCUSDT 0.0009 @ 64099.9 | uPNL 🟢 +0.11
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.69% | SR=-1.26 | WR=37.3% | 241t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.30% | SR=-0.13 | WR=28.3% | 60t |
+| MA_Cross_ETH | 🔴 -4.99% | SR=-0.13 | WR=29.7% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.62 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -13.68% | SR=-0.33 | WR=69.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 15:59 — Engine ♡ | 风控 ? | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.76% | SR=-1.26 | WR=37.2% | 242t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.30% | SR=-0.13 | WR=28.3% | 60t |
+| MA_Cross_ETH | 🔴 -4.58% | SR=-0.11 | WR=31.1% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.61 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -14.05% | SR=-0.34 | WR=69.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 16:04 — Engine ♡ | 风控 normal | long BTC/USDT:USDT 0.0009 @ 64099.9 | uPNL 🟢 +0.10
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -29.24% | SR=-1.28 | WR=37.2% | 242t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.20% | SR=-0.12 | WR=30.0% | 60t |
+| MA_Cross_ETH | 🔴 -4.05% | SR=-0.10 | WR=31.1% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.61 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -14.53% | SR=-0.35 | WR=68.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 16:09 — Engine ♡ | 风控 normal | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.71% | SR=-1.26 | WR=37.2% | 242t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.20% | SR=-0.12 | WR=30.0% | 60t |
+| MA_Cross_ETH | 🔴 -4.75% | SR=-0.12 | WR=31.1% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.61 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -13.89% | SR=-0.33 | WR=69.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 16:15 — Engine ♡ | 风控 normal | long BTCUSDT 0.0009 @ 64099.9 | uPNL 🟢 +0.00
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.67% | SR=-1.26 | WR=37.6% | 242t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.41% | SR=-0.13 | WR=28.3% | 60t |
+| MA_Cross_ETH | 🔴 -4.81% | SR=-0.12 | WR=31.1% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.61 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -13.84% | SR=-0.33 | WR=69.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 16:20 — Engine ♡ | 风控 ? | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.79% | SR=-1.26 | WR=37.2% | 242t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.41% | SR=-0.13 | WR=28.3% | 60t |
+| MA_Cross_ETH | 🔴 -4.66% | SR=-0.12 | WR=31.1% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.61 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -13.98% | SR=-0.34 | WR=69.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 16:22 — Mercury: 监控中 | 持仓1 | 无信号
+
+---
+### 06-21 16:22 — Mercury: 监控中 | 持仓1 | 无新交易
+
+---
+### 06-21 16:25 — Engine ♡ | 风控 ? | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.79% | SR=-1.26 | WR=37.2% | 242t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.34% | SR=-0.13 | WR=28.3% | 60t |
+| MA_Cross_ETH | 🔴 -4.75% | SR=-0.12 | WR=31.1% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.61 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -13.89% | SR=-0.33 | WR=69.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 16:30 — Engine ♡ | 风控 ? | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.79% | SR=-1.26 | WR=37.2% | 242t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.34% | SR=-0.13 | WR=28.3% | 60t |
+| MA_Cross_ETH | 🔴 -4.81% | SR=-0.12 | WR=31.1% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.61 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -13.84% | SR=-0.33 | WR=69.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 16:35 — Engine ♡ | 风控 normal | long BTC/USDT:USDT 0.0009 @ 64099.9 | uPNL 🔴 -0.05
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.79% | SR=-1.26 | WR=37.2% | 242t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.52% | SR=-0.14 | WR=28.3% | 60t |
+| MA_Cross_ETH | 🔴 -4.42% | SR=-0.11 | WR=31.1% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.61 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -14.19% | SR=-0.34 | WR=69.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 16:39 — Mercury: 监控中 | 持仓1 | 无信号
+
+---
+### 06-21 16:40 — Mercury: 监控中 | 持仓1 | 无新交易
+
+---
+### 06-21 16:40 — Engine ♡ | 风控 ? | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.79% | SR=-1.26 | WR=37.2% | 242t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.51% | SR=-0.14 | WR=28.3% | 60t |
+| MA_Cross_ETH | 🔴 -4.52% | SR=-0.11 | WR=31.1% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.61 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🔴 -14.11% | SR=-0.34 | WR=69.6% | 102t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 16:46 — Engine ♡ | 风控 normal | long BTC/USDT:USDT 0.0009 @ 64099.9 | uPNL 🔴 -0.01
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=34.8% | 247t |
+| DynamicGrid_ETH | 🔴 -28.79% | SR=-1.26 | WR=37.2% | 242t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.51% | SR=-0.14 | WR=28.3% | 60t |
+| MA_Cross_ETH | 🔴 -4.11% | SR=-0.10 | WR=31.1% | 74t |
+| TrendFollow_BTC | 🟢 +17.88% | SR=+0.61 | WR=40.3% | 77t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=26.8% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
+| RSI_MR_ETH | 🟢 +9.56% | SR=+0.58 | WR=77.8% | 9t |
+| TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |

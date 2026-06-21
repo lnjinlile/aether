@@ -102,11 +102,11 @@ class TrendFollow(BaseStrategy):
             self._bars_since_last_trade = 0
             return Signal(SignalType.LONG, symbol, price=price, quantity=0.001,
                           stop_loss=price*(1-sl_pct), take_profit=price*(1+tp_pct),
-                          leverage=3, confidence=0.65,
+                          leverage=self.params.get("leverage", 3), confidence=0.65,
                           reason="Uptrend", strategy_name=self.name)
         else:
             self._bars_since_last_trade = 0
             return Signal(SignalType.SHORT, symbol, price=price, quantity=0.001,
                           stop_loss=price*(1+sl_pct), take_profit=price*(1-tp_pct),
-                          leverage=3, confidence=0.65,
+                          leverage=self.params.get("leverage", 3), confidence=0.65,
                           reason="Downtrend", strategy_name=self.name)

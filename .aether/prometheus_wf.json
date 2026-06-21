@@ -1,13 +1,47 @@
 {
-  "status": "active",
-  "dgt_deployed": true,
-  "dgt_btc_pnl": "+22.8%",
-  "dgt_eth_pnl": "+5.4%",
-  "dsr_implemented": true,
-  "walk_forward_implemented": true,
-  "validated_strategies": [
-    "MA_Cross_BTC",
-    "MA_Cross_ETH"
-  ],
-  "next": "order_flow_strategy"
+  "run_time": "2026-06-21T16:14:32.173951+00:00",
+  "results": {
+    "TrendFollow_BTC": {
+      "wfe": 0.0124,
+      "is_return": 20.2,
+      "oos_return": 0.25,
+      "passed": false,
+      "interpretation": "WFE=0.012 \u2014 WEAK \u2014 significant OOS degradation, likely overfit"
+    },
+    "TrendFollow_BTC_1h": {
+      "wfe": 0.4232,
+      "is_return": -4.56,
+      "oos_return": -1.93,
+      "passed": false,
+      "interpretation": "WFE=0.423 \u2014 DEGRADING \u2014 both negative and OOS much worse than IS"
+    },
+    "RSI_MR_ETH": {
+      "wfe": 0.7184,
+      "is_return": -7.99,
+      "oos_return": -5.74,
+      "passed": true,
+      "interpretation": "WFE=0.718 \u2014 CONSISTENT_LOSER \u2014 consistently unprofitable but not overfit (same behavior IS and OOS)"
+    },
+    "RSI_MR_BTC": {
+      "wfe": -0.3534,
+      "is_return": 2.49,
+      "oos_return": -0.88,
+      "passed": false,
+      "interpretation": "WFE=-0.353 \u2014 BROKEN \u2014 IS positive but OOS negative, classic overfitting"
+    },
+    "MA_Cross_BTC": {
+      "wfe": -3.8065,
+      "is_return": -0.93,
+      "oos_return": 3.54,
+      "passed": true,
+      "interpretation": "WFE=-3.806 \u2014 REGIME_SHIFT \u2014 IS negative but OOS positive, favorable regime change, not overfitting"
+    },
+    "MA_Cross_ETH": {
+      "wfe": -1.6838,
+      "is_return": -2.72,
+      "oos_return": 4.58,
+      "passed": true,
+      "interpretation": "WFE=-1.684 \u2014 REGIME_SHIFT \u2014 IS negative but OOS positive, favorable regime change, not overfitting"
+    }
+  }
 }

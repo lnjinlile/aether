@@ -43,7 +43,7 @@ class Signal:
     take_profit: float = float("nan")
     reason: str = ""
     confidence: float = 1.0
-    leverage: int = 1
+    leverage: int = 0
     strategy_name: str = ""
     timestamp: Optional[pd.Timestamp] = None
 

@@ -39,7 +39,7 @@ strategies:
     confidence_threshold: 0.55
 - name: MA_Cross_BTC
   class: strategy.examples.ma_cross.MACrossoverStrategy
-  enabled: true
+  enabled: false
   params:
     symbols:
     - BTC/USDT
@@ -54,7 +54,7 @@ strategies:
     leverage: 5
 - name: MA_Cross_ETH
   class: strategy.examples.ma_cross.MACrossoverStrategy
-  enabled: true
+  enabled: false
   params:
     symbols:
     - ETH/USDT
@@ -111,7 +111,7 @@ strategies:
     leverage: 3
 - name: RSI_MR_ETH
   class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
-  enabled: true
+  enabled: false
   params:
     symbols:
     - ETH/USDT
