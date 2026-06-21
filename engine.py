@@ -423,6 +423,10 @@ def sync_agent_states():
         for key in ("dsr_implemented", "walk_forward_implemented", "anti_overfitting_run", "wf_findings", "next"):
             if key in existing_prom:
                 prom_state[key] = existing_prom[key]
+        # Clean up stale hardcoded fake fields (replaced by strategies dict)
+        prom_state["dgt_deployed"] = None
+        prom_state["dgt_btc_pnl"] = None
+        prom_state["dgt_eth_pnl"] = None
         merge_state("prometheus", prom_state)
     except Exception as e:
         logger.error("State sync error: %s", e)
@@ -450,7 +454,7 @@ def sync_agent_states():
                 wr = m.get("win_rate", 0)
                 tr = m.get("total_trades", 0)
                 sign = "🟢" if ret > 0 else "🔴"
-                strat_lines.append(f"| {name} | {sign} {ret:+.2f}% | SR={sr:+.2f} | WR={wr:.0%} | {tr}t |")
+                strat_lines.append(f"| {name} | {sign} {ret:+.2f}% | SR={sr:+.2f} | WR={wr:.1f}% | {tr}t |")
             else:
                 strat_lines.append(f"| {name} | ⚪ no metrics | — | — | — |")
 
