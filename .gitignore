@@ -8,3 +8,7 @@ trading.log
 *.egg-info/
 dist/
 build/
+
+# Aether state (auto-generated)
+.aether/state/
+.aether/__pycache__/
