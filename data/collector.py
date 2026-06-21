@@ -127,22 +127,42 @@ class BinanceDataCollector:
         Returns:
             DataFrame with all klines in the requested range, sorted by time.
         """
+        import logging
+        logger = logging.getLogger("collector")
+
         timeframe_ms = self._timeframe_to_ms(timeframe)
         end_time = int(datetime.now(timezone.utc).timestamp() * 1000)
         start_time = end_time - (days * 24 * 60 * 60 * 1000)
 
+        # Calculate expected total bars for progress tracking
+        total_ms = end_time - start_time
+        expected_bars = total_ms // timeframe_ms
+
         all_frames = []
         current_since = start_time
+        bars_fetched = 0
+        page = 0
+        MAX_LIMIT = 1500  # Binance max per request
+
+        logger.info(
+            "Fetching %s %s — %d days (~%d bars expected, %d per page)",
+            symbol, timeframe, days, expected_bars, MAX_LIMIT
+        )
 
         while current_since < end_time:
+            page += 1
             raw = self.exchange.fetch_ohlcv(
                 symbol=symbol,
                 timeframe=timeframe,
                 since=current_since,
-                limit=1000,
+                limit=MAX_LIMIT,
             )
 
             if not raw:
+                logger.info(
+                    "  [%s %s] page %d: 0 bars (API returned empty, stopping)",
+                    symbol, timeframe, page
+                )
                 break
 
             df = pd.DataFrame(
@@ -156,11 +176,32 @@ class BinanceDataCollector:
                 df["quote_volume"] = 0.0
                 df["trades_count"] = 0
 
+            batch_size = len(df)
             all_frames.append(df)
+            bars_fetched += batch_size
+
+            # Progress log
+            pct = min(100, round(bars_fetched / max(1, expected_bars) * 100))
+            first_ts = datetime.fromtimestamp(df["open_time"].iloc[0] / 1000, tz=timezone.utc)
+            last_ts = datetime.fromtimestamp(df["open_time"].iloc[-1] / 1000, tz=timezone.utc)
+            logger.info(
+                "  [%s %s] page %d: %d bars | %s → %s | %d/%d (%d%%)",
+                symbol, timeframe, page, batch_size,
+                first_ts.strftime("%Y-%m-%d"), last_ts.strftime("%Y-%m-%d"),
+                bars_fetched, expected_bars, pct
+            )
 
             # Advance past the last candle
             last_open_time = df["open_time"].iloc[-1]
             current_since = last_open_time + timeframe_ms
+
+            # Stop if we've reached the present time
+            if current_since >= end_time:
+                logger.info(
+                    "  [%s %s] reached present time — stopping",
+                    symbol, timeframe
+                )
+                break
 
             # Rate limit
             time.sleep(0.1)
@@ -175,6 +216,11 @@ class BinanceDataCollector:
         result.drop_duplicates(subset=["open_time"], inplace=True)
         result.sort_values("open_time", inplace=True)
         result.reset_index(drop=True, inplace=True)
+
+        logger.info(
+            "  [%s %s] DONE: %d total bars over %d pages",
+            symbol, timeframe, len(result), page
+        )
         return result
 
     def fetch_current_klines(

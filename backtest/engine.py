@@ -342,7 +342,7 @@ class BacktestEngine:
 
             gross_profit = pnl_array[pnl_array > 0].sum() if (pnl_array > 0).any() else 0
             gross_loss = abs(pnl_array[pnl_array < 0].sum()) if (pnl_array < 0).any() else 0
-            profit_factor = gross_profit / gross_loss if gross_loss > 0 else float("inf")
+            profit_factor = gross_profit / gross_loss if gross_loss > 0 else (999.0 if gross_profit > 0 else 0.0)
 
             avg_win = pnl_array[pnl_array > 0].mean() if (pnl_array > 0).any() else 0
             avg_loss = abs(pnl_array[pnl_array < 0].mean()) if (pnl_array < 0).any() else 0

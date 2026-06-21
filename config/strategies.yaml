@@ -1,8 +1,7 @@
 strategies:
-# ── Dynamic Grid Trading ──────────────────────────────────────
 - name: DynamicGrid_BTC
   class: strategy.examples.dynamic_grid.DynamicGridStrategy
-  enabled: false  # 2026-06-21 Athena: 7d return -8.90%, Sharpe -1.91 → paused
+  enabled: false
   params:
     symbols:
     - BTC/USDT
@@ -14,10 +13,9 @@ strategies:
     rebalance_interval_bars: 16
     min_spread_pct: 0.2
     leverage: 3
-
 - name: DynamicGrid_ETH
   class: strategy.examples.dynamic_grid.DynamicGridStrategy
-  enabled: false  # 2026-06-21 Athena: 7d return -4.92%, Sharpe -1.18 → paused
+  enabled: false
   params:
     symbols:
     - ETH/USDT
@@ -29,8 +27,6 @@ strategies:
     rebalance_interval_bars: 16
     min_spread_pct: 0.2
     leverage: 3
-
-# ── ML Alpha (replaces old EMA strategies) ──────────────────
 - name: MLAlpha_BTC
   class: ml_alpha.strategy.MLAlphaStrategy
   enabled: false
@@ -41,26 +37,24 @@ strategies:
     timeframes:
     - 1h
     confidence_threshold: 0.55
-
-# ── MA Cross (optimized by Prometheus sweep) ──────────────
 - name: MA_Cross_BTC
   class: strategy.examples.ma_cross.MACrossoverStrategy
-  enabled: true
+  enabled: false
   params:
     symbols:
     - BTC/USDT
     timeframes:
     - 1h
-    fast_period: 5   # 2026-06-21 Athena: optimized from sweep (12→5, 26→20) +2.42% net
+    fast_period: 5
     slow_period: 20
     atr_period: 14
     atr_sl_mult: 2.0
-    atr_tp_mult: 4.0  # was 3.0
+    atr_tp_mult: 4.0
     cooldown_bars: 5
-
+    leverage: 5
 - name: MA_Cross_ETH
   class: strategy.examples.ma_cross.MACrossoverStrategy
-  enabled: true
+  enabled: false
   params:
     symbols:
     - ETH/USDT
@@ -72,20 +66,20 @@ strategies:
     atr_sl_mult: 2.0
     atr_tp_mult: 3.0
     cooldown_bars: 5
-
-# ── Legacy EMA strategies (disabled) ─────────────────────────
+    leverage: 5
 - name: TrendFollow_BTC
   class: strategy.examples.trend_follow.TrendFollow
-  enabled: false
+  enabled: true
   params:
     symbols:
     - BTC/USDT
     timeframes:
     - 15m
-    ema_period: 50
+    ema_period: 75
     stop_loss_pct: 0.01
-    take_profit_pct: 0.025
-    cooldown_bars: 8
+    take_profit_pct: 0.015
+    cooldown_bars: 10
+    leverage: 3
 - name: TrendFollow_ETH
   class: strategy.examples.trend_follow.TrendFollow
   enabled: false
@@ -98,6 +92,7 @@ strategies:
     stop_loss_pct: 0.03
     take_profit_pct: 0.06
     cooldown_bars: 8
+    leverage: 3
 - name: RSI_MR_BTC
   class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
   enabled: false
@@ -113,23 +108,23 @@ strategies:
     stop_loss_pct: 0.03
     take_profit_pct: 0.06
     cooldown_bars: 5
-
-# ── RSI Mean Reversion ETH (Athena 2026-06-21) ──────────────────
+    leverage: 3
 - name: RSI_MR_ETH
   class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
-  enabled: true  # Athena: 7d +7.30% net, Sharpe +3.65, 8 trades, 100% WR
+  enabled: false
   params:
     symbols:
     - ETH/USDT
     timeframes:
     - 1h
-    rsi_period: 7    # faster RSI for more signals
-    oversold: 35
-    overbought: 65
+    rsi_period: 14
+    oversold: 20
+    overbought: 80
     exit_rsi: 50
-    stop_loss_pct: 0.03
-    take_profit_pct: 0.06
+    stop_loss_pct: 0.02
+    take_profit_pct: 0.04
     cooldown_bars: 5
+    leverage: 3
 - name: TrendFollow_BTC_1h
   class: strategy.examples.trend_follow.TrendFollow
   enabled: false
@@ -140,5 +135,6 @@ strategies:
     - 1h
     ema_period: 50
     stop_loss_pct: 0.015
-    take_profit_pct: 0.06
+    take_profit_pct: 0.05
     cooldown_bars: 8
+    leverage: 3

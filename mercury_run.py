@@ -151,14 +151,22 @@ def main():
     market_data = {}
     for sym in sorted(needed_symbols):
         for tf in sorted(needed_timeframes):
+            df = None
             try:
                 df = collector.fetch_current_klines(sym, tf, lookback_bars=500)
-                storage.save_klines(df, sym, tf)
-                market_data[(sym, tf)] = df
                 last_close = float(df["close"].iloc[-1])
                 print(f"  {sym} {tf}: {len(df)}根K线 | 最新价: {last_close:,.2f}")
             except Exception as e:
-                print(f"  {sym} {tf}: ❌ {e}")
+                print(f"  {sym} {tf}: ❌ 获取失败: {e}")
+                continue
+
+            # Save to DB (non-fatal — if DB is locked by another process, still use in-memory data)
+            try:
+                storage.save_klines(df, sym, tf)
+            except Exception as e:
+                print(f"  {sym} {tf}: ⚠️ DB写入跳过 ({e})")
+
+            market_data[(sym, tf)] = df
 
     # ── 5. Feed data to strategies & generate signals ────────
     print("\n🎯 信号生成")

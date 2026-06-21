@@ -148,7 +148,7 @@ class MACrossoverStrategy(BaseStrategy):
                     take_profit=tp,
                     reason=f"Golden cross (fast={self.params['fast_period']}, slow={self.params['slow_period']})",
                     confidence=0.7,
-                    leverage=5,
+                    leverage=self.params.get("leverage", 5),
                     strategy_name=self.name,
                     timestamp=df.index[-1],
                 )
@@ -165,7 +165,7 @@ class MACrossoverStrategy(BaseStrategy):
                     take_profit=tp,
                     reason=f"Death cross (fast={self.params['fast_period']}, slow={self.params['slow_period']})",
                     confidence=0.7,
-                    leverage=5,
+                    leverage=self.params.get("leverage", 5),
                     strategy_name=self.name,
                     timestamp=df.index[-1],
                 )

@@ -164,9 +164,15 @@ class StrategyManager:
                 raise ImportError(f"Cannot import {class_path}: {e}") from e
 
             # Instantiate with params from YAML (name is passed explicitly)
+            # Filter out params not accepted by strategy constructors (leverage is set post-init)
+            constructor_params = {k: v for k, v in params.items()
+                                  if k not in ("leverage",)}
             try:
-                params_with_name = {"name": name, **params}
+                params_with_name = {"name": name, **constructor_params}
                 strategy = strategy_cls(**params_with_name)
+                # Inject leverage into strategy params post-construction (most strategies accept it via params dict)
+                if "leverage" in params:
+                    strategy.params["leverage"] = params["leverage"]
                 mgr.register(strategy)
                 logger.info("Loaded strategy '%s' from %s (params: %s)", name, class_path, params)
             except TypeError as e:

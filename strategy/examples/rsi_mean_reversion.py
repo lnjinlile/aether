@@ -158,7 +158,7 @@ class RSIMeanReversionStrategy(BaseStrategy):
                     take_profit=tp,
                     reason=f"RSI({self.params['rsi_period']})={latest['rsi']:.1f} crossed below {self.params['oversold']} (oversold)",
                     confidence=0.65,
-                    leverage=3,
+                    leverage=self.params.get("leverage", 3),
                     strategy_name=self.name,
                     timestamp=df.index[-1],
                 )
@@ -175,7 +175,7 @@ class RSIMeanReversionStrategy(BaseStrategy):
                     take_profit=tp,
                     reason=f"RSI({self.params['rsi_period']})={latest['rsi']:.1f} crossed above {self.params['overbought']} (overbought)",
                     confidence=0.65,
-                    leverage=3,
+                    leverage=self.params.get("leverage", 3),
                     strategy_name=self.name,
                     timestamp=df.index[-1],
                 )

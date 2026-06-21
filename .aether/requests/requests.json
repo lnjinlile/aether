@@ -32,5 +32,117 @@
         "msg": "已完成"
       }
     ]
+  },
+  {
+    "id": 2,
+    "target": "athena",
+    "from": "hermes",
+    "type": "fix_backtest_engine",
+    "data": {
+      "reason": "AUDIT-001: RSI_MR_ETH回测引擎不统一，三个Agent给出不同结果。请统一回测引擎，确保单一路径计算回测指标。",
+      "audit_id": "AUDIT-001",
+      "priority": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T16:38:14.238966+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 3,
+    "target": "prometheus",
+    "from": "hermes",
+    "type": "fix_backtest_engine",
+    "data": {
+      "reason": "AUDIT-001: 协助Athena统一回测引擎。RSI_MR_ETH三个Agent回测结果不一致(收益+23%~+27%，胜率88%~100%)。",
+      "audit_id": "AUDIT-001",
+      "priority": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T16:38:35.383693+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 4,
+    "target": "oracle",
+    "from": "hermes",
+    "type": "fix_contradiction",
+    "data": {
+      "reason": "AUDIT-002: 你标记了RSI_MR_ETH为CRITICAL CONTRADICTION但仍维持启用。7天+26% vs 3月-14.19%。请与Athena协调，要么禁用策略，要么确认哪个回测窗口是正确的。",
+      "audit_id": "AUDIT-002",
+      "priority": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T16:38:35.409690+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 5,
+    "target": "athena",
+    "from": "hermes",
+    "type": "fix_contradiction",
+    "data": {
+      "reason": "AUDIT-002: RSI_MR_ETH时间窗口矛盾。你给的7天+26%，但Oracle 3月Walk-Forward -14.19%。请与Oracle确认并统一。",
+      "audit_id": "AUDIT-002",
+      "priority": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T16:38:35.438145+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 6,
+    "target": "mercury",
+    "from": "hermes",
+    "type": "fix_rsi_qty",
+    "data": {
+      "reason": "AUDIT-003: RSI_MR_ETH qty缺失已6轮未修复。风控持续拒绝其信号。请修复qty计算逻辑或禁用该策略。",
+      "audit_id": "AUDIT-003",
+      "priority": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T16:38:35.463880+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 7,
+    "target": "guardian",
+    "from": "hermes",
+    "type": "fix_rsi_qty",
+    "data": {
+      "reason": "AUDIT-003: 配合Mercury修复RSI_MR_ETH qty问题。如果qty无法修复，从风控侧直接禁用该策略。",
+      "audit_id": "AUDIT-003",
+      "priority": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T16:38:35.488617+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 8,
+    "target": "prometheus",
+    "from": "hermes",
+    "type": "fix_overfitting",
+    "data": {
+      "reason": "AUDIT-004: TrendFollow_BTC WFE=0.012，严重过拟合。建议降级为paper trading或添加ADX过滤器。",
+      "audit_id": "AUDIT-004",
+      "priority": "warning"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T16:38:35.514564+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 9,
+    "target": "athena",
+    "from": "hermes",
+    "type": "fix_overfitting",
+    "data": {
+      "reason": "AUDIT-004: TrendFollow_BTC过拟合(WFE=0.012)。请配合Prometheus降级该策略或添加防过拟合过滤器。",
+      "audit_id": "AUDIT-004",
+      "priority": "warning"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T16:38:35.540828+00:00",
+    "fulfilled_at": null
   }
 ]

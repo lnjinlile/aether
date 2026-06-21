@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
 Athena — Strategy Brain backtest engine.
-Loads strategies.yaml → pulls 7d data from DB → backtests → scores → writes athena.json
+Loads strategies.yaml → pulls data from DB → backtests → scores → writes athena.json
+Usage: python3 athena_backtest.py [--days N]  (default: 30 days)
 """
-import sys, os, json, yaml
+import argparse, sys, os, json, yaml
 from datetime import datetime, timezone
 from collections import defaultdict
 
@@ -14,6 +15,12 @@ import numpy as np
 from config.settings import get_config
 from data.storage import MarketStorage
 from backtest.engine import BacktestEngine
+
+# ── CLI args ──
+parser = argparse.ArgumentParser()
+parser.add_argument('--days', type=int, default=30, help='Lookback days (default: 30)')
+args = parser.parse_args()
+lookback_days = args.days
 
 # ── Load config ──
 cfg = get_config()
@@ -370,14 +377,14 @@ def load_df(storage, symbol, timeframe, days=7):
 print("🦉 Athena — Strategy Brain Backtest")
 print("=" * 70)
 t0 = datetime.now(timezone.utc)
-print(f"Run: {t0.strftime('%Y-%m-%d %H:%M UTC')}")
+print(f"Run: {t0.strftime('%Y-%m-%d %H:%M UTC')} | Lookback: {lookback_days}d")
 print()
 
 # Load all needed data
 data = {}
 for sym in ['BTC/USDT', 'ETH/USDT']:
     for tf in ['15m', '1h']:
-        df = load_df(storage, sym, tf, days=7)
+        df = load_df(storage, sym, tf, days=lookback_days)
         if df is not None and len(df) > 0:
             data[(sym, tf)] = df
             days_span = (df.index[-1] - df.index[0]).days + (df.index[-1] - df.index[0]).seconds / 86400
@@ -395,7 +402,7 @@ results_summary = []
 
 print()
 print("=" * 80)
-print("STRATEGY BACKTEST RESULTS (last 7 days)")
+print(f"STRATEGY BACKTEST RESULTS (last {lookback_days} days)")
 print("=" * 80)
 
 for s in strategies_list:
@@ -441,7 +448,9 @@ for s in strategies_list:
         })
         continue
 
-    result = engine.run(df, signals)
+    # Leverage from strategy config (default 1 if not specified)
+    leverage = p.get('leverage', 1)
+    result = engine.run(df, signals, leverage=leverage)
     m = result['metrics']
 
     status_icon = "✅" if enabled else "⏸️"
@@ -512,7 +521,7 @@ for sym in ['BTC/USDT', 'ETH/USDT']:
     for fp, sp in [(7, 25), (5, 20), (10, 30), (12, 26), (5, 13)]:
         for slm, tpm in [(2.0, 3.0), (1.5, 3.0), (2.0, 4.0), (2.5, 4.0)]:
             signals = ma_cross_signals(df, fp, sp, 14, slm, tpm, 5)
-            result = engine.run(df, signals)
+            result = engine.run(df, signals, leverage=5)
             m = result['metrics']
             ma_cross_sweep.append({
                 'symbol': sym, 'fast': fp, 'slow': sp,
@@ -561,7 +570,7 @@ if ('BTC/USDT', '1h') in data:
     # Test EMA20, SL=1%, TP=3%
     for ema, sl, tp, cd in [(20, 0.01, 0.03, 5), (20, 0.015, 0.04, 8), (50, 0.01, 0.03, 5), (100, 0.015, 0.04, 8)]:
         sig = trendfollow_signals(df, ema, sl, tp, cd)
-        res = engine.run(df, sig)
+        res = engine.run(df, sig, leverage=3)
         m = res['metrics']
         print(f"  TF EMA{ema} SL={sl*100:.1f}% TP={tp*100:.1f}% CD={cd} "
               f"(BTC 1h): net={m['total_return_pct']:+.2f}% "
@@ -573,7 +582,7 @@ if ('ETH/USDT', '1h') in data:
     df = data[('ETH/USDT', '1h')]
     for rsi_p, os_level, ob_level, sl, tp in [(14, 30, 70, 0.03, 0.06), (14, 25, 75, 0.02, 0.05), (7, 35, 65, 0.03, 0.06)]:
         sig = rsi_mr_signals(df, rsi_p, os_level, ob_level, 50, sl, tp, 5)
-        res = engine.run(df, sig)
+        res = engine.run(df, sig, leverage=3)
         m = res['metrics']
         print(f"  RSI_MR(rsi={rsi_p} os={os_level} ob={ob_level}) ETH 1h: net={m['total_return_pct']:+.2f}% "
               f"sharpe={m['sharpe_ratio']:+.2f} dd={m['max_drawdown_pct']:.1f}% "
@@ -646,7 +655,7 @@ os.makedirs('.aether', exist_ok=True)
 
 athena_data = {
     'run_time': t0.isoformat(),
-    'data_range_days': 7,
+    'data_range_days': lookback_days,
     'db_total_klines': storage.get_db_stats()['tables']['klines'],
     'strategies': [],
     'ma_cross_sweep_top5': ma_cross_sweep[:5] if ma_cross_sweep else [],

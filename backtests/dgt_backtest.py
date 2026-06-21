@@ -250,7 +250,7 @@ class GridBacktest:
         # Average win/loss
         avg_win = np.mean([t["pnl"] for t in winning_trades]) if winning_trades else 0
         avg_loss = np.mean([t["pnl"] for t in losing_trades]) if losing_trades else 0
-        profit_factor = abs(sum(t["pnl"] for t in winning_trades) / sum(t["pnl"] for t in losing_trades)) if losing_trades and sum(t["pnl"] for t in losing_trades) != 0 else float("inf")
+        profit_factor = abs(sum(t["pnl"] for t in winning_trades) / sum(t["pnl"] for t in losing_trades)) if losing_trades and sum(t["pnl"] for t in losing_trades) != 0 else (999.0 if winning_trades else 0.0)
 
         # Grid efficiency
         total_pnl = sum(t["pnl"] for t in self.trades)

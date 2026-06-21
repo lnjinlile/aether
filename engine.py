@@ -105,6 +105,7 @@ def run_backtests():
             dynamic_grid_signals, ma_cross_signals,
         )
         import numpy as np
+        import pandas as pd
         import yaml
 
         # Load ALL strategies from YAML (enabled+disabled) to know params for disabled ones
@@ -131,14 +132,32 @@ def run_backtests():
 
             try:
                 df = storage.load_klines(sym, tf)
-                if df.empty or len(df) < 50:
+                if df is None or df.empty or len(df) < 50:
+                    results[name] = {
+                        "status": "no_data",
+                        "symbol": sym, "timeframe": tf,
+                        "data_rows": len(df) if df is not None else 0,
+                        "error": f"Insufficient data ({len(df) if df is not None else 0} bars) for {sym} {tf}",
+                    }
+                    continue
+
+                # ── Filter to last 7 days (match athena_backtest.py) ──
+                df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
+                df.set_index('open_time', inplace=True)
+                df.sort_index(inplace=True)
+                cutoff = df.index[-1] - pd.Timedelta(days=7)
+                df = df[df.index >= cutoff]
+                if len(df) < 50:
                     results[name] = {
                         "status": "no_data",
                         "symbol": sym, "timeframe": tf,
                         "data_rows": len(df),
-                        "error": f"Insufficient data ({len(df)} bars) for {sym} {tf}",
+                        "error": f"Insufficient recent data ({len(df)} bars in last 7d) for {sym} {tf}",
                     }
                     continue
+
+                # Get leverage from strategy config (match athena_backtest.py)
+                leverage = p.get('leverage', 1)
 
                 # Generate signals based on strategy type
                 try:
@@ -183,7 +202,7 @@ def run_backtests():
                     continue
 
                 # Run BacktestEngine
-                bt_result = engine.run(df, signals)
+                bt_result = engine.run(df, signals, leverage=leverage)
                 m = bt_result["metrics"]
 
                 # Count signals for backward compatibility
