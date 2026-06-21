@@ -13,7 +13,7 @@ SYMBOLS = ["BTC/USDT", "ETH/USDT"]
 TIMEFRAMES = ["15m", "1h", "4h", "1d"]
 INTERVAL = 300  # 5 minutes
 HISTORICAL_DAYS = 365
-FUNDING_INTERVAL = 3600  # 1 hour (funding rates change every 8h)
+# FUNDING_INTERVAL removed — funding rates now collected exclusively by data_ext.py
 
 STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state", "pipeline.json")
 
@@ -84,8 +84,6 @@ def run():
     # ── First boot: backfill 365 days of historical data ──
     _backfill_all(collector, storage)
 
-    last_funding_fetch = 0  # unix timestamp of last funding rate collection
-
     while True:
         try:
             stats = {}
@@ -107,27 +105,18 @@ def run():
                                 errors.append({"feed": f"{sym}_{tf}", "error": str(e)[:200]})
                                 logger.error("%s %s: %s", sym, tf, e)
 
-            # ── Orderbook: every tick (5 min) ──
-            for sym in SYMBOLS:
-                try:
-                    ob = collector.fetch_orderbook(sym, 20)
-                    storage.save_orderbook(sym, ob)
-                    stats[f"{sym}_orderbook"] = "ok"
-                except Exception as e:
-                    logger.error("Orderbook %s: %s", sym, e)
+            # ── Orderbook / Funding rates: handled by data_ext.py (single source of truth) ──
+            # REMOVED: orderbook + funding_rate now collected exclusively by data_ext.py
+            # This avoids dual-write to funding_rates table and dead orderbook table.
+            # data_ext.py uses "BTCUSDT" symbol format, consistent with ml_alpha consumers.
 
-            # ── Funding rate: every 1 hour ──
-            now_ts = time.time()
-            if now_ts - last_funding_fetch >= FUNDING_INTERVAL:
-                for sym in SYMBOLS:
-                    try:
-                        fr = collector.fetch_funding_rate(sym, 100)
-                        storage.save_funding_rates(sym, fr)
-                        stats[f"{sym}_funding"] = len(fr)
-                        logger.info("Funding rate %s: %d records saved", sym, len(fr))
-                    except Exception as e:
-                        logger.error("Funding rate %s: %s", sym, e)
-                last_funding_fetch = now_ts
+            # ── Periodic ANALYZE (every 6 hours) ──
+            if int(time.time()) % 21600 < INTERVAL:
+                try:
+                    storage._get_conn().execute("ANALYZE")
+                    logger.info("ANALYZE complete — query planner stats refreshed")
+                except Exception:
+                    pass
 
             # Write health status
             os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)

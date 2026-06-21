@@ -10,6 +10,7 @@ logger = logging.getLogger("data_ext")
 
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "market.db")
 INTERVAL = 300
+FUNDING_INTERVAL = 3600  # 1h — funding rates change every 8h, no need for 5min polling
 
 def init_db():
     conn = sqlite3.connect(DB)
@@ -87,6 +88,7 @@ def fetch_and_store():
     conn = sqlite3.connect(DB)
     conn.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access
     now_ts = time.time()
+    fetch_funding = (now_ts - _last_funding_fetch[0]) >= FUNDING_INTERVAL
 
     for sym in ["BTC/USDT", "ETH/USDT"]:
         bin_sym = sym.replace("/", "")
@@ -108,17 +110,18 @@ def fetch_and_store():
             )
             logger.info("%s OB: bid=%.1f ask=%.1f spread=%.4f%% imb=%.3f", sym, best_bid, best_ask, spread, imbalance)
 
-            # === 2. Funding Rate ===
-            fr_raw = exchange.fetch_funding_rate_history(sym, limit=10)
-            for fr in fr_raw:
-                try:
-                    conn.execute(
-                        "INSERT OR IGNORE INTO funding_rates(symbol,funding_time,funding_rate,mark_price) VALUES(?,?,?,?)",
-                        (bin_sym, fr["timestamp"], fr["fundingRate"], fr.get("markPrice", 0))
-                    )
-                except: pass
-            if fr_raw:
-                logger.info("%s FR: latest=%.6f%%", sym, fr_raw[-1]["fundingRate"] * 100)
+            # === 2. Funding Rate (every 1h, not every 5min tick) ===
+            if fetch_funding:
+                fr_raw = exchange.fetch_funding_rate_history(sym, limit=10)
+                for fr in fr_raw:
+                    try:
+                        conn.execute(
+                            "INSERT OR IGNORE INTO funding_rates(symbol,funding_time,funding_rate,mark_price) VALUES(?,?,?,?)",
+                            (bin_sym, fr["timestamp"], fr["fundingRate"], fr.get("markPrice", 0))
+                        )
+                    except: pass
+                if fr_raw:
+                    logger.info("%s FR: latest=%.6f%%", sym, fr_raw[-1]["fundingRate"] * 100)
 
             # === 3. Open Interest ===
             oi = exchange.fetch_open_interest(sym)
@@ -185,8 +188,11 @@ def fetch_and_store():
 
     conn.commit()
     conn.close()
+    if fetch_funding:
+        _last_funding_fetch[0] = time.time()
 
 if __name__ == "__main__":
+    _last_funding_fetch = [0]  # mutable singleton to track across fetch_and_store() calls
     init_db()
     logger.info("Extended data collector started — interval %ds", INTERVAL)
     while True:
