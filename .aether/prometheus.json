@@ -1,79 +1,45 @@
 {
-  "last_run": "2026-06-21T23:15:00Z",
-  "version": "1.2.0",
-  "data": {
-    "btc_1h_bars": 2160,
-    "btc_15m_bars": 2880,
-    "eth_1h_bars": 2160,
-    "eth_15m_bars": 2880,
-    "lookback_days_btc": 90,
-    "lookback_days_eth": 90
+  "run_time": "2026-06-21T15:36:56.058134+00:00",
+  "findings": {
+    "btc_1h_best": {
+      "ema": 50,
+      "sl": 0.015,
+      "tp": 0.05,
+      "net": 12.66,
+      "sharpe": 0.3706,
+      "trades": 49
+    },
+    "btc_15m_best": {
+      "ema": 75,
+      "sl": 0.01,
+      "tp": 0.015,
+      "net": 17.88,
+      "sharpe": 0.6151,
+      "trades": 77
+    },
+    "rsi_best": {
+      "rsi_p": 14,
+      "os": 30,
+      "ob": 70,
+      "sl": 0.03,
+      "tp": 0.06,
+      "net": -0.02,
+      "sharpe": 0.0183
+    }
   },
-  "optimizations_applied": [
+  "actions": [
     {
       "strategy": "TrendFollow_BTC_1h",
-      "param": "take_profit_pct",
-      "old": 0.05,
-      "new": 0.06,
-      "net_before": 16.4,
-      "net_after": 27.6,
-      "improvement_pct": 11.2,
-      "rationale": "Wider TP captures more upside in trending markets; same 50 EMA, same risk profile"
+      "ema": 50,
+      "sl": 0.015,
+      "tp": 0.05
     },
     {
       "strategy": "TrendFollow_BTC",
-      "param": "multiple",
-      "changes": {
-        "ema_period": {"old": 75, "new": 50},
-        "take_profit_pct": {"old": 0.015, "new": 0.025},
-        "cooldown_bars": {"old": 10, "new": 8}
-      },
-      "net_before": 14.9,
-      "net_after": 31.4,
-      "improvement_pct": 16.5,
-      "rationale": "Faster EMA + wider TP + shorter cooldown captures 15m momentum better"
-    },
-    {
-      "strategy": "TrendFollow_ETH",
-      "param": "multiple",
-      "changes": {
-        "enabled": {"old": false, "new": true},
-        "ema_period": {"old": 150, "new": 50},
-        "stop_loss_pct": {"old": 0.025, "new": 0.03},
-        "cooldown_bars": {"old": 15, "new": 8}
-      },
-      "net_before": 24.3,
-      "net_after": 80.9,
-      "improvement_pct": 56.6,
-      "rationale": "ETH trends faster than BTC; EMA=50 gives better signal; SL=3% appropriate for ETH volatility"
-    },
-    {
-      "strategy": "athena_backtest.py",
-      "param": "new_signal_generator",
-      "changes": {
-        "added": "dynamic_grid_signals() — vectorized DynamicGrid backtest signal generator",
-        "routing": "DynamicGridStrategy → dynamic_grid_signals() in strategy type switch"
-      },
-      "rationale": "DynamicGrid_BTC and DynamicGrid_ETH were the main active strategies with ZERO backtest visibility. Athena could not evaluate them, Prometheus could not optimize parameters. Now both strategies have full backtest coverage."
-    },
-    {
-      "strategy": "prometheus_optimize.py",
-      "param": "new_sweep_section",
-      "changes": {
-        "added": "Section 6: DynamicGrid parameter sweep — grid_range_pct × num_levels × min_spread × rebalance_interval (192 combos per symbol on BTC/ETH 15m)"
-      },
-      "rationale": "Systematic parameter optimization for grid strategies — currently using hand-tuned defaults with no validation."
+      "ema": 75,
+      "sl": 0.01,
+      "tp": 0.015
     }
   ],
-  "disabled_strategies": ["RSI_MR", "MA_Cross"],
-  "disabled_reason": "RSI_MR and MA_Cross showed negative net returns (-999% baseline) in audit scan; not viable without regime filter or confirmation logic. MA_Cross_BTC/ETH now enabled with optimized params from separate sweeps.",
-  "total_projected_improvement": "+84.3% aggregate net across 3 active strategies (legacy TrendFollow params)",
-  "next_priorities": [
-    "Run DynamicGrid parameter sweep (prometheus_optimize.py section 6) to find optimal grid configs",
-    "Run walk-forward validation on DynamicGrid to verify WFE > 0.5 before deploying optimized params",
-    "Enable RSI_MR ETH 1h (rsi=7, os=35, ob=65) — 7d backtest net=+7.29% sharpe=+3.65, wr=88%",
-    "Add volume/volatility filters to RSI_MR and MA_Cross to improve regime detection",
-    "Explore funding-rate based strategy for futures",
-    "Add market regime detection (trending vs ranging) for strategy gating"
-  ]
+  "timestamp": "2026-06-21 15:36 UTC"
 }
