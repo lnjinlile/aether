@@ -26,6 +26,74 @@ def write_json(filename, data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+def sync_trades_db():
+    """Reconcile trades_log in market.db with live exchange state.
+    
+    Reads live_exchange.json (already fetched by engine) and:
+    1. Closes stale DB records whose position no longer exists on exchange
+    2. Inserts exchange positions missing from DB
+    """
+    try:
+        import sqlite3
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "market.db")
+        if not os.path.exists(db_path):
+            return
+
+        live_state = os.path.join(STATE_DIR, "live_exchange.json")
+        if not os.path.exists(live_state):
+            return
+        with open(live_state) as f:
+            live = json.load(f)
+
+        positions = live.get("positions", [])
+        if not positions:
+            return
+
+        db = sqlite3.connect(db_path)
+        db.row_factory = sqlite3.Row
+        now = time.time()
+
+        open_trades = db.execute("SELECT * FROM trades_log WHERE status='OPEN'").fetchall()
+
+        # Build exchange key set
+        ex_keys = set()
+        for ep in positions:
+            sym = ep["symbol"].replace(":USDT", "")
+            ex_keys.add(f'{sym}:{ep["side"].upper()}')
+
+        changes = 0
+        # 1. Close stale DB records
+        for dt in open_trades:
+            db_sym = dt["symbol"].replace(":USDT", "")
+            db_key = f'{db_sym}:{dt["side"].upper()}'
+            if db_key not in ex_keys:
+                db.execute(
+                    "UPDATE trades_log SET status='CLOSED', exit_time=?, reason=reason || ' [SYNC: position not on exchange]' WHERE id=?",
+                    (now, dt["id"]))
+                logger.info("DB sync: closed stale ID#%d (%s %s)", dt["id"], dt["symbol"], dt["side"])
+                changes += 1
+
+        # 2. Insert missing exchange positions
+        db_keys = {f'{dt["symbol"].replace(":USDT", "")}:{dt["side"].upper()}' for dt in open_trades}
+        for ep in positions:
+            sym = ep["symbol"].replace(":USDT", "")
+            ex_key = f'{sym}:{ep["side"].upper()}'
+            if ex_key not in db_keys:
+                db.execute("""
+                    INSERT INTO trades_log (symbol, side, entry_time, entry_price, quantity, pnl, pnl_pct, fee, strategy_name, reason, status)
+                    VALUES (?, ?, ?, ?, ?, 0.0, 0.0, 0.0, 'SYNC', '[SYNC: from exchange via engine]', 'OPEN')
+                """, (sym, ep["side"], now, ep["entry_price"], ep["contracts"]))
+                logger.info("DB sync: inserted %s %s x%s @ %s", sym, ep["side"], ep["contracts"], ep["entry_price"])
+                changes += 1
+
+        db.commit()
+        db.close()
+        if changes:
+            logger.info("DB sync complete: %d change(s)", changes)
+    except Exception as e:
+        logger.error("DB sync error: %s", e)
+
+
 def run_backtests():
     """Run backtests on all enabled strategies using BacktestEngine, write results."""
     try:
@@ -364,6 +432,53 @@ def sync_agent_states():
         import subprocess, sys
         subprocess.run([sys.executable, "generate_dashboard.py"], capture_output=True, timeout=30)
     except: pass
+
+    # Post engine heartbeat summary to bulletin (keeps bulletin fresh every tick)
+    try:
+        from datetime import datetime, timezone
+        risk = load_json(os.path.join(STATE_DIR, "risk_check.json"))
+        bt = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
+        ts = datetime.now(timezone.utc).strftime("%m-%d %H:%M")
+
+        # Build strategy performance summary
+        strat_lines = []
+        for name, s in bt.get("strategies", {}).items():
+            m = s.get("metrics", {})
+            if m:
+                ret = m.get("total_return_pct", 0)
+                sr = m.get("sharpe_ratio", 0)
+                wr = m.get("win_rate", 0)
+                tr = m.get("total_trades", 0)
+                sign = "🟢" if ret > 0 else "🔴"
+                strat_lines.append(f"| {name} | {sign} {ret:+.2f}% | SR={sr:+.2f} | WR={wr:.0%} | {tr}t |")
+            else:
+                strat_lines.append(f"| {name} | ⚪ no metrics | — | — | — |")
+
+        strat_table = "\n".join(strat_lines) if strat_lines else "| — | — | — | — | — |"
+
+        pos_info = "无持仓"
+        positions = risk.get("positions", [])
+        if positions:
+            p = positions[0]
+            pnl = p.get("unrealized_pnl", 0)
+            pnl_sign = "🟢" if pnl >= 0 else "🔴"
+            pos_info = f"{p.get('side','?')} {p.get('symbol','?')} {p.get('contracts','?')} @ {p.get('entry_price','?')} | uPNL {pnl_sign} {pnl:+.2f}"
+
+        bulletin_entry = (
+            f"\n---\n"
+            f"### {ts} — Engine ♡ | 风控 {risk.get('risk_level','?')} | {pos_info}\n\n"
+            f"| 策略 | 收益 | 夏普 | 胜率 | 笔数 |\n"
+            f"|------|------|------|------|------|\n"
+            f"{strat_table}\n"
+        )
+        bulletin_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "bulletin.md")
+        with open(bulletin_path, "a") as bf:
+            bf.write(bulletin_entry)
+    except Exception:
+        pass  # bulletin is non-critical
+
+    # Sync trades_log DB with exchange (auto-reconcile each heartbeat)
+    sync_trades_db()
 
 
 def load_json(path):
