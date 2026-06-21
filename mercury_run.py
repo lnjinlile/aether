@@ -73,17 +73,26 @@ def main():
     # ── 2. Get account snapshot ───────────────────────────────
     print("\n📊 账户快照")
     print("-" * 40)
-    try:
-        balance = client.get_balance()
-        positions = client.get_positions()
-        print(f"  余额:     {balance['balance']:,.2f} USDT")
-        print(f"  可用:     {balance['available']:,.2f} USDT")
-        print(f"  未实现盈亏: {fmt_pnl(balance['unrealized_pnl'])} USDT")
-        risk.update_daily_balance(balance['balance'])
-    except Exception as e:
-        print(f"  ⚠️  获取账户失败: {e}")
+    balance = None
+    positions = []
+    for attempt in range(3):
+        try:
+            balance = client.get_balance()
+            positions = client.get_positions()
+            if balance.get("balance", 0) > 0 or balance.get("available", 0) > 0:
+                break
+            print(f"  ⚠️  余额为0,重试 {attempt+1}/3...")
+            time.sleep(1)
+        except Exception as e:
+            print(f"  ⚠️  获取账户失败(尝试{attempt+1}/3): {e}")
+            time.sleep(1)
+    if balance is None:
         balance = {"balance": 0, "available": 0, "unrealized_pnl": 0}
-        positions = []
+
+    print(f"  余额:     {balance['balance']:,.2f} USDT")
+    print(f"  可用:     {balance['available']:,.2f} USDT")
+    print(f"  未实现盈亏: {fmt_pnl(balance['unrealized_pnl'])} USDT")
+    risk.update_daily_balance(balance['balance'])
 
     account_info = {
         "balance": balance["balance"],
@@ -236,14 +245,54 @@ def main():
         has_position = len(existing_pos) > 0
 
         if sig_type in (SignalType.LONG, SignalType.SHORT) and has_position:
-            print(f"  ⏭️  {sym} {sig_type.value}: 已有持仓,跳过开仓")
-            trades_skipped += 1
-            execution_results.append({
-                "symbol": sym, "strategy": strategy_name,
-                "signal": sig_type.value, "status": "SKIPPED",
-                "reason": "已有持仓"
-            })
-            continue
+            existing_side = existing_pos[0].get("side", "")
+            new_side = "long" if sig_type == SignalType.LONG else "short"
+            if existing_side != new_side:
+                # ═══ Reversal: close existing position, then open opposite ═══
+                print(f"  🔄 {sym}: 持有{existing_side}, 收到{new_side}信号 → 反转中...")
+                close_type = SignalType.CLOSE_LONG if existing_side == "long" else SignalType.CLOSE_SHORT
+                close_sig = {
+                    "type": close_type.value,
+                    "symbol": sym,
+                    "quantity": existing_pos[0].get("contracts", sig_dict.get("quantity", 0)),
+                    "price": None,
+                }
+                try:
+                    close_result = engine.execute_signal(close_sig, account_info)
+                    close_order = close_result.get("order") or {}
+                    if close_result.get("success"):
+                        pnl = float(close_order.get("realizedPnl", 0) or 0)
+                        print(f"    ✅ 平{existing_side}成功 — 已实现盈亏: {fmt_pnl(pnl)}")
+                        positions = [p for p in positions if p.get("symbol","").replace("/","").replace(":USDT","").upper() != bin_sym.upper()]
+                        account_info["positions"] = positions
+                        has_position = False
+                    else:
+                        print(f"    ❌ 平仓失败: {close_result.get('error')}")
+                        trades_skipped += 1
+                        execution_results.append({
+                            "symbol": sym, "strategy": strategy_name,
+                            "signal": sig_type.value, "status": "FAILED",
+                            "reason": f"平仓反转失败: {close_result.get('error', 'unknown')}"
+                        })
+                        continue
+                except Exception as e:
+                    print(f"    ❌ 反转异常: {e}")
+                    trades_skipped += 1
+                    execution_results.append({
+                        "symbol": sym, "strategy": strategy_name,
+                        "signal": sig_type.value, "status": "ERROR",
+                        "reason": f"反转异常: {e}"
+                    })
+                    continue
+            else:
+                print(f"  ⏭️  {sym} {sig_type.value}: 已有同向持仓,跳过加仓")
+                trades_skipped += 1
+                execution_results.append({
+                    "symbol": sym, "strategy": strategy_name,
+                    "signal": sig_type.value, "status": "SKIPPED",
+                    "reason": "已有同向持仓"
+                })
+                continue
 
         if sig_type in (SignalType.CLOSE_LONG, SignalType.CLOSE_SHORT) and not has_position:
             print(f"  ⏭️  {sym} {sig_type.value}: 无持仓,跳过平仓")
@@ -272,11 +321,21 @@ def main():
             print(f"  ⚠️  {sym} 仓位调降: {risk_result.adjusted_quantity:.4f}")
 
         # Execute!
+        # ═══ Before opening: cancel existing open orders on this symbol ═══
+        if sig_type in (SignalType.LONG, SignalType.SHORT):
+            try:
+                open_orders = client.get_open_orders(sym)
+                if open_orders:
+                    print(f"  🧹 清理 {sym} 现有 {len(open_orders)} 个挂单...")
+                    client.cancel_all_orders(sym)
+            except Exception as oe:
+                print(f"  ⚠️  清理挂单异常: {oe}")
+
         print(f"  📡 {sym} {sig_type.value} [{strategy_name}] → 执行中...")
         try:
             result = engine.execute_signal(sig_dict, account_info)
 
-            order = result.get("order", {})
+            order = result.get("order") or {}
             order_id = order.get("id", order.get("orderId", "N/A"))
             avg_price = float(order.get("average", order.get("price", 0)) or 0)
             executed_qty = float(order.get("amount", order.get("executedQty", sig_dict.get("quantity", 0))) or 0)

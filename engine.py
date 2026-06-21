@@ -229,6 +229,12 @@ def sync_agent_states():
     except Exception as e:
         logger.error("State sync error: %s", e)
 
+    # Regenerate dashboard
+    try:
+        import subprocess, sys
+        subprocess.run([sys.executable, "generate_dashboard.py"], capture_output=True, timeout=30)
+    except: pass
+
 
 def load_json(path):
     if not os.path.exists(path): return {}

@@ -202,14 +202,22 @@ class OrderExecutionEngine:
                     reduce_only=False,
                 )
                 # Validate fill: testnet ccxt sometimes returns phantom "success"
-                # with no order ID and no filled quantity — treat as failure
+                # with no order ID and no filled quantity — treat as failure.
+                # Phantom fills are NOT transient: retrying creates duplicate orders.
                 order_id = order.get("id", order.get("orderId"))
                 executed_qty = float(order.get("filled", order.get("executedQty", 0)) or 0)
                 if not order_id or (executed_qty == 0 and order_type == "market"):
-                    raise ValueError(
-                        f"Phantom fill detected: orderId={order_id}, "
-                        f"executedQty={executed_qty}. Likely testnet ccxt desync."
-                    )
+                    return {
+                        "success": False,
+                        "action": action,
+                        "order": order,
+                        "error": (
+                            f"Phantom fill: orderId={order_id}, "
+                            f"executedQty={executed_qty}. Testnet ccxt desync — "
+                            f"NOT retried to avoid duplicates."
+                        ),
+                        "retries": attempt,
+                    }
                 return {
                     "success": True,
                     "action": action,
@@ -262,14 +270,21 @@ class OrderExecutionEngine:
                     price=order_price,
                     reduce_only=True,
                 )
-                # Validate fill (same phantom-fill guard as _open_position)
+                # Validate fill (same phantom-fill guard as _open_position).
+                # Phantom fills are NOT transient: retrying creates duplicate orders.
                 order_id = order.get("id", order.get("orderId"))
                 executed_qty = float(order.get("filled", order.get("executedQty", 0)) or 0)
                 if not order_id or (executed_qty == 0 and order_type == "market"):
-                    raise ValueError(
-                        f"Phantom fill on close: orderId={order_id}, "
-                        f"executedQty={executed_qty}"
-                    )
+                    return {
+                        "success": False,
+                        "action": action,
+                        "order": order,
+                        "error": (
+                            f"Phantom fill on close: orderId={order_id}, "
+                            f"executedQty={executed_qty}. NOT retried."
+                        ),
+                        "retries": attempt,
+                    }
                 return {
                     "success": True,
                     "action": action,
