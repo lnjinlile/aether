@@ -61,14 +61,39 @@ class MLAlphaStrategy(BaseStrategy):
         self._feature_cache: dict = {}
 
     def _preprocess(self, symbol: str, timeframe: str, df: pd.DataFrame):
-        """Build and cache features when data is fed."""
+        """Build and cache features when data is fed.
+
+        Loads oracle features (orderbook, funding rates, open interest)
+        and passes them to the feature engineer for richer ML features.
+        """
         key = (symbol, timeframe)
         try:
-            X, _ = self._engineer.build_features(df)
+            # Load oracle features
+            oracle_df = self._load_oracle_features(symbol, df)
+            X, _ = self._engineer.build_features(df, oracle_df=oracle_df)
             self._feature_cache[key] = X
         except Exception:
             # Not enough data yet or feature build failed; will be retried
             self._feature_cache[key] = pd.DataFrame()
+
+    @staticmethod
+    def _load_oracle_features(symbol: str, kline_df: pd.DataFrame):
+        """Load and merge oracle features for the given symbol.
+
+        Handles symbol format conversion (BTC/USDT → BTCUSDT) for
+        oracle feature loading which uses Binance's raw symbol format.
+        """
+        try:
+            from .oracle_features import merge_oracle_features
+            oracle_symbol = symbol.replace("/", "")
+            enriched = merge_oracle_features(kline_df, oracle_symbol)
+            oracle_cols = [c for c in enriched.columns
+                          if c not in kline_df.columns]
+            if oracle_cols:
+                return enriched[oracle_cols]
+        except Exception:
+            pass
+        return None
 
     def generate_signal(self, symbol: str) -> Signal:
         """Generate a trading signal from the ML model.

@@ -1,0 +1,22 @@
+{
+  "run_time": "2026-06-21T19:43:33.191107+00:00",
+  "elapsed_s": 1.6,
+  "oracle_columns_available": [
+    "ob_imbalance",
+    "ob_imbalance_smoothed",
+    "ob_imbalance_delta",
+    "ob_spread_bps",
+    "ob_spread_pct",
+    "fund_funding_rate",
+    "fund_funding_rate_pct",
+    "fund_funding_extreme",
+    "fund_funding_zscore",
+    "oi_oi_change_1",
+    "oi_oi_change_3",
+    "oi_oi_change_12",
+    "oi_oi_change_48",
+    "oi_oi_change_288",
+    "oi_oi_surge"
+  ],
+  "oracle_feature_count": 15
+}

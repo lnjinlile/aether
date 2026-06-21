@@ -71,6 +71,7 @@ def get_exchange_state():
 def get_db_state():
     """Return local DB state."""
     db = sqlite3.connect(str(DB_PATH))
+    db.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access
     cur = db.cursor()
     cur.execute("""
         SELECT id, symbol, side, entry_price, quantity, status, entry_time
@@ -130,9 +131,10 @@ def reconcile(dry_run=False):
         return
     
     db = sqlite3.connect(str(DB_PATH))
+    db.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access
     cur = db.cursor()
     now = time.time()
-    
+
     for c in changes:
         if c['action'] == 'CLOSE_STALE':
             cur.execute(

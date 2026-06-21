@@ -18,12 +18,14 @@ class FeatureEngineer:
     def __init__(self):
         pass
 
-    def build_features(self, df: pd.DataFrame) -> tuple:
+    def build_features(self, df: pd.DataFrame, oracle_df: pd.DataFrame = None) -> tuple:
         """Build feature matrix and target from OHLCV DataFrame.
 
         Args:
             df: DataFrame with columns: open, high, low, close, volume.
                 Must be sorted chronologically.
+            oracle_df: Optional DataFrame with oracle features (OI/funding/orderbook),
+                       must share index with df.
 
         Returns:
             (X, y) tuple where X is the feature DataFrame and y is the
@@ -82,6 +84,16 @@ class FeatureEngineer:
 
         # High-low range ratio
         features["hl_ratio"] = hl_range / close.shift(1)
+
+        # ── Oracle features (OI / Funding / Orderbook) ──────────
+        if oracle_df is not None and not oracle_df.empty:
+            common_idx = features.index.intersection(oracle_df.index)
+            if len(common_idx) > 0:
+                oracle_cols = [c for c in oracle_df.columns
+                              if c not in features.columns
+                              and not c.startswith(("open_interest", "best_bid", "best_ask", "mid_price", "timestamp"))]
+                for col in oracle_cols:
+                    features[col] = oracle_df[col].reindex(features.index)
 
         # ── Target: next-bar return direction ────────────────────
         future_ret = np.log(close.shift(-1) / close)

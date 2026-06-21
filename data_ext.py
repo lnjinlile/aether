@@ -14,6 +14,7 @@ INTERVAL = 300
 def init_db():
     conn = sqlite3.connect(DB)
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access (engine.py)
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS orderbook_snapshots (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,6 +85,7 @@ def fetch_and_store():
     exchange.fetch_leverage_brackets = lambda *a, **kw: {}
 
     conn = sqlite3.connect(DB)
+    conn.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access
     now_ts = time.time()
 
     for sym in ["BTC/USDT", "ETH/USDT"]:
@@ -148,7 +150,11 @@ def fetch_and_store():
                     lsr_log = lsr_val if isinstance(lsr_val, (int, float)) else 0.5
                 logger.info("%s L/S: %.3f/%.3f", sym, lsr_log, 1.0 - lsr_log)
             except Exception as e:
-                logger.warning("%s L/S ratio fetch failed: %s", sym, str(e)[:80])
+                err_msg = str(e)
+                if "not supported" in err_msg.lower():
+                    logger.debug("%s L/S ratio not supported (testnet limitation)", sym)
+                else:
+                    logger.warning("%s L/S ratio fetch failed: %s", sym, err_msg[:80])
 
             # === 5. Taker Buy/Sell Volume ===
             try:
@@ -168,7 +174,11 @@ def fetch_and_store():
                         )
                 logger.info("%s Taker: buy_ratio=%.3f", sym, ratio)
             except Exception as e:
-                logger.warning("%s Taker volume fetch failed: %s", sym, str(e)[:80])
+                err_msg = str(e)
+                if "invalid" in err_msg.lower() or "not supported" in err_msg.lower():
+                    logger.debug("%s Taker volume not supported (testnet limitation)", sym)
+                else:
+                    logger.warning("%s Taker volume fetch failed: %s", sym, err_msg[:80])
 
         except Exception as e:
             logger.error("%s: %s", sym, str(e)[:80])

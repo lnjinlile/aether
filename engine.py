@@ -50,6 +50,7 @@ def sync_trades_db():
             return
 
         db = sqlite3.connect(db_path)
+        db.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access (data_ext.py)
         db.row_factory = sqlite3.Row
         now = time.time()
 
@@ -189,11 +190,8 @@ def run_backtests():
                         signals = mlalpha_signals(
                             df, p.get("model_path", "ml_alpha/model.pkl"),
                             p.get("confidence_threshold", 0.55),
-                            p.get("prediction_horizon", 5),
-                            p.get("atr_period", 14),
-                            p.get("atr_sl_mult", 2.0),
-                            p.get("atr_tp_mult", 3.0),
-                            p.get("cooldown_bars", 5),
+                            sl_pct=p.get("atr_sl_mult", 2.0) * 0.01,
+                            tp_pct=p.get("atr_tp_mult", 3.0) * 0.01,
                         )
                     elif strategy_type == "MLEnsembleStrategy":
                         from athena_backtest import mlensemble_signals
@@ -201,22 +199,25 @@ def run_backtests():
                             df, p.get("prediction_horizon", 5),
                             p.get("confidence_threshold", 0.60),
                             p.get("min_train_samples", 200),
-                            p.get("retrain_every", 24),
-                            p.get("atr_period", 14),
-                            p.get("atr_sl_mult", 2.0),
-                            p.get("atr_tp_mult", 3.0),
-                            p.get("cooldown_bars", 5),
-                            p.get("model_type", "classifier"),
+                            sl_pct=p.get("atr_sl_mult", 2.0) * 0.01,
+                            tp_pct=p.get("atr_tp_mult", 3.0) * 0.01,
                         )
                     elif strategy_type == "RegimeSwitchStrategy":
                         from athena_backtest import regimeswitch_signals
                         signals = regimeswitch_signals(
-                            df, p.get("regime_model_path", "ml_alpha/regime_model.pkl"),
-                            p.get("confidence_threshold", 0.55),
-                            p.get("atr_period", 14),
-                            p.get("atr_sl_mult", 2.0),
-                            p.get("atr_tp_mult", 3.0),
-                            p.get("cooldown_bars", 5),
+                            df,
+                            trend_ema_period=p.get("trend_ema_period", 50),
+                            trend_sl_pct=p.get("trend_sl_pct", 0.02),
+                            trend_tp_pct=p.get("trend_tp_pct", 0.05),
+                            mr_rsi_period=p.get("mr_rsi_period", 14),
+                            mr_oversold=p.get("mr_oversold", 30),
+                            mr_overbought=p.get("mr_overbought", 70),
+                            mr_sl_pct=p.get("mr_sl_pct", 0.02),
+                            mr_tp_pct=p.get("mr_tp_pct", 0.04),
+                            vol_window=p.get("vol_window", 20),
+                            regime_lookback=p.get("regime_lookback", 100),
+                            cooldown_bars=p.get("cooldown_bars", 5),
+                            high_vol_capital_pct=p.get("high_vol_capital_pct", 0.25),
                         )
                     else:
                         results[name] = {
@@ -356,6 +357,9 @@ def run_signal_check():
         mgr = StrategyManager.load_from_yaml("config/strategies.yaml")
 
         signals = {}
+        # Track signals per symbol for conflict detection
+        symbol_signals = {}  # symbol -> list of (name, signal_dict)
+
         for name in mgr.get_active_strategies():
             strat = mgr.get_strategy(name)
             if not strat: continue
@@ -371,7 +375,7 @@ def run_signal_check():
                 continue
 
             if sig.type.name != "HOLD":
-                signals[name] = {
+                signal_data = {
                     "symbol": sym, "timeframe": tf,
                     "signal": sig.type.value,
                     "price": float(sig.price) if not np.isnan(float(sig.price)) else float(df.iloc[-1]["close"]),
@@ -379,7 +383,67 @@ def run_signal_check():
                     "take_profit": float(sig.take_profit) if not np.isnan(float(sig.take_profit)) else None,
                     "confidence": sig.confidence,
                     "reason": sig.reason,
+                    "strategy": name,
                 }
+                symbol_signals.setdefault(sym, []).append((name, signal_data))
+
+        # ── Conflict arbitration (AUDIT-018) ──
+        # When multiple strategies produce signals for the same symbol,
+        # apply priority: backtest-verified > unverified, higher Sharpe > lower
+        bt_results = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
+        bt_strategies = bt_results.get("strategies", {})
+
+        def strategy_score(name: str) -> float:
+            """Score a strategy for priority: positive metrics = higher score."""
+            s = bt_strategies.get(name, {})
+            m = s.get("metrics", {})
+            if not m or s.get("status") == "error":
+                return -999.0  # unverified/errored strategies lose
+            return m.get("sharpe_ratio", 0) * 10 + m.get("total_return_pct", 0) / 10
+
+        for sym, candidates in symbol_signals.items():
+            if len(candidates) == 1:
+                sig_name, sig_data = candidates[0]
+                signals[sig_name] = sig_data
+                continue
+
+            # Multiple strategies → resolve conflicts
+            # Separate by direction
+            long_candidates = [(n, d) for n, d in candidates if d["signal"] == "LONG"]
+            short_candidates = [(n, d) for n, d in candidates if d["signal"] == "SHORT"]
+
+            if long_candidates and short_candidates:
+                # CONFLICT: opposing signals for same symbol
+                best_long = max(long_candidates, key=lambda x: strategy_score(x[0]))
+                best_short = max(short_candidates, key=lambda x: strategy_score(x[0]))
+                long_score = strategy_score(best_long[0])
+                short_score = strategy_score(best_short[0])
+
+                if long_score > short_score:
+                    winner_name, winner_data = best_long
+                    logger.warning(
+                        "CONFLICT ARBITRATION: %s — %s(LONG score=%.1f) vs %s(SHORT score=%.1f) → %s WINS",
+                        sym, best_long[0], long_score, best_short[0], short_score, winner_name,
+                    )
+                elif short_score > long_score:
+                    winner_name, winner_data = best_short
+                    logger.warning(
+                        "CONFLICT ARBITRATION: %s — %s(LONG score=%.1f) vs %s(SHORT score=%.1f) → %s WINS",
+                        sym, best_long[0], long_score, best_short[0], short_score, winner_name,
+                    )
+                else:
+                    # Tie — skip both, send HOLD
+                    logger.warning(
+                        "CONFLICT ARBITRATION: %s — %s(LONG score=%.1f) vs %s(SHORT score=%.1f) → TIE, ALL HELD",
+                        sym, best_long[0], long_score, best_short[0], short_score,
+                    )
+                    continue
+
+                signals[winner_name] = winner_data
+            else:
+                # Same direction from multiple strategies — pick highest score
+                best = max(candidates, key=lambda x: strategy_score(x[0]))
+                signals[best[0]] = best[1]
 
         write_json("signals.json", {"signals": signals, "timestamp": datetime.now(timezone.utc).isoformat()})
         logger.info("Signals: %d generated", len(signals))

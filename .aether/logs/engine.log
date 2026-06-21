@@ -1,0 +1,1237 @@
+2026-06-22 03:26:23,265 [ENGINE] Aether Engine started — interval 300s
+🦉 Athena — Strategy Brain Backtest
+======================================================================
+Run: 2026-06-21 19:26 UTC | Lookback: 30d
+
+  📊 BTC/USDT   15m :  2881 bars, 30.0d [05/22 19:15 → 06/21 19:15]
+  📊 BTC/USDT   1h  :   721 bars, 30.0d [05/22 19:00 → 06/21 19:00]
+  📊 ETH/USDT   15m :  2881 bars, 30.0d [05/22 19:15 → 06/21 19:15]
+  📊 ETH/USDT   1h  :   721 bars, 30.0d [05/22 19:00 → 06/21 19:00]
+
+================================================================================
+STRATEGY BACKTEST RESULTS (last 30 days)
+================================================================================
+
+  ⏸️ DynamicGrid_BTC (BTC/USDT 15m)
+     Return: -25.12% | Sharpe: -0.533 | MaxDD: 32.60%
+     Trades: 251 | WinRate: 43.0% | PF: 0.757
+     AvgWin: +0.79% | AvgLoss: +0.79% | Best: +4.05% | Worst: -4.57%
+     Final Equity: $7,487.91
+     ⚠️ NEGATIVE SHARPE (-0.533)
+     ⚠️ LARGE LOSS (-25.12%)
+     ⚠️ HIGH DRAWDOWN (32.6%)
+     Recent trades:
+       LONG  |  64,052.70 →  64,021.40 | PnL: -0.23%
+       LONG  |  64,143.21 →  64,096.69 | PnL: -0.30%
+       LONG  |  64,121.01 →  64,030.10 | PnL: -0.51%
+       LONG  |  63,618.76 →  63,813.02 | PnL: +0.84%
+       LONG  |  63,834.68 →  63,821.92 | PnL: -0.14%
+
+  ⏸️ DynamicGrid_ETH (ETH/USDT 15m)
+     Return: -22.12% | Sharpe: -0.232 | MaxDD: 34.14%
+     Trades: 252 | WinRate: 48.8% | PF: 0.870
+     AvgWin: +1.10% | AvgLoss: +1.20% | Best: +13.33% | Worst: -10.03%
+     Final Equity: $7,788.42
+     ⚠️ NEGATIVE SHARPE (-0.232)
+     ⚠️ LARGE LOSS (-22.12%)
+     ⚠️ HIGH DRAWDOWN (34.1%)
+     Recent trades:
+       LONG  |   1,727.58 →   1,727.83 | PnL: -0.04%
+       LONG  |   1,718.68 →   1,715.68 | PnL: -0.60%
+       LONG  |   1,713.15 →   1,716.83 | PnL: +0.56%
+       LONG  |   1,716.22 →   1,716.41 | PnL: -0.05%
+       LONG  |   1,723.80 →   1,722.77 | PnL: -0.26%
+
+  ⏸️ MLAlpha_BTC (BTC/USDT 1h)
+     Return: +3.81% | Sharpe: +0.278 | MaxDD: 8.54%
+     Trades: 13 | WinRate: 46.1% | PF: 1.262
+     AvgWin: +3.50% | AvgLoss: +2.38% | Best: +4.39% | Worst: -2.86%
+     Final Equity: $10,380.93
+     Recent trades:
+       LONG  |  62,510.35 →  61,141.69 | PnL: -2.27%
+       SHORT |  63,164.08 →  64,450.34 | PnL: -2.12%
+       SHORT |  64,430.86 →  65,790.08 | PnL: -2.19%
+       LONG  |  65,366.64 →  63,948.40 | PnL: -2.25%
+       SHORT |  64,193.58 →  63,834.68 | PnL: +0.48%
+
+  ⏸️ MA_Cross_BTC (BTC/USDT 1h)
+     Return: -34.40% | Sharpe: -1.283 | MaxDD: 40.13%
+     Trades: 15 | WinRate: 6.7% | PF: 0.250
+     AvgWin: +13.24% | AvgLoss: +3.78% | Best: +13.24% | Worst: -11.62%
+     Final Equity: $6,559.95
+     ⚠️ LOW WINRATE (7% < 30%)
+     ⚠️ NEGATIVE SHARPE (-1.283)
+     ⚠️ LARGE LOSS (-34.40%)
+     ⚠️ HIGH DRAWDOWN (40.1%)
+     Recent trades:
+       SHORT |  63,930.71 →  65,406.54 | PnL: -11.62%
+       SHORT |  65,709.03 →  66,416.64 | PnL: -5.46%
+       SHORT |  65,615.94 →  63,867.69 | PnL: +13.24%
+       LONG  |  63,183.92 →  63,193.68 | PnL: -0.00%
+       LONG  |  64,228.42 →  63,821.92 | PnL: -3.24%
+
+  ⏸️ MA_Cross_ETH (ETH/USDT 1h)
+     Return: -27.09% | Sharpe: -0.399 | MaxDD: 48.42%
+     Trades: 23 | WinRate: 21.7% | PF: 0.718
+     AvgWin: +11.95% | AvgLoss: +4.62% | Best: +28.80% | Worst: -13.13%
+     Final Equity: $7,291.34
+     ⚠️ LOW WINRATE (22% < 30%)
+     ⚠️ NEGATIVE SHARPE (-0.399)
+     ⚠️ LARGE LOSS (-27.09%)
+     ⚠️ HIGH DRAWDOWN (48.4%)
+     Recent trades:
+       SHORT |   1,769.18 →   1,788.77 | PnL: -5.62%
+       SHORT |   1,776.49 →   1,798.38 | PnL: -6.24%
+       SHORT |   1,789.00 →   1,685.67 | PnL: +28.80%
+       LONG  |   1,705.98 →   1,743.11 | PnL: +10.80%
+       SHORT |   1,728.19 →   1,731.17 | PnL: -0.94%
+
+  ⏸️ TrendFollow_BTC (BTC/USDT 15m)
+     Return: +76.95% | Sharpe: +0.737 | MaxDD: 17.25%
+     Trades: 78 | WinRate: 41.0% | PF: 1.783
+     AvgWin: +4.37% | AvgLoss: +1.70% | Best: +5.80% | Worst: -3.64%
+     Final Equity: $17,695.13
+     ⚠️ HIGH DRAWDOWN (17.2%)
+     Recent trades:
+       LONG  |  63,327.73 →  64,293.57 | PnL: +4.50%
+       LONG  |  63,466.05 →  63,288.77 | PnL: -0.92%
+       LONG  |  63,786.38 →  63,892.61 | PnL: +0.42%
+       SHORT |  63,638.94 →  64,129.51 | PnL: -2.39%
+       LONG  |  64,109.51 →  63,762.12 | PnL: -1.71%
+
+  ⏸️ TrendFollow_ETH (ETH/USDT 1h)
+     Return: +99.31% | Sharpe: +1.269 | MaxDD: 8.19%
+     Trades: 15 | WinRate: 53.3% | PF: 4.939
+     AvgWin: +12.13% | AvgLoss: +2.81% | Best: +22.44% | Worst: -6.75%
+     Final Equity: $19,930.77
+     Recent trades:
+       LONG  |   1,652.62 →   1,665.98 | PnL: +2.35%
+       LONG  |   1,719.13 →   1,843.05 | PnL: +21.54%
+       LONG  |   1,788.51 →   1,764.09 | PnL: -4.18%
+       SHORT |   1,742.40 →   1,728.06 | PnL: +2.39%
+       LONG  |   1,743.45 →   1,718.72 | PnL: -4.34%
+
+  ⏸️ TrendFollow_BTC_1h (BTC/USDT 1h)
+     Return: +82.24% | Sharpe: +1.428 | MaxDD: 3.14%
+     Trades: 16 | WinRate: 50.0% | PF: 7.757
+     AvgWin: +9.29% | AvgLoss: +1.20% | Best: +18.81% | Worst: -2.40%
+     Final Equity: $18,224.23
+     Recent trades:
+       LONG  |  65,456.24 →  65,813.02 | PnL: +1.56%
+       LONG  |  65,817.38 →  65,393.46 | PnL: -2.01%
+       SHORT |  65,340.07 →  63,397.14 | PnL: +8.84%
+       LONG  |  63,873.59 →  63,704.73 | PnL: -0.87%
+       LONG  |  63,834.68 →  63,821.92 | PnL: -0.14%
+
+  ⏸️ RSI_MR_BTC (BTC/USDT 1h)
+     Return: -15.01% | Sharpe: -0.483 | MaxDD: 26.20%
+     Trades: 9 | WinRate: 55.6% | PF: 0.577
+     AvgWin: +3.82% | AvgLoss: +8.28% | Best: +7.04% | Worst: -12.45%
+     Final Equity: $8,499.48
+     ⚠️ NEGATIVE SHARPE (-0.483)
+     ⚠️ LARGE LOSS (-15.01%)
+     ⚠️ HIGH DRAWDOWN (26.2%)
+     Recent trades:
+       SHORT |  62,799.72 →  61,309.93 | PnL: +7.04%
+       LONG  |  61,470.05 →  62,101.89 | PnL: +3.00%
+       SHORT |  65,393.46 →  65,722.17 | PnL: -1.59%
+       LONG  |  64,758.48 →  65,293.47 | PnL: +2.40%
+       LONG  |  62,395.24 →  63,172.08 | PnL: +3.66%
+
+  ⏸️ RSI_MR_ETH (ETH/USDT 1h)
+     Return: -8.54% | Sharpe: -0.530 | MaxDD: 13.26%
+     Trades: 3 | WinRate: 33.3% | PF: 0.396
+     AvgWin: +5.44% | AvgLoss: +6.86% | Best: +5.44% | Worst: -7.26%
+     Final Equity: $9,145.88
+     ⚠️ NEGATIVE SHARPE (-0.530)
+     ⚠️ LARGE LOSS (-8.54%)
+     ⚠️ HIGH DRAWDOWN (13.3%)
+     Recent trades:
+       LONG  |   1,982.06 →   2,018.52 | PnL: +5.44%
+       LONG  |   1,866.59 →   1,826.84 | PnL: -6.47%
+       SHORT |   1,722.74 →   1,763.97 | PnL: -7.26%
+sh: 1: nvidia-smi: not found
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+
+  ⏸️ MLEnsemble_BTC (BTC/USDT 1h)
+     Return: +1.16% | Sharpe: +0.118 | MaxDD: 10.25%
+     Trades: 12 | WinRate: 50.0% | PF: 1.138
+     AvgWin: +2.21% | AvgLoss: +1.94% | Best: +6.72% | Worst: -3.82%
+     Final Equity: $10,115.56
+     ⚠️ HIGH DRAWDOWN (10.2%)
+     Recent trades:
+       LONG  |  62,656.37 →  62,682.13 | PnL: +0.04%
+       LONG  |  62,558.76 →  62,585.34 | PnL: +0.05%
+       SHORT |  63,172.08 →  63,236.32 | PnL: -0.39%
+       SHORT |  63,285.37 →  64,073.51 | PnL: -3.82%
+       SHORT |  63,193.68 →  63,834.68 | PnL: -3.12%
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+/home/rinnen/binance_quant/venv/lib/python3.11/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but LGBMClassifier was fitted with feature names
+  warnings.warn(
+
+  ⏸️ MLEnsemble_ETH (ETH/USDT 1h)
+     Return: -0.59% | Sharpe: +0.019 | MaxDD: 9.76%
+     Trades: 20 | WinRate: 50.0% | PF: 1.015
+     AvgWin: +2.40% | AvgLoss: +2.37% | Best: +5.38% | Worst: -8.51%
+     Final Equity: $9,940.50
+     Recent trades:
+       SHORT |   1,729.49 →   1,721.51 | PnL: +1.30%
+       SHORT |   1,726.52 →   1,716.65 | PnL: +1.63%
+       SHORT |   1,732.50 →   1,740.18 | PnL: -1.41%
+       LONG  |   1,728.02 →   1,715.68 | PnL: -2.22%
+       SHORT |   1,718.72 →   1,731.17 | PnL: -2.25%
+
+  ⏸️ RegimeSwitch_BTC (BTC/USDT 1h)
+     Return: +15.83% | Sharpe: +0.890 | MaxDD: 2.87%
+     Trades: 17 | WinRate: 52.9% | PF: 3.417
+     AvgWin: +2.42% | AvgLoss: +0.80% | Best: +10.73% | Worst: -1.68%
+     Final Equity: $11,583.15
+     Recent trades:
+       LONG  |  61,470.05 →  61,141.69 | PnL: -1.68%
+       SHORT |  65,387.46 →  65,633.46 | PnL: -1.21%
+       LONG  |  64,758.48 →  64,783.52 | PnL: +0.04%
+       LONG  |  63,961.20 →  64,342.27 | PnL: +1.71%
+       SHORT |  62,546.24 →  62,757.18 | PnL: -1.09%
+
+  ⏸️ RegimeSwitch_ETH (ETH/USDT 1h)
+     Return: -14.83% | Sharpe: -0.783 | MaxDD: 18.09%
+     Trades: 11 | WinRate: 45.5% | PF: 0.381
+     AvgWin: +1.86% | AvgLoss: +4.06% | Best: +4.48% | Worst: -9.81%
+     Final Equity: $8,517.00
+     ⚠️ NEGATIVE SHARPE (-0.783)
+     ⚠️ LARGE LOSS (-14.83%)
+     ⚠️ HIGH DRAWDOWN (18.1%)
+     Recent trades:
+       LONG  |   1,688.00 →   1,689.58 | PnL: +0.20%
+       SHORT |   1,718.79 →   1,721.34 | PnL: -0.53%
+       LONG  |   1,828.48 →   1,769.18 | PnL: -9.81%
+       LONG  |   1,788.77 →   1,783.10 | PnL: -1.03%
+       SHORT |   1,678.69 →   1,706.54 | PnL: -5.06%
+
+================================================================================
+MA_CROSS PARAMETER SWEEP (disabled strategy — evaluation)
+================================================================================
+
+  Top 10 MA_Cross configs (by net%):
+  Sym      Fast Slow   SLm   TPm    Net%     Shp    DD%   WR%     PF   #T
+  BTC/USDT   12   26  2.0x  4.0x  +34.66%   +0.82  13.3%   62%  2.76    8
+  BTC/USDT   12   26  2.5x  4.0x  +34.66%   +0.82  13.3%   62%  2.76    8
+  BTC/USDT   10   30  2.0x  4.0x  +33.36%   +0.77  13.3%   50%  2.62    8
+  BTC/USDT   10   30  2.5x  4.0x  +33.36%   +0.77  13.3%   50%  2.62    8
+  BTC/USDT   12   26  2.0x  3.0x  +24.98%   +0.69  13.3%   60%  2.01   10
+  BTC/USDT   12   26  1.5x  3.0x  +24.98%   +0.69  13.3%   60%  2.01   10
+  ETH/USDT   10   30  2.0x  4.0x  +22.22%   +0.47  19.5%   38%  1.75    8
+  ETH/USDT   10   30  2.5x  4.0x  +22.22%   +0.47  19.5%   38%  1.75    8
+  BTC/USDT   10   30  2.0x  3.0x  +17.66%   +0.56  13.3%   50%  1.94    8
+  BTC/USDT   10   30  1.5x  3.0x  +17.66%   +0.56  13.3%   50%  1.94    8
+
+  ▶ Best BTC: fast=12 slow=26 slm=2.0x tpm=4.0x → net=+34.66% sharpe=+0.82 dd=13.3% wr=62%
+  ▶ Best ETH: fast=10 slow=30 slm=2.0x tpm=4.0x → net=+22.22% sharpe=+0.47 dd=19.5% wr=38%
+
+================================================================================
+NEW STRATEGY IDEAS — EXPLORATION
+================================================================================
+  TF EMA20 SL=1.0% TP=3.0% CD=5 (BTC 1h): net=+56.34% sharpe=+1.08 dd=14.0% wr=48% #T=29
+  TF EMA20 SL=1.5% TP=4.0% CD=8 (BTC 1h): net=+61.52% sharpe=+1.19 dd=8.8% wr=52% #T=21
+  TF EMA50 SL=1.0% TP=3.0% CD=5 (BTC 1h): net=+48.14% sharpe=+1.02 dd=14.0% wr=42% #T=24
+  TF EMA100 SL=1.5% TP=4.0% CD=8 (BTC 1h): net=+54.19% sharpe=+0.97 dd=15.3% wr=47% #T=17
+  RSI_MR(rsi=14 os=30 ob=70) ETH 1h: net=-21.98% sharpe=-0.57 dd=29.8% wr=44% #T=9
+  RSI_MR(rsi=14 os=25 ob=75) ETH 1h: net=-22.49% sharpe=-1.07 dd=22.5% wr=20% #T=5
+  RSI_MR(rsi=7 os=35 ob=65) ETH 1h: net=-11.38% sharpe=-0.15 dd=32.2% wr=74% #T=35
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+  ✓ DynamicGrid_BTC: already disabled (Sharpe -0.533 < 0, return -25.12% < -5%)
+  ✓ DynamicGrid_ETH: already disabled (Sharpe -0.232 < 0, return -22.12% < -5%)
+  ✓ MA_Cross_BTC: already disabled (win rate 7% < 30%, Sharpe -1.283 < 0, return -34.40% < -5%)
+  ✓ MA_Cross_ETH: already disabled (win rate 22% < 30%, Sharpe -0.399 < 0, return -27.09% < -5%)
+  ✓ RSI_MR_BTC: already disabled (Sharpe -0.483 < 0, return -15.01% < -5%)
+  ✓ RSI_MR_ETH: already disabled (Sharpe -0.530 < 0, return -8.54% < -5%)
+  ✓ RegimeSwitch_ETH: already disabled (Sharpe -0.783 < 0, return -14.83% < -5%)
+  💡 CONSIDER MA_Cross on BTC 1h: fast=12 slow=26 slm=2.0x tpm=4.0x → net=+34.66% sharpe=+0.82
+
+💾 athena.json written (14 strategies evaluated)
+
+═══ BULLETIN SUMMARY ═══
+⏸️ DynamicGrid_BTC: net=-25.12% sharpe=-0.53 wr=43% dd=32.6% #T=251
+⏸️ DynamicGrid_ETH: net=-22.12% sharpe=-0.23 wr=49% dd=34.1% #T=252
+⏸️ MLAlpha_BTC: net=+3.81% sharpe=+0.28 wr=46% dd=8.5% #T=13
+⏸️ MA_Cross_BTC: net=-34.40% sharpe=-1.28 wr=7% dd=40.1% #T=15
+⏸️ MA_Cross_ETH: net=-27.09% sharpe=-0.40 wr=22% dd=48.4% #T=23
+⏸️ TrendFollow_BTC: net=+76.95% sharpe=+0.74 wr=41% dd=17.2% #T=78
+⏸️ TrendFollow_ETH: net=+99.31% sharpe=+1.27 wr=53% dd=8.2% #T=15
+⏸️ TrendFollow_BTC_1h: net=+82.24% sharpe=+1.43 wr=50% dd=3.1% #T=16
+⏸️ RSI_MR_BTC: net=-15.01% sharpe=-0.48 wr=56% dd=26.2% #T=9
+⏸️ RSI_MR_ETH: net=-8.54% sharpe=-0.53 wr=33% dd=13.3% #T=3
+⏸️ MLEnsemble_BTC: net=+1.16% sharpe=+0.12 wr=50% dd=10.2% #T=12
+⏸️ MLEnsemble_ETH: net=-0.59% sharpe=+0.02 wr=50% dd=9.8% #T=20
+⏸️ RegimeSwitch_BTC: net=+15.83% sharpe=+0.89 wr=53% dd=2.9% #T=17
+⏸️ RegimeSwitch_ETH: net=-14.83% sharpe=-0.78 wr=45% dd=18.1% #T=11
+📋 1 recommendation(s)
+🦉 Athena pulse #1 — 06-21 19:26 UTC
+2026-06-22 03:27:00,060 [ENGINE] Backtests: 14/14 strategies evaluated with real metrics
+2026-06-22 03:27:01,335 [ENGINE] Risk check: 4994.68823051, 1 positions, risk=normal
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'DynamicGrid_BTC' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'DynamicGrid_ETH' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'MLAlpha_BTC' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'MA_Cross_BTC' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'MA_Cross_ETH' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'TrendFollow_BTC' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'TrendFollow_ETH' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'TrendFollow_BTC_1h' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'RSI_MR_BTC' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'RSI_MR_ETH' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'MLEnsemble_BTC' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'MLEnsemble_ETH' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'RegimeSwitch_BTC' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Strategy 'RegimeSwitch_ETH' is disabled, skipping.
+2026-06-22 03:27:01,357 [ENGINE] Loaded 0 strategies from /home/rinnen/binance_quant/config/strategies.yaml
+2026-06-22 03:27:01,358 [ENGINE] Signals: 0 generated
+2026-06-22 03:27:02,954 [ENGINE] Live exchange: balance=4995.27, positions=1, orders=0
+2026-06-22 03:27:03,012 [ENGINE] DB sync: closed stale ID#9 (BTC/USDT LONG)
+2026-06-22 03:27:03,012 [ENGINE] DB sync error: CHECK constraint failed: side IN ('LONG', 'SHORT')
+2026-06-22 03:31:45,309 [ENGINE] Backtests: 14/14 strategies evaluated with real metrics
+2026-06-22 03:31:46,737 [ENGINE] Risk check: 0.0, 0 positions, risk=normal
+2026-06-22 03:31:46,759 [ENGINE] Strategy 'DynamicGrid_BTC' is disabled, skipping.
+2026-06-22 03:31:46,759 [ENGINE] Strategy 'DynamicGrid_ETH' is disabled, skipping.
+2026-06-22 03:31:46,759 [ENGINE] Strategy 'MLAlpha_BTC' is disabled, skipping.
+2026-06-22 03:31:46,759 [ENGINE] Strategy 'MA_Cross_BTC' is disabled, skipping.
+2026-06-22 03:31:46,759 [ENGINE] Strategy 'MA_Cross_ETH' is disabled, skipping.
+2026-06-22 03:31:46,759 [ENGINE] Strategy 'TrendFollow_BTC' is disabled, skipping.
+2026-06-22 03:31:46,759 [ENGINE] Strategy 'TrendFollow_ETH' is disabled, skipping.
+2026-06-22 03:31:46,760 [ENGINE] Strategy 'TrendFollow_BTC_1h' is disabled, skipping.
+2026-06-22 03:31:46,760 [ENGINE] Strategy 'RSI_MR_BTC' is disabled, skipping.
+2026-06-22 03:31:46,760 [ENGINE] Strategy 'RSI_MR_ETH' is disabled, skipping.
+2026-06-22 03:31:46,760 [ENGINE] Strategy 'MLEnsemble_BTC' is disabled, skipping.
+2026-06-22 03:31:46,760 [ENGINE] Strategy 'MLEnsemble_ETH' is disabled, skipping.
+2026-06-22 03:31:46,760 [ENGINE] Strategy 'RegimeSwitch_BTC' is disabled, skipping.
+2026-06-22 03:31:46,760 [ENGINE] Strategy 'RegimeSwitch_ETH' is disabled, skipping.
+2026-06-22 03:31:46,760 [ENGINE] Loaded 0 strategies from /home/rinnen/binance_quant/config/strategies.yaml
+2026-06-22 03:31:46,760 [ENGINE] Signals: 0 generated
+2026-06-22 03:31:48,461 [ENGINE] Live exchange: balance=0.00, positions=0, orders=2
+2026-06-22 03:36:28,629 [ENGINE] Backtests: 14/14 strategies evaluated with real metrics
+2026-06-22 03:36:29,815 [ENGINE] Risk check: 4994.72163323, 1 positions, risk=normal
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'DynamicGrid_BTC' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'DynamicGrid_ETH' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'MLAlpha_BTC' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'MA_Cross_BTC' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'MA_Cross_ETH' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'TrendFollow_BTC' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'TrendFollow_ETH' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'TrendFollow_BTC_1h' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'RSI_MR_BTC' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'RSI_MR_ETH' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'MLEnsemble_BTC' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'MLEnsemble_ETH' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'RegimeSwitch_BTC' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Strategy 'RegimeSwitch_ETH' is disabled, skipping.
+2026-06-22 03:36:29,835 [ENGINE] Loaded 0 strategies from /home/rinnen/binance_quant/config/strategies.yaml
+2026-06-22 03:36:29,836 [ENGINE] Signals: 0 generated
+2026-06-22 03:36:31,368 [ENGINE] Live exchange: balance=4994.72, positions=1, orders=0
+2026-06-22 03:36:31,425 [ENGINE] DB sync: closed stale ID#9 (BTC/USDT LONG)
+2026-06-22 03:36:31,425 [ENGINE] DB sync error: CHECK constraint failed: side IN ('LONG', 'SHORT')
+2026-06-22 03:41:13,609 [ENGINE] Backtests: 14/14 strategies evaluated with real metrics
+2026-06-22 03:41:14,866 [ENGINE] Risk check: 4994.70730341, 1 positions, risk=normal
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'DynamicGrid_BTC' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'DynamicGrid_ETH' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'MLAlpha_BTC' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'MA_Cross_BTC' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'MA_Cross_ETH' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'TrendFollow_BTC' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'TrendFollow_ETH' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'TrendFollow_BTC_1h' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'RSI_MR_BTC' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'RSI_MR_ETH' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'MLEnsemble_BTC' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'MLEnsemble_ETH' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'RegimeSwitch_BTC' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Strategy 'RegimeSwitch_ETH' is disabled, skipping.
+2026-06-22 03:41:14,886 [ENGINE] Loaded 0 strategies from /home/rinnen/binance_quant/config/strategies.yaml
+2026-06-22 03:41:14,887 [ENGINE] Signals: 0 generated
+2026-06-22 03:41:16,325 [ENGINE] Live exchange: balance=4994.71, positions=1, orders=0
+2026-06-22 03:41:16,385 [ENGINE] DB sync: closed stale ID#9 (BTC/USDT LONG)
+2026-06-22 03:41:16,386 [ENGINE] DB sync error: CHECK constraint failed: side IN ('LONG', 'SHORT')
+2026-06-22 03:45:58,456 [ENGINE] Backtests: 14/14 strategies evaluated with real metrics
+2026-06-22 03:45:59,907 [ENGINE] Risk check: 0.0, 0 positions, risk=normal
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'DynamicGrid_BTC' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'DynamicGrid_ETH' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'MLAlpha_BTC' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'MA_Cross_BTC' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'MA_Cross_ETH' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'TrendFollow_BTC' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'TrendFollow_ETH' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'TrendFollow_BTC_1h' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'RSI_MR_BTC' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'RSI_MR_ETH' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'MLEnsemble_BTC' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'MLEnsemble_ETH' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'RegimeSwitch_BTC' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Strategy 'RegimeSwitch_ETH' is disabled, skipping.
+2026-06-22 03:45:59,928 [ENGINE] Loaded 0 strategies from /home/rinnen/binance_quant/config/strategies.yaml
+2026-06-22 03:45:59,928 [ENGINE] Signals: 0 generated
+2026-06-22 03:46:01,603 [ENGINE] Live exchange: balance=0.00, positions=0, orders=2

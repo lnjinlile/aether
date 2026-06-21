@@ -113,7 +113,7 @@ strategies:
     leverage: 3
 - name: TrendFollow_BTC_1h
   class: strategy.examples.trend_follow.TrendFollow
-  enabled: true
+  enabled: false  # AUDIT-013: CONSISTENT_LOSER — 7d -3.43% Sharpe -1.97 WR 0%, Prometheus live 8笔0%胜率 -3.98%
   params:
     symbols:
     - BTC/USDT
@@ -146,7 +146,7 @@ strategies:
     leverage: 3
 - name: RSI_MR_ETH
   class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
-  enabled: true
+  enabled: false  # AUDIT-014: 0信号0交易 7d, RSI参数过于极端(os=20/ob=80), 名义启用实际休眠
   params:
     symbols:
     - ETH/USDT
@@ -170,7 +170,7 @@ strategies:
 # -------------------------------------------------------------------------
 - name: MLEnsemble_BTC
   class: strategy.examples.ml_ensemble.MLEnsembleStrategy
-  enabled: true
+  enabled: false  # AUDIT-008/017: 零预测力(corr~0.04), WF pass_rate=0.4, backtest全error, 03:10盲飞SHORT已执行
   params:
     symbols:
     - BTC/USDT
@@ -211,7 +211,7 @@ strategies:
 # -------------------------------------------------------------------------
 - name: RegimeSwitch_BTC
   class: strategy.examples.regime_switch.RegimeSwitchStrategy
-  enabled: true
+  enabled: false  # AUDIT-008/017: backtest error (str vs int comparison), WF CONSISTENT_LOSER (5/5窗口亏损 -16%)
   params:
     symbols:
     - BTC/USDT
