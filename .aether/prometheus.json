@@ -1,45 +1,109 @@
 {
-  "run_time": "2026-06-21T15:36:56.058134+00:00",
-  "findings": {
-    "btc_1h_best": {
-      "ema": 50,
-      "sl": 0.015,
-      "tp": 0.05,
-      "net": 12.66,
-      "sharpe": 0.3706,
-      "trades": 49
-    },
-    "btc_15m_best": {
+  "run_time": "2026-06-22T00:41:00+00:00",
+  "timestamp": "2026-06-22 00:41 UTC",
+  "status": "optimization_in_progress",
+  "last_action": "RSI_MR_ETH parameter optimization",
+  "walk_forward": {
+    "deployed": true,
+    "last_full_run": "2026-06-21 16:17 UTC",
+    "results": {
+      "TrendFollow_BTC": {
+        "wfe": 0.012,
+        "is_return": 20.2,
+        "oos_return": 0.25,
+        "passed": false,
+        "verdict": "EXTREME OVERFIT",
+        "note": "OLD params (EMA=150). Current params (EMA=75) insufficient data for WF validation (< 45d train + 21d test)"
+      },
+      "TrendFollow_BTC_1h": {
+        "wfe": 0.423,
+        "is_return": -4.56,
+        "oos_return": -1.93,
+        "passed": false,
+        "verdict": "DEGRADING",
+        "status": "DISABLED (Oracle)"
+      },
+      "RSI_MR_ETH": {
+        "old_params": {
+          "rsi_period": 7,
+          "oversold": 35,
+          "overbought": 65,
+          "sl": 0.03,
+          "tp": 0.06,
+          "wfe": 0.718,
+          "is_return": -7.99,
+          "oos_return": -5.74,
+          "passed": true,
+          "verdict": "CONSISTENT_LOSER",
+          "full_net": -14.11,
+          "full_sharpe": -0.34,
+          "full_dd": 22.4,
+          "full_wr": 70,
+          "full_pf": 0.78,
+          "full_trades": 102
+        },
+        "new_params": {
+          "rsi_period": 14,
+          "oversold": 20,
+          "overbought": 80,
+          "sl": 0.02,
+          "tp": 0.04,
+          "wfe": 0.628,
+          "is_return": 7.86,
+          "oos_return": 4.94,
+          "passed": true,
+          "verdict": "GOOD",
+          "full_net": 9.56,
+          "full_sharpe": 0.58,
+          "full_dd": 4.6,
+          "full_wr": 78,
+          "full_pf": 3.00,
+          "full_trades": 9
+        },
+        "action": "UPDATED to optimal params",
+        "note": "Fewer trades (9 vs 102) but positive IS+OOS, high quality signals only"
+      },
+      "RSI_MR_BTC": {
+        "wfe": -0.353,
+        "is_return": 2.49,
+        "oos_return": -0.88,
+        "passed": false,
+        "verdict": "BROKEN OVERFIT"
+      },
+      "MA_Cross_BTC": {
+        "wfe": -3.807,
+        "is_return": -0.93,
+        "oos_return": 3.54,
+        "passed": true,
+        "verdict": "REGIME_SHIFT"
+      },
+      "MA_Cross_ETH": {
+        "wfe": -1.684,
+        "is_return": -2.72,
+        "oos_return": 4.58,
+        "passed": true,
+        "verdict": "REGIME_SHIFT"
+      }
+    }
+  },
+  "full_sweep": {
+    "trendfollow_btc_15m_current": {
       "ema": 75,
       "sl": 0.01,
       "tp": 0.015,
+      "cd": 10,
       "net": 17.88,
-      "sharpe": 0.6151,
-      "trades": 77
+      "sharpe": 0.61,
+      "trades": 77,
+      "dd": 6.8,
+      "wr": 40
     },
-    "rsi_best": {
-      "rsi_p": 14,
-      "os": 30,
-      "ob": 70,
-      "sl": 0.03,
-      "tp": 0.06,
-      "net": -0.02,
-      "sharpe": 0.0183
-    }
+    "wf_status": "INSUFFICIENT_DATA — only 30d available, need 45d train + 21d test for proper WF"
   },
-  "actions": [
-    {
-      "strategy": "TrendFollow_BTC_1h",
-      "ema": 50,
-      "sl": 0.015,
-      "tp": 0.05
-    },
-    {
-      "strategy": "TrendFollow_BTC",
-      "ema": 75,
-      "sl": 0.01,
-      "tp": 0.015
-    }
-  ],
-  "timestamp": "2026-06-21 15:36 UTC"
+  "alerts": [
+    "ACTION: RSI_MR_ETH updated to RSI=14/OS=20/OB=80/SL=2%/TP=4% — WF GOOD (IS+7.9% OOS+4.9%), replaces CONSISTENT_LOSER old config",
+    "WARNING: TrendFollow_BTC (EMA=75) has only 30d data — cannot run proper WF validation, 17.88% net may be overfit on single window",
+    "INFO: MA_Cross_BTC/ETH both REGIME_SHIFT (IS negative, OOS positive) — favorable regime change, strategy generalizing better than trained",
+    "INFO: Data pipeline appears stale — last bar 06-21 16:00 UTC (~8.5h ago), Oracle should check pipeline"
+  ]
 }
