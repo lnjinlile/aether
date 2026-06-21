@@ -163,6 +163,45 @@ def run_signal_check():
         write_json("signals.json", {"error": str(e), "status": "error"})
 
 
+def fetch_live_exchange():
+    """Pull live account data from Binance testnet."""
+    try:
+        from execution.client import BinanceFuturesClient
+        from config.settings import get_config
+        cfg = get_config()
+        client = BinanceFuturesClient(cfg.api_key, cfg.api_secret, cfg.testnet)
+
+        bal = client.get_balance()
+        positions = client.get_positions()
+        orders = client.get_open_orders()
+        tickers = {}
+        for sym in ["BTC/USDT", "ETH/USDT"]:
+            try: tickers[sym] = client.get_ticker(sym).get("last", 0)
+            except: tickers[sym] = 0
+
+        # Enrich positions with liq distance
+        enriched_positions = []
+        for p in positions:
+            mark = p.get("mark_price", 0)
+            liq = p.get("liquidation_price", 0)
+            liq_dist = abs(mark - liq) / mark * 100 if mark > 0 else 999
+            p["liq_distance_pct"] = round(liq_dist, 1)
+            p["notional"] = abs(p.get("contracts", 0)) * mark
+            enriched_positions.append(p)
+
+        write_json("live_exchange.json", {
+            "balance": bal,
+            "positions": enriched_positions,
+            "open_orders": len(orders),
+            "tickers": tickers,
+        })
+        logger.info("Live exchange: balance=%.2f, positions=%d, orders=%d",
+                    bal.get("balance", 0), len(positions), len(orders))
+    except Exception as e:
+        logger.error("Live exchange error: %s", e)
+        write_json("live_exchange.json", {"error": str(e), "status": "error"})
+
+
 def sync_agent_states():
     """Update agent state files — MERGE with existing, preserve tasks."""
     try:
@@ -205,6 +244,7 @@ def run_all():
             run_backtests()
             run_risk_check()
             run_signal_check()
+            fetch_live_exchange()
             sync_agent_states()
         except Exception as e:
             logger.error("Engine loop error: %s", e)

@@ -41,6 +41,7 @@ pipeline = load_json(os.path.join(STATE_DIR, "pipeline.json"))
 backtest = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
 risk = load_json(os.path.join(STATE_DIR, "risk_check.json"))
 signals_data = load_json(os.path.join(STATE_DIR, "signals.json"))
+live_exchange = load_json(os.path.join(STATE_DIR, "live_exchange.json"))
 tasks_all = load_json(TASKS_FILE)
 trades = db_query("SELECT * FROM trades_log ORDER BY id DESC LIMIT 30")
 closed_trades = [t for t in trades if t["status"] == "CLOSED"]
@@ -145,6 +146,30 @@ prom_html = stat_row([
     ("下一步", "防过拟合框架"),
 ]) + agent_tasks("prometheus")
 
+# Live Exchange
+live_bal = live_exchange.get("balance", {})
+live_positions = live_exchange.get("positions", [])
+live_tickers = live_exchange.get("tickers", {})
+live_html = stat_row([
+    ("账户余额", f'{live_bal.get("balance",0):.2f} USDT'),
+    ("可用", f'{live_bal.get("available",0):.2f}'),
+    ("未实现盈亏", f'{live_bal.get("unrealized_pnl",0):+.2f}'),
+    ("BTC", f'{live_tickers.get("BTC/USDT",0):.1f}'),
+    ("ETH", f'{live_tickers.get("ETH/USDT",0):.1f}'),
+    ("挂单", str(live_exchange.get("open_orders",0))+"个"),
+])
+if live_positions:
+    live_html += '<table class="mini-table"><tr><th>标的</th><th>方向</th><th>数量</th><th>入场价</th><th>标记价</th><th>未实现PnL</th><th>强平距离</th><th>杠杆</th></tr>'
+    for p in live_positions:
+        pnl = p.get("unrealized_pnl", 0)
+        pnl_color = "#22c55e" if pnl > 0 else ("#ef4444" if pnl < 0 else "#6b7280")
+        liq_dist = p.get("liq_distance_pct", 999)
+        liq_color = "#22c55e" if liq_dist > 50 else ("#f59e0b" if liq_dist > 10 else "#ef4444")
+        live_html += f'<tr><td>{p.get("symbol","?")[:12]}</td><td>{p.get("side","?")}</td><td>{p.get("contracts",0):.4f}</td><td>{p.get("entry_price",0):.1f}</td><td>{p.get("mark_price",0):.1f}</td><td style="color:{pnl_color}">{pnl:+.2f}</td><td style="color:{liq_color}">{liq_dist:.1f}%</td><td>{p.get("leverage",1)}x</td></tr>'
+    live_html += '</table>'
+else:
+    live_html += '<div style="color:#6b7280;font-size:12px;margin-top:8px">无持仓</div>'
+
 # ====== HTML ======
 html = f'''<!DOCTYPE html>
 <html lang="zh">
@@ -192,7 +217,10 @@ h1{{font-size:24px;margin-bottom:4px;color:#f8fafc}}h1 span{{color:#f59e0b}}
 <div class="card" style="border-top:3px solid #f59e0b"><h3>🔥 Prometheus 优化</h3>{prom_html}</div>
 </div>
 
-<div class="footer">Aether Dashboard v4 · engine.py {pipeline.get("_updated_at","")[:19] if pipeline else "?"} · 数据源: 引擎输出文件</div>
+<div class="section-title">💹 币安测试网 · 实时持仓</div>
+<div class="card" style="border-top:3px solid #22c55e"><h3>📡 交易所实时数据</h3>{live_html}</div>
+
+<div class="footer">Aether Dashboard v4 · 60秒刷新 · 数据源: engine.py</div>
 </body>
 </html>'''
 
