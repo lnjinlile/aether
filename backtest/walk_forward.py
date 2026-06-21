@@ -178,17 +178,38 @@ def walk_forward_validate(
 
 def _build_result(wfe, is_return, oos_return, is_sharpe, oos_sharpe, windows, details):
     """Build standardized result dict."""
-    passed = wfe >= 0.3
-    if wfe >= 0.7:
+    # WFE interpretation depends on sign of IS return
+    if is_return > 0 and oos_return < 0:
+        # IS positive, OOS negative — classic overfitting
+        passed = False
+        interp = "BROKEN — IS positive but OOS negative, classic overfitting"
+    elif is_return < 0 and oos_return > 0:
+        # IS negative, OOS positive — not overfitting, market regime shift
+        passed = True
+        interp = "REGIME_SHIFT — IS negative but OOS positive, favorable regime change, not overfitting"
+    elif is_return < 0 and oos_return < 0:
+        # Both negative — consistent but unprofitable
+        if wfe >= 0.5:
+            passed = True
+            interp = "CONSISTENT_LOSER — consistently unprofitable but not overfit (same behavior IS and OOS)"
+        else:
+            passed = False
+            interp = "DEGRADING — both negative and OOS much worse than IS"
+    elif wfe >= 0.7:
+        passed = True
         interp = "STRONG — strategy generalizes well, low overfitting risk"
     elif wfe >= 0.5:
+        passed = True
         interp = "GOOD — acceptable out-of-sample performance"
     elif wfe >= 0.3:
+        passed = True
         interp = "MARGINAL — some degradation but not clearly overfit"
     elif wfe >= 0.0:
+        passed = False
         interp = "WEAK — significant OOS degradation, likely overfit"
     else:
-        interp = "BROKEN — OOS performance is negative while IS is positive, classic overfitting"
+        passed = False
+        interp = "BROKEN — OOS negative while IS positive, classic overfitting"
 
     return {
         'wfe': round(wfe, 4),
@@ -217,15 +238,24 @@ def _empty_wf_result(reason: str) -> Dict[str, Any]:
     }
 
 
-def WFEInterpretation(wfe: float) -> str:
+def WFEInterpretation(wfe: float, is_return: float = 0.0, oos_return: float = 0.0) -> str:
     """Human-readable interpretation of Walk-Forward Efficiency."""
-    if wfe >= 0.7:
-        return f"🟢 WFE={wfe:.3f}: Strong generalization (low overfit risk)"
+    if is_return > 0 and oos_return < 0:
+        return f"BROKEN WFE={wfe:.3f}: IS positive, OOS negative (classic overfitting)"
+    elif is_return < 0 and oos_return > 0:
+        return f"REGIME_SHIFT WFE={wfe:.3f}: IS negative, OOS positive (favorable regime change)"
+    elif is_return < 0 and oos_return < 0:
+        if wfe >= 0.5:
+            return f"CONSISTENT_LOSER WFE={wfe:.3f}: Unprofitable but not overfit"
+        else:
+            return f"DEGRADING WFE={wfe:.3f}: Both negative, getting worse OOS"
+    elif wfe >= 0.7:
+        return f"STRONG WFE={wfe:.3f}: Strong generalization (low overfit risk)"
     elif wfe >= 0.5:
-        return f"🟡 WFE={wfe:.3f}: Acceptable generalization"
+        return f"GOOD WFE={wfe:.3f}: Acceptable generalization"
     elif wfe >= 0.3:
-        return f"🟠 WFE={wfe:.3f}: Marginal — some OOS degradation"
+        return f"MARGINAL WFE={wfe:.3f}: Some OOS degradation"
     elif wfe >= 0.0:
-        return f"🔴 WFE={wfe:.3f}: Weak — likely overfit"
+        return f"WEAK WFE={wfe:.3f}: Likely overfit"
     else:
-        return f"⛔ WFE={wfe:.3f}: Broken — classic overfitting pattern"
+        return f"BROKEN WFE={wfe:.3f}: Classic overfitting pattern"
