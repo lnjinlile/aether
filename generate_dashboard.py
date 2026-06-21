@@ -85,7 +85,7 @@ def agent_tasks(agent_name):
 # Oracle
 oracle_html = stat_row([
     ("数据管道", f'● {pipeline.get("status","?")}'),
-    ("K线数据", str(sum(pipeline.get("latest",{}).values()))+"行" if isinstance(pipeline.get("latest",{}).get(list(pipeline.get("latest",{}).keys())[0] if pipeline.get("latest") else ""), int) else "运行中"),
+    ("K线数据", str(sum(v for v in pipeline.get("latest",{}).values() if isinstance(v,int)))+"行"),
     ("最近采集", pipeline.get("last_run","")[:19]),
 ]) + agent_tasks("oracle")
 
