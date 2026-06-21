@@ -31,13 +31,19 @@ def run():
             stats = {}
             for sym in SYMBOLS:
                 for tf in TIMEFRAMES:
-                    try:
-                        df = collector.fetch_current_klines(sym, tf, 300)
-                        storage.save_klines(df, sym, tf)
-                        stats[f"{sym}_{tf}"] = len(df)
-                    except Exception as e:
-                        stats[f"{sym}_{tf}"] = f"ERR:{e}"
-                        logger.error("%s %s: %s", sym, tf, e)
+                    for attempt in range(3):  # retry transient API failures
+                        try:
+                            df = collector.fetch_current_klines(sym, tf, 300)
+                            storage.save_klines(df, sym, tf)
+                            stats[f"{sym}_{tf}"] = len(df)
+                            break
+                        except Exception as e:
+                            if attempt < 2:
+                                logger.warning("%s %s attempt %d failed, retrying: %s", sym, tf, attempt+1, e)
+                                time.sleep(5)
+                            else:
+                                stats[f"{sym}_{tf}"] = f"ERR:{e}"
+                                logger.error("%s %s: %s", sym, tf, e)
 
             # Write health status
             os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
