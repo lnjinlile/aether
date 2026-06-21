@@ -3,19 +3,39 @@
     {
       "id": 1,
       "title": "检查账户余额和持仓风险",
-      "status": "in_progress",
+      "status": "done",
       "priority": 0,
       "created_at": "06-21 12:16",
       "started_at": "06-21 12:16",
-      "done_at": null,
-      "notes": ""
+      "done_at": "06-21 12:22",
+      "notes": "已自动化: engine.py 持续检查风控"
     },
     {
       "id": 2,
       "title": "监控强平距离和仓位集中度",
-      "status": "queued",
+      "status": "done",
       "priority": 0,
       "created_at": "06-21 12:16",
+      "started_at": "06-21 12:22",
+      "done_at": "06-21 12:23",
+      "notes": "已自动化: engine.py 持续风控"
+    },
+    {
+      "id": 3,
+      "title": "审查风控告警，判断是否需要减仓",
+      "status": "queued",
+      "priority": 0,
+      "created_at": "06-21 12:22",
+      "started_at": null,
+      "done_at": null,
+      "notes": ""
+    },
+    {
+      "id": 4,
+      "title": "评估风险参数是否需要调整",
+      "status": "queued",
+      "priority": 0,
+      "created_at": "06-21 12:22",
       "started_at": null,
       "done_at": null,
       "notes": ""

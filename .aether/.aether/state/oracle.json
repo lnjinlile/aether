@@ -13,12 +13,12 @@
     {
       "id": 2,
       "title": "响应其他专员的数据请求",
-      "status": "queued",
+      "status": "done",
       "priority": 0,
       "created_at": "06-21 12:16",
       "started_at": null,
-      "done_at": null,
-      "notes": ""
+      "done_at": "06-21 12:23",
+      "notes": "已自动化: pipeline.py"
     },
     {
       "id": 3,
@@ -33,12 +33,12 @@
     {
       "id": 4,
       "title": "处理其他专员的数据请求",
-      "status": "queued",
+      "status": "done",
       "priority": 0,
       "created_at": "06-21 12:20",
       "started_at": null,
-      "done_at": null,
-      "notes": ""
+      "done_at": "06-21 12:23",
+      "notes": "已自动化: pipeline.py"
     },
     {
       "id": 5,

@@ -140,11 +140,12 @@ oracle_lines.append(agent_tasks("oracle"))
 
 # ---- ATHENA SECTION ----
 athena_state = load_json(os.path.join(STATE_DIR, "athena.json"))
+bt_results = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
 athena_lines = []
 athena_lines.append(stat_row([
-    ("活跃策略",str(len(active_strats))+"个"),
-    ("禁用策略",str(len(inactive_strats))+"个"),
-    ("最近评估",athena_state.get("_updated_at","N/A")[:16]),
+    ("活跃策略", str(len(active_strats))+"个"),
+    ("回测引擎", "● 运行中" if bt_results.get("status") != "error" else "● 异常"),
+    ("最近评估", bt_results.get("_updated_at","N/A")[:16]),
 ]))
 if active_strats:
     athena_lines.append('<table class="mini-table"><tr><th>策略名</th><th>标的</th><th>周期</th><th>状态</th></tr>')
@@ -166,11 +167,15 @@ if bt:
 athena_lines.append(agent_tasks("athena"))
 # ---- GUARDIAN SECTION ----
 guardian_state = load_json(os.path.join(STATE_DIR, "guardian.json"))
+risk_data = load_json(os.path.join(STATE_DIR, "risk_check.json"))
 guardian_lines = []
+risk_level = risk_data.get("risk_level", "unknown")
+risk_icon = {"normal":"🟢","warning":"🟡","critical":"🔴"}.get(risk_level, "⚪")
 guardian_lines.append(stat_row([
-    ("持仓数",str(len(open_trades))+"笔"),
-    ("风险等级","🟢 正常" if len(open_trades)<3 else "🟡 关注"),
-    ("最近检查",guardian_state.get("_updated_at","N/A")[:16]),
+    ("余额", f'{risk_data.get("balance",0):.2f} USDT'),
+    ("持仓", str(risk_data.get("positions_count",0))+"个"),
+    ("仓位占比", f'{risk_data.get("position_pct",0)}%'),
+    ("风控等级", f'{risk_icon} {risk_level}'),
 ]))
 if open_trades:
     guardian_lines.append('<table class="mini-table"><tr><th>标的</th><th>方向</th><th>入场</th><th>数量</th></tr>')
@@ -181,13 +186,14 @@ if open_trades:
 guardian_lines.append(agent_tasks("guardian"))
 # ---- MERCURY SECTION ----
 mercury_state = load_json(os.path.join(STATE_DIR, "mercury.json"))
+sig_data = load_json(os.path.join(STATE_DIR, "signals.json"))
 mercury_lines = []
+sig_count = len(sig_data.get("signals", {}))
 mercury_lines.append(stat_row([
-    ("总交易",str(len(trades))+"笔"),
-    ("持仓中",str(len(open_trades))+"笔"),
-    ("已平仓",str(len(closed_trades))+"笔"),
-    ("胜率",f'{win_rate:.0f}%'),
-    ("累计盈亏",f'{total_pnl:+.4f}'),
+    ("信号引擎", f'● 运行中 ({sig_count}个信号)'),
+    ("总交易", str(len(trades))+"笔"),
+    ("胜率", f'{win_rate:.0f}%'),
+    ("累计盈亏", f'{total_pnl:+.4f}'),
 ]))
 if trades:
     mercury_lines.append(progress_bar(win_rate, "胜率", "#22c55e" if win_rate>50 else "#f59e0b"))

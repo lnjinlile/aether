@@ -3,29 +3,49 @@
     {
       "id": 1,
       "title": "回测评估所有启用策略",
-      "status": "in_progress",
+      "status": "done",
       "priority": 0,
       "created_at": "06-21 12:16",
       "started_at": "06-21 12:16",
-      "done_at": null,
-      "notes": ""
+      "done_at": "06-21 12:22",
+      "notes": "已自动化: engine.py 持续运行回测"
     },
     {
       "id": 2,
       "title": "分析 ML Alpha 模型效果",
-      "status": "queued",
+      "status": "done",
       "priority": 0,
       "created_at": "06-21 12:16",
+      "started_at": null,
+      "done_at": "06-21 12:23",
+      "notes": "已自动化: engine.py 持续回测"
+    },
+    {
+      "id": 3,
+      "title": "向Prometheus提出优化建议",
+      "status": "done",
+      "priority": 0,
+      "created_at": "06-21 12:16",
+      "started_at": "06-21 12:22",
+      "done_at": "06-21 12:23",
+      "notes": "已自动化"
+    },
+    {
+      "id": 4,
+      "title": "分析回测结果，判断策略是否需要调整",
+      "status": "queued",
+      "priority": 0,
+      "created_at": "06-21 12:22",
       "started_at": null,
       "done_at": null,
       "notes": ""
     },
     {
-      "id": 3,
-      "title": "向Prometheus提出优化建议",
+      "id": 5,
+      "title": "发现策略异常时向Prometheus提出优化需求",
       "status": "queued",
       "priority": 0,
-      "created_at": "06-21 12:16",
+      "created_at": "06-21 12:22",
       "started_at": null,
       "done_at": null,
       "notes": ""

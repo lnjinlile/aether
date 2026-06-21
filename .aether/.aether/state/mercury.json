@@ -3,29 +3,49 @@
     {
       "id": 1,
       "title": "监控策略信号并执行交易",
-      "status": "in_progress",
+      "status": "done",
       "priority": 0,
       "created_at": "06-21 12:16",
       "started_at": "06-21 12:16",
-      "done_at": null,
-      "notes": ""
+      "done_at": "06-21 12:22",
+      "notes": "已自动化: engine.py 持续生成信号"
     },
     {
       "id": 2,
       "title": "管理现有持仓(止盈止损)",
-      "status": "queued",
+      "status": "done",
       "priority": 0,
       "created_at": "06-21 12:16",
+      "started_at": "06-21 12:22",
+      "done_at": "06-21 12:23",
+      "notes": "已自动化: engine.py 执行交易"
+    },
+    {
+      "id": 3,
+      "title": "记录交易到数据库",
+      "status": "done",
+      "priority": 0,
+      "created_at": "06-21 12:16",
+      "started_at": null,
+      "done_at": "06-21 12:23",
+      "notes": "已自动化: engine.py"
+    },
+    {
+      "id": 4,
+      "title": "审查交易信号，决定是否执行",
+      "status": "queued",
+      "priority": 0,
+      "created_at": "06-21 12:22",
       "started_at": null,
       "done_at": null,
       "notes": ""
     },
     {
-      "id": 3,
-      "title": "记录交易到数据库",
+      "id": 5,
+      "title": "监控已执行订单，管理持仓",
       "status": "queued",
       "priority": 0,
-      "created_at": "06-21 12:16",
+      "created_at": "06-21 12:22",
       "started_at": null,
       "done_at": null,
       "notes": ""
