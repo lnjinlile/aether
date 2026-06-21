@@ -1,211 +1,265 @@
 #!/usr/bin/env python3
-"""Mercury trading executor — runs on Binance testnet."""
-import json, time, os, sys
+"""Mercury auto-execution script — runs every 15m via cron."""
+
+import json, sys, os
 from datetime import datetime, timezone
+import numpy as np
+import pandas as pd
 
 from config.settings import get_config
 from execution.client import BinanceFuturesClient
 from data.collector import BinanceDataCollector
-from data.storage import MarketStorage
 from strategy.manager import StrategyManager
 from strategy.base import SignalType
 
+print('=== Mercury Init ===')
 cfg = get_config()
 client = BinanceFuturesClient(cfg.api_key, cfg.api_secret, cfg.testnet)
-collector = BinanceDataCollector()
-storage = MarketStorage()
+collector = BinanceDataCollector(cfg.api_key, cfg.api_secret, cfg.testnet)
+mgr = StrategyManager.load_from_yaml('config/strategies.yaml')
+print(f'Strategies: {mgr.get_active_strategies()}')
+print(f'Testnet: {cfg.testnet}')
+print()
 
-print("=== Mercury Heartbeat ===")
-print(f"Testnet: {cfg.testnet}")
-print(f"Time: {datetime.now(timezone.utc).strftime('%m-%d %H:%M UTC')}")
+# ---- Step 1: Get current positions ----
+print('=== Current Positions ===')
+def normalize_pos_symbol(raw: str) -> str:
+    """Normalize position symbol: 'BTC/USDT:USDT' -> 'BTCUSDT'"""
+    # Strip ccxt settlement suffix (':USDT')
+    if ':' in raw:
+        raw = raw.split(':')[0]
+    return raw.replace('/', '')
 
-# Step 1: Pull latest ticker prices
-print("\n--- Step 1: Fetch tickers ---")
-btc_ticker = client.get_ticker("BTCUSDT")
-eth_ticker = client.get_ticker("ETHUSDT")
-btc_last = float(btc_ticker['last'])
-eth_last = float(eth_ticker['last'])
-print(f"BTC/USDT: {btc_last}")
-print(f"ETH/USDT: {eth_last}")
-
-# Step 2: Fetch 15m klines (strategy timeframe)
-print("\n--- Step 2: Fetch 15m klines ---")
-btc_df = collector.fetch_current_klines("BTC/USDT", "15m", lookback_bars=200)
-eth_df = collector.fetch_current_klines("ETH/USDT", "15m", lookback_bars=200)
-print(f"BTC 15m klines: {len(btc_df)}")
-print(f"ETH 15m klines: {len(eth_df)}")
-storage.save_klines(btc_df, "BTC/USDT", "15m")
-storage.save_klines(eth_df, "ETH/USDT", "15m")
-print("Klines saved to DB")
-
-# Step 3: Check exchange positions
-print("\n--- Step 3: Check positions ---")
 positions = client.get_positions()
-print(f"Positions: {len(positions)}")
 pos_map = {}
 for p in positions:
-    sym = p.get('symbol', '')
+    sym = normalize_pos_symbol(p.get('symbol', ''))
     pos_map[sym] = p
-    print(f"  {sym}: side={p['side']}, qty={p['contracts']}, entry={p['entry_price']}")
+    print(f"  {sym}: {p['side']} {p['contracts']} @ {p['entry_price']:.1f} | uPNL: {p['unrealized_pnl']:.4f} | lev: {p['leverage']}x")
+if not positions:
+    print('  No positions')
 
-open_orders_btc = client.get_open_orders("BTCUSDT")
-open_orders_eth = client.get_open_orders("ETHUSDT")
-all_open_orders = (open_orders_btc if isinstance(open_orders_btc, list) else []) + \
-                  (open_orders_eth if isinstance(open_orders_eth, list) else [])
-print(f"Open orders: {len(all_open_orders)}")
+balance = client.get_balance()
+print(f"Balance: {balance['balance']:.2f} USDT | Available: {balance['available']:.2f}")
+print()
 
-# Step 4: Load strategy and generate signals
-print("\n--- Step 4: Load strategy, generate signals ---")
-mgr = StrategyManager.load_from_yaml("config/strategies.yaml")
-print(f"Active strategies: {mgr.get_active_strategies()}")
+# ---- Step 2: Fetch data and generate signals ----
+print('=== Signal Generation ===')
+all_signals = {}
+for sym in ['BTC/USDT', 'ETH/USDT']:
+    try:
+        df = collector.fetch_current_klines(sym, '15m', 500)
+        print(f'{sym}: {len(df)} 15m candles, close={df.iloc[-1]["close"]:.1f}')
+        mgr.feed_data_only(sym, '15m', df)
+    except Exception as e:
+        print(f'{sym}: data fetch failed - {e}')
+        continue
 
-mgr.feed_data_only("BTC/USDT", "15m", btc_df)
-mgr.feed_data_only("ETH/USDT", "15m", eth_df)
+for sym in ['BTC/USDT', 'ETH/USDT']:
+    signals = mgr.generate_all_signals(sym)
+    all_signals[sym] = signals
+    for name, sig in signals.items():
+        print(f'  {sym} {name}: {sig.type.value} @ {sig.price:.1f} -- {sig.reason}')
+print()
 
-signals_btc = mgr.generate_all_signals("BTC/USDT")
-signals_eth = mgr.generate_all_signals("ETH/USDT")
+# ---- Step 3: Check for exit signals ----
+print('=== Position Management ===')
+exit_actions = []
+for sym_ccxt in ['BTC/USDT', 'ETH/USDT']:
+    bin_sym = sym_ccxt.replace('/', '')
+    pos = pos_map.get(bin_sym)
+    if not pos:
+        continue
 
-results = {}
-for sym, sigs in [("BTC/USDT", signals_btc), ("ETH/USDT", signals_eth)]:
-    for name, sig in sigs.items():
-        key = f"{sym}/{name}"
-        results[key] = {
-            "type": sig.type.value,
-            "price": sig.price,
-            "reason": sig.reason,
-            "confidence": sig.confidence,
-            "leverage": sig.leverage,
-            "quantity": sig.quantity,
-            "stop_loss": sig.stop_loss,
-            "take_profit": sig.take_profit,
-        }
-        print(f"  {key}: {sig.type.value} | {sig.reason} | price={sig.price:.2f}")
+    sym_signals = all_signals.get(sym_ccxt, {})
+    has_exit = False
+    exit_reason = ''
 
-# Step 5: Execute trades
-print("\n--- Step 5: Execute trades ---")
-executed = []
-for sym, sigs in [("BTC/USDT", signals_btc), ("ETH/USDT", signals_eth)]:
-    for name, sig in sigs.items():
+    for name, sig in sym_signals.items():
+        if pos['side'] == 'long' and sig.type == SignalType.CLOSE_LONG:
+            has_exit = True
+            exit_reason = sig.reason
+        elif pos['side'] == 'short' and sig.type == SignalType.CLOSE_SHORT:
+            has_exit = True
+            exit_reason = sig.reason
+
+    if has_exit:
+        df = collector.fetch_current_klines(sym_ccxt, '15m', 1)
+        price = float(df.iloc[-1]['close'])
+        qty = float(pos['contracts'])
+        side = 'BUY' if pos['side'] == 'short' else 'SELL'
+
+        try:
+            order = client.place_order(bin_sym, side.lower(), 'market', qty, reduce_only=True)
+            entry = float(pos['entry_price'])
+            if pos['side'] == 'long':
+                pnl = (price - entry) * qty
+            else:
+                pnl = (entry - price) * qty
+            pnl_pct = pnl / (entry * qty / float(pos.get('leverage', 3))) * 100
+
+            print('+------------------------------------+')
+            print(f'|  Aether CLOSE {pos["side"].upper():>4s} {sym_ccxt:<10s} |')
+            print(f'|  Exit:   {price:>10.1f} USDT         |')
+            print(f'|  Entry:  {entry:>10.1f} USDT         |')
+            print(f'|  Qty:    {qty:>10.4f}                |')
+            print(f'|  PnL:    {pnl:>+10.4f} USDT         |')
+            print(f'|  PnL%:   {pnl_pct:>+10.2f}%               |')
+            print(f'|  Reason: {exit_reason:<20s}   |')
+            print(f'|  Order:  {str(order.get("id","?")):<20s}   |')
+            print('+------------------------------------+')
+
+            exit_actions.append({
+                'symbol': bin_sym, 'action': f'CLOSE_{pos["side"].upper()}',
+                'price': price, 'qty': qty, 'pnl': pnl, 'pnl_pct': pnl_pct,
+                'reason': exit_reason, 'order_id': str(order.get('id', '?'))
+            })
+            del pos_map[bin_sym]
+        except Exception as e:
+            print(f'  !! Close failed {bin_sym}: {e}')
+    else:
+        print(f'  {bin_sym}: holding {pos["side"]} {pos["contracts"]} -- no exit signal')
+
+# ---- Step 4: Open new positions ----
+print()
+print('=== Entry Execution ===')
+new_trades = []
+for sym_ccxt in ['BTC/USDT', 'ETH/USDT']:
+    bin_sym = sym_ccxt.replace('/', '')
+    sym_signals = all_signals.get(sym_ccxt, {})
+    existing = pos_map.get(bin_sym, {})
+
+    for name, sig in sym_signals.items():
         if sig.type == SignalType.HOLD:
             continue
-
-        bin_sym = sym.replace("/", "")
-        current_pos = pos_map.get(bin_sym)
-
-        # Handle CLOSE signals
-        if sig.type in (SignalType.CLOSE_LONG, SignalType.CLOSE_SHORT):
-            if current_pos:
-                print(f"  {sym}: {sig.type.value} - closing (market)")
-                try:
-                    close_side = "sell" if current_pos['side'] == 'long' else "buy"
-                    qty = abs(float(current_pos.get('contracts', 0)))
-                    order = client.place_order(bin_sym, close_side, "market", qty)
-                    print(f"    Order: {order.get('id', '?')}")
-                    executed.append({
-                        "symbol": bin_sym,
-                        "action": sig.type.value,
-                        "side": close_side,
-                        "qty": qty,
-                        "order": str(order.get('id', '?')),
-                    })
-                except Exception as e:
-                    print(f"    FAILED: {e}")
-            else:
-                print(f"  {sym}: {sig.type.value} - no position, skip")
+        if sig.type not in (SignalType.LONG, SignalType.SHORT):
             continue
 
-        # Handle LONG/SHORT open signals
-        if current_pos:
-            existing_side = current_pos['side']
-            new_side = "long" if sig.type == SignalType.LONG else "short"
-            if existing_side == new_side:
-                print(f"  {sym}: {sig.type.value} - same direction position exists, skip")
-                continue
+        # Check same-direction
+        if (sig.type == SignalType.LONG and existing.get('side') == 'long') or \
+           (sig.type == SignalType.SHORT and existing.get('side') == 'short'):
+            print(f'  {sym_ccxt}: same-direction position exists, skip {sig.type.value}')
+            continue
 
-        qty = min(sig.quantity, 0.001) if sym == "BTC/USDT" else min(sig.quantity, 0.01)
-        last_price = btc_last if sym == "BTC/USDT" else eth_last
-        limit_price = round(last_price * 0.98, 1)
-        side = "buy" if sig.type == SignalType.LONG else "sell"
+        # Reverse position exists
+        if existing and existing.get('side') in ('long', 'short'):
+            print(f'  {sym_ccxt}: reverse position {existing["side"]}, skip entry')
+            continue
 
-        print(f"  {sym}: {sig.type.value} - open {side} {qty} @ {limit_price}")
+        df = collector.fetch_current_klines(sym_ccxt, '15m', 1)
+        price = float(df.iloc[-1]['close'])
+        qty = 0.001
+        lev = 3
+        notional = qty * price
+        margin = notional / lev
+
+        sl = sig.stop_loss if not np.isnan(float(sig.stop_loss)) else price * (0.98 if sig.type == SignalType.LONG else 1.02)
+        tp = sig.take_profit if not np.isnan(float(sig.take_profit)) else price * (1.04 if sig.type == SignalType.LONG else 0.96)
+        mmr = 0.005
+        liq = price * (1 - 1/lev + mmr) if sig.type == SignalType.LONG else price * (1 + 1/lev - mmr)
+        liq_dist = abs(liq - price) / price * 100
+
+        side = 'BUY' if sig.type == SignalType.LONG else 'SELL'
+
         try:
-            client.set_leverage(bin_sym, sig.leverage)
-            order = client.place_order(bin_sym, side, "limit", qty, limit_price)
-            print(f"    Order: {order.get('id', '?')} | status={order.get('status', '?')}")
-            executed.append({
-                "symbol": bin_sym,
-                "action": sig.type.value,
-                "side": side,
-                "qty": qty,
-                "price": limit_price,
-                "leverage": sig.leverage,
-                "strategy": name,
-                "reason": sig.reason,
-                "order_id": str(order.get('id', '?')),
-                "order_status": order.get('status', '?'),
+            client.set_leverage(bin_sym, lev)
+            limit_px = round(price * (0.999 if sig.type == SignalType.LONG else 1.001), 1)
+            order = client.place_order(bin_sym, side.lower(), 'limit', qty, limit_px)
+
+            print('+------------------------------------+')
+            print(f'|  Aether {sig.type.value:>4s} {sym_ccxt:<10s}       |')
+            print(f'|  Price:  {price:>10.1f} USDT         |')
+            print(f'|  Limit:  {limit_px:>10.1f} USDT         |')
+            print(f'|  Qty:    {qty:>10.4f}                |')
+            print(f'|  Notion: {notional:>10.2f} USDT         |')
+            print(f'|  Margin: {margin:>10.2f} ({lev}x)       |')
+            print(f'|  SL:     {sl:>10.1f}                |')
+            print(f'|  TP:     {tp:>10.1f}                |')
+            print(f'|  Liq:    {liq:>10.1f} ({liq_dist:.1f}%)       |')
+            print(f'|  Strat:  {name:<20s}   |')
+            print(f'|  Reason: {sig.reason:<20s}   |')
+            print(f'|  Order:  {str(order.get("id","?")):<20s}   |')
+            print('+------------------------------------+')
+
+            new_trades.append({
+                'symbol': bin_sym, 'action': sig.type.value, 'side': side.lower(),
+                'price': price, 'limit_px': limit_px, 'qty': qty, 'leverage': lev,
+                'notional': notional, 'margin': margin, 'sl': sl, 'tp': tp,
+                'liq': liq, 'liq_dist': liq_dist, 'strategy': name,
+                'reason': sig.reason, 'order_id': str(order.get('id', '?'))
             })
-            storage.log_trade({
-                "symbol": bin_sym,
-                "side": sig.type.value,
-                "entry_price": limit_price,
-                "quantity": qty,
-                "strategy_name": name,
-                "reason": sig.reason,
-                "entry_time": time.time(),
-            })
-            print(f"    Logged to trades_log")
         except Exception as e:
-            print(f"    FAILED: {e}")
+            print(f'  !! Entry failed {sym_ccxt} {sig.type.value}: {e}')
 
-# Step 6: Write mercury.json
-print("\n--- Step 6: Write mercury.json ---")
+# ---- Step 5: Write state ----
+print()
+print('=== State Update ===')
+final_positions = client.get_positions()
+final_balance = client.get_balance()
+
+# Get BTC price
+btc_price = None
+try:
+    df_btc = collector.fetch_current_klines('BTC/USDT', '15m', 1)
+    btc_price = float(df_btc.iloc[-1]['close'])
+except:
+    pass
+
 mercury_state = {
-    "status": "ok",
-    "timestamp": datetime.now(timezone.utc).isoformat(),
-    "btc_price": btc_last,
-    "eth_price": eth_last,
-    "positions": len(positions),
-    "open_orders": len(all_open_orders),
-    "signals": results,
-    "executed": executed,
-    "strategy": mgr.get_active_strategies(),
+    'status': 'ok',
+    'timestamp': datetime.now(timezone.utc).isoformat(),
+    'btc_price': btc_price,
+    'balance': final_balance['balance'],
+    'available': final_balance['available'],
+    'positions': len(final_positions),
+    'open_orders': len(new_trades),
+    'action': 'EXECUTED' if (exit_actions or new_trades) else 'MONITORING',
+    'signals': {},
+    'executed': new_trades,
+    'exits': exit_actions,
+    'current_positions': final_positions,
 }
-os.makedirs(".aether", exist_ok=True)
-with open(".aether/mercury.json", "w") as f:
+
+# Record signals
+for sym, sigs in all_signals.items():
+    for name, sig in sigs.items():
+        if sig.type.value != 'HOLD':
+            key = f'{sym}/{name}'
+            mercury_state['signals'][key] = {
+                'type': sig.type.value,
+                'price': sig.price,
+                'reason': sig.reason,
+                'confidence': sig.confidence,
+                'leverage': sig.leverage,
+                'quantity': sig.quantity,
+                'stop_loss': sig.stop_loss,
+                'take_profit': sig.take_profit,
+            }
+
+with open('.aether/mercury.json', 'w') as f:
     json.dump(mercury_state, f, indent=2, default=str)
-print("mercury.json written")
+print('mercury.json updated')
 
-# Step 7: Generate bulletin
-print("\n--- Bulletin ---")
-open_trades = storage.get_open_trades()
-print(f"Open trades: {len(open_trades)}")
+# ---- Step 6: Append bulletin ----
+now_utc = datetime.now(timezone.utc)
+ts = now_utc.strftime('%m-%d %H:%M')
 
-if executed:
-    status_icon = "GREEN"
-    action_text = "; ".join([f"{e['symbol']} {e['action']}" for e in executed])
-elif len(open_trades) > 0:
-    status_icon = "BLUE"
-    action_text = f"Holding ({len(open_trades)} open)"
-else:
-    status_icon = "BLUE"
-    action_text = "HOLD"
+lines = []
+if exit_actions:
+    for e in exit_actions:
+        lines.append(f'### {ts} -- Mercury: {e["action"]} {e["symbol"]} @ {e["price"]:.1f} | PnL={e["pnl"]:+.4f} ({e["pnl_pct"]:+.2f}%)')
+if new_trades:
+    for t in new_trades:
+        lines.append(f'### {ts} -- Mercury: {t["action"]} {t["symbol"]} @ {t["price"]:.1f} ({t["reason"]})')
 
-signals_text = "; ".join([f"{k}:{v['type']}" for k, v in results.items() if v['type'] != 'HOLD'])
-if not signals_text:
-    signals_text = "All HOLD"
+if not lines:
+    lines.append(f'### {ts} -- Mercury: heartbeat -- monitoring | positions:{len(final_positions)} | BTC~{btc_price or "?"}')
 
-bulletin_line = (
-    f"### {datetime.now(timezone.utc).strftime('%m-%d %H:%M')} — "
-    f"[{status_icon}] Mercury: {action_text} | "
-    f"BTC={btc_last:.1f} | ETH={eth_last:.1f} | "
-    f"Signals: {signals_text} | "
-    f"Orders: {len(all_open_orders)}"
-)
-print(bulletin_line)
+for line in lines:
+    with open('.aether/bulletin.md', 'a') as f:
+        f.write(line + ' \n')
+    print(f'bulletin: {line}')
 
-# Append to bulletin.md
-with open(".aether/bulletin.md", "a") as f:
-    f.write(f"\n---\n{bulletin_line}\n")
-
-print("Done.")
-print(f"BULLETIN_LINE: {bulletin_line}")
+print()
+print('=== Mercury Complete ===')
+print(f'Actions: {len(exit_actions)} exits | {len(new_trades)} entries | {len(final_positions)} holding')

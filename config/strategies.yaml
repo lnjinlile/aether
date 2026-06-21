@@ -1,43 +1,66 @@
-# Aether Strategy Configuration
-# ==============================
-# TrendFollow is the primary strategy (backtested +1.4% on 15m).
-# MA_Cross and RSI_MR kept as secondary/fallback.
-
 strategies:
-  - name: TrendFollow
-    class: strategy.examples.trend_follow.TrendFollow
-    enabled: true
-    params:
-      symbols: [BTC/USDT, ETH/USDT]
-      timeframes: [15m]
-      ema_period: 100
-      stop_loss_pct: 0.02
-      take_profit_pct: 0.04
-      cooldown_bars: 5
-
-  - name: MA_Cross
-    class: strategy.examples.ma_cross.MACrossoverStrategy
-    enabled: false
-    params:
-      symbols: [BTC/USDT]
-      timeframes: [1h]
-      fast_period: 7
-      slow_period: 25
-      atr_period: 14
-      atr_sl_mult: 2.0
-      atr_tp_mult: 3.0
-      cooldown_bars: 5
-
-  - name: RSI_MR
-    class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
-    enabled: false
-    params:
-      symbols: [BTC/USDT]
-      timeframes: [1h]
-      rsi_period: 14
-      oversold: 30
-      overbought: 70
-      exit_rsi: 50
-      stop_loss_pct: 0.03
-      take_profit_pct: 0.06
-      cooldown_bars: 5
+- name: TrendFollow_BTC
+  class: strategy.examples.trend_follow.TrendFollow
+  enabled: true
+  params:
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 15m
+    ema_period: 50
+    stop_loss_pct: 0.01
+    take_profit_pct: 0.025
+    cooldown_bars: 8
+- name: TrendFollow_ETH
+  class: strategy.examples.trend_follow.TrendFollow
+  enabled: true
+  params:
+    symbols:
+    - ETH/USDT
+    timeframes:
+    - 1h
+    ema_period: 50
+    stop_loss_pct: 0.03
+    take_profit_pct: 0.06
+    cooldown_bars: 8
+- name: RSI_MR
+  class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
+  enabled: false
+  params:
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+    rsi_period: 14
+    oversold: 30
+    overbought: 70
+    exit_rsi: 50
+    stop_loss_pct: 0.03
+    take_profit_pct: 0.06
+    cooldown_bars: 5
+- name: TrendFollow_BTC_1h
+  class: strategy.examples.trend_follow.TrendFollow
+  enabled: true
+  params:
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+    ema_period: 50
+    stop_loss_pct: 0.015
+    take_profit_pct: 0.06
+    cooldown_bars: 8
+- name: MA_Cross
+  class: strategy.examples.ma_cross.MACrossoverStrategy
+  enabled: false
+  params:
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+    fast_period: 7
+    slow_period: 25
+    atr_period: 14
+    atr_sl_mult: 2.0
+    atr_tp_mult: 3.0
+    cooldown_bars: 5

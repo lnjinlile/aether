@@ -1,160 +1,180 @@
 """
-Oracle heartbeat — 每15分钟拉取 BTC+ETH 1h K线，存DB，写状态，发公告。
+Oracle Heartbeat — Aether 数据脉搏
+每15分钟心跳: 拉取 BTC+ETH 1h K线 → 存DB → 写 oracle.json → 追加 bulletin.md
 """
-import sys
-import os
-import json
-from datetime import datetime, timezone, timedelta
 
-# Project root
-_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, _root)
+import json
+import os
+import sys
+import traceback
+from datetime import datetime, timezone
+
+import pandas as pd
+
+# Inject project root into path
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, PROJECT_ROOT)
 
 from data.collector import BinanceDataCollector
 from data.storage import MarketStorage
 
-# Import shared_state from sibling .aether dir
-_sys_path = os.path.dirname(os.path.abspath(__file__))
-if _sys_path not in sys.path:
-    sys.path.insert(0, _sys_path)
-# Use direct file path since it's not a package when run as script
-import importlib.util as _iu
-_ss_spec = _iu.spec_from_file_location("shared_state", os.path.join(_sys_path, "shared_state.py"))
-shared_state = _iu.module_from_spec(_ss_spec)
-_ss_spec.loader.exec_module(shared_state)
-write_state = shared_state.write_state
-post_bulletin = shared_state.post_bulletin
+
+AETHER_DIR = os.path.join(PROJECT_ROOT, ".aether")
+ORACLE_JSON = os.path.join(AETHER_DIR, "oracle.json")
+BULLETIN_MD = os.path.join(AETHER_DIR, "bulletin.md")
+
+SYMBOLS = ["BTC/USDT", "ETH/USDT"]
+TIMEFRAME = "1h"
+LOOKBACK = 200  # bars to fetch per run
 
 
-def heart_emoji(btc_change_pct, eth_change_pct):
-    """决定心跳 emoji: 🟢正常 / 🟡小幅波动 / 🔴异常"""
-    max_change = max(abs(btc_change_pct), abs(eth_change_pct))
-    if max_change > 5:
-        return "🔴"
-    elif max_change > 2:
-        return "🟡"
-    else:
-        return "🟢"
+def _green_heart() -> str:
+    """Return a Markdown-formatted GREEN Oracle heartbeat."""
+    return "### {ts} — 🟢 Oracle 心跳 — {btc} | {eth} | K线({btc_k}/{eth_k}) {extra}"
 
 
-def run():
+def _yellow_heart() -> str:
+    """Return a Markdown-formatted YELLOW Oracle heartbeat (anomaly)."""
+    return "### {ts} — 🟡 Oracle 心跳 ⚠️ — {btc} | {eth} | K线({btc_k}/{eth_k}) {extra}"
+
+
+def _format_price(val: float, null_val: str = "N/A") -> str:
+    """Format price; return null_val if val is None/NaN."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return null_val
+    # Format: 63,995.7 style
+    if val >= 1:
+        return f"{val:,.1f}"
+    return f"{val:.4f}"
+
+
+def main():
+    errors = []
+    price_map = {}
+    count_map = {}
+
+    # --- 1. Connect to data layer ---
     collector = BinanceDataCollector()
     storage = MarketStorage()
 
-    results = []
-    anomalies = []
-
-    for symbol in ["BTC/USDT", "ETH/USDT"]:
+    # --- 2. Fetch klines for each symbol ---
+    for sym in SYMBOLS:
         try:
-            df = collector.fetch_current_klines(symbol=symbol, timeframe="1h", lookback_bars=200)
-
-            if df.empty:
-                anomalies.append(f"{symbol}: 空数据")
-                results.append({"symbol": symbol, "price": None, "count": 0, "error": "空数据"})
-                continue
-
-            latest = df.iloc[-1]
-            price = float(latest["close"])
-            count = len(df)
-
-            # Save to DB
-            storage.save_klines(df, symbol=symbol, timeframe="1h")
-
-            # Detect anomalies: check 1h candle change vs previous
-            if len(df) >= 2:
-                prev_close = float(df.iloc[-2]["close"])
-                change_pct = (price - prev_close) / prev_close * 100
-                results.append({
-                    "symbol": symbol,
-                    "price": round(price, 2),
-                    "count": count,
-                    "change_1h_pct": round(change_pct, 4),
-                })
-            else:
-                results.append({
-                    "symbol": symbol,
-                    "price": round(price, 2),
-                    "count": count,
-                })
-
+            df = collector.fetch_current_klines(
+                symbol=sym,
+                timeframe=TIMEFRAME,
+                lookback_bars=LOOKBACK,
+            )
         except Exception as e:
-            anomalies.append(f"{symbol}: {str(e)[:120]}")
-            results.append({"symbol": symbol, "price": None, "count": 0, "error": str(e)[:120]})
+            errors.append(f"{sym}: {e}")
+            price_map[sym] = None
+            count_map[sym] = 0
+            continue
 
-    # Pull out BTC/ETH specifics
-    btc = next((r for r in results if r["symbol"] == "BTC/USDT"), {})
-    eth = next((r for r in results if r["symbol"] == "ETH/USDT"), {})
+        if df.empty:
+            errors.append(f"{sym}: No data returned")
+            price_map[sym] = None
+            count_map[sym] = 0
+            continue
 
-    btc_price = btc.get("price")
-    eth_price = eth.get("price")
-    btc_count = btc.get("count", 0)
-    eth_count = eth.get("count", 0)
-
-    data_ok = btc_price is not None and eth_price is not None
-
-    # Price change detection (using previous oracle state)
-    import json as _json
-    prev_path = os.path.join(os.path.dirname(__file__), "state", "oracle.json")
-    prev_btc, prev_eth = None, None
-    if os.path.exists(prev_path):
+        # Latest close is our current "price"
         try:
-            with open(prev_path) as f:
-                prev = _json.load(f)
-            prev_btc = prev.get("btc_price")
-            prev_eth = prev.get("eth_price")
+            price_map[sym] = float(df["close"].iloc[-1])
         except Exception:
-            pass
+            price_map[sym] = None
 
-    btc_change = round((btc_price - prev_btc) / prev_btc * 100, 4) if btc_price and prev_btc else 0
-    eth_change = round((eth_price - prev_eth) / prev_eth * 100, 4) if eth_price and prev_eth else 0
+        count_map[sym] = len(df)
 
-    # Write oracle.json state
-    state = {
-        "status": "ok" if data_ok else "degraded",
-        "btc_price": btc_price,
-        "eth_price": eth_price,
-        "btc_klines": btc_count,
-        "eth_klines": eth_count,
-        "data_fresh": data_ok,
+        # --- 3. Save to DB ---
+        try:
+            storage.save_klines(df, symbol=sym, timeframe=TIMEFRAME)
+        except Exception as e:
+            errors.append(f"{sym}/DB: {e}")
+
+    # --- 4. DB stats ---
+    try:
+        db_stats = storage.get_db_stats()
+    except Exception as e:
+        db_stats = {"db_size_bytes": 0, "db_size_mb": 0, "tables": {}}
+        errors.append(f"DB stats: {e}")
+
+    # --- 5. Build oracle.json ---
+    oracle = {
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "heartbeat": {
+            "name": "Oracle",
+            "role": "Aether 数据脉搏",
+            "frequency": "15min",
+        },
+        "prices": {
+            "BTC/USDT": price_map.get("BTC/USDT"),
+            "ETH/USDT": price_map.get("ETH/USDT"),
+        },
+        "kline_counts": {
+            "BTC/USDT": count_map.get("BTC/USDT", 0),
+            "ETH/USDT": count_map.get("ETH/USDT", 0),
+        },
+        "db_stats": db_stats,
+        "errors": errors if errors else None,
     }
-    if btc_change:
-        state["btc_change_pct"] = btc_change
-    if eth_change:
-        state["eth_change_pct"] = eth_change
-    if anomalies:
-        state["anomalies"] = anomalies
-    elif data_ok:
-        # Clear stale anomaly markers from previous runs
-        state["anomalies"] = []
 
-    write_state("oracle", state)
+    os.makedirs(AETHER_DIR, exist_ok=True)
+    with open(ORACLE_JSON, "w") as f:
+        json.dump(oracle, f, indent=2, ensure_ascii=False)
+        f.write("\n")
 
-    # Build bulletin entry
-    emoji = heart_emoji(btc_change, eth_change)
-    timestamp = datetime.now(timezone.utc)
+    # --- 6. Build bulletin entry ---
+    ts = datetime.now(timezone.utc).strftime("%m-%d %H:%M")
 
-    btc_str = f"BTC={btc_price:,.1f}" if btc_price else "BTC=N/A"
-    eth_str = f"ETH={eth_price:,.1f}" if eth_price else "ETH=N/A"
+    btc_price = _format_price(price_map.get("BTC/USDT"))
+    eth_price = _format_price(price_map.get("ETH/USDT"))
+    btc_k = count_map.get("BTC/USDT", 0)
+    eth_k = count_map.get("ETH/USDT", 0)
 
-    if btc_change and eth_change:
-        change_str = f"Δ BTC{btc_change:+.2f}% ETH{eth_change:+.2f}%"
+    extra = ""
+    if errors:
+        error_summary = "; ".join(errors[:3])  # cap at 3
+        extra = f"⚠️ {error_summary}"
+        template = _yellow_heart()
     else:
-        change_str = ""
+        template = _green_heart()
 
-    entry = f"{emoji} Oracle 心跳 — {btc_str} | {eth_str} | K线({btc_count}/{eth_count}) {change_str}"
+    line = template.format(
+        ts=ts,
+        btc=f"BTC={btc_price}",
+        eth=f"ETH={eth_price}",
+        btc_k=btc_k,
+        eth_k=eth_k,
+        extra=extra,
+    )
 
-    if anomalies:
-        entry += f" ⚠️ {'; '.join(anomalies)}"
+    # Build full bulletin entry with separator
+    entry = f"\n---\n{line}\n"
 
-    post_bulletin(entry)
+    with open(BULLETIN_MD, "a") as f:
+        f.write(entry)
 
-    print(entry)
-    print(json.dumps(state, indent=2, ensure_ascii=False, default=str))
-
-    # Also print DB stats
-    stats = storage.get_db_stats()
-    print(f"\nDB: {stats['db_size_mb']}MB, rows: {stats['tables']}")
+    # --- 7. Print summary to stdout ---
+    status = "YELLOW ⚠️" if errors else "GREEN"
+    print(f"Oracle heartbeat: {status}")
+    print(f"  BTC: {btc_price}  |  ETH: {eth_price}")
+    print(f"  Klines: {btc_k}/{eth_k}")
+    if errors:
+        for err in errors:
+            print(f"  ⚠️ {err}")
 
 
 if __name__ == "__main__":
-    run()
+    try:
+        main()
+    except Exception as exc:
+        traceback.print_exc()
+        # Emergency bulletin entry
+        ts = datetime.now(timezone.utc).strftime("%m-%d %H:%M")
+        emergency = (
+            f"\n---\n### {ts} — 🔴 Oracle CRASH ⚠️ — {exc}\n"
+        )
+        os.makedirs(AETHER_DIR, exist_ok=True)
+        with open(BULLETIN_MD, "a") as f:
+            f.write(emergency)
+        sys.exit(1)

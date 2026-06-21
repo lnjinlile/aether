@@ -1,116 +1,179 @@
 {
-  "timestamp": "2026-06-21T09:05:31Z",
-  "market": {
-    "btc_price": 63899.0,
-    "eth_price": 1724.36
-  },
-  "strategies": {
-    "TrendFollow": {
-      "status": "negative_sharpe",
-      "avg_return_pct": -3.12,
-      "avg_sharpe": -2.29,
-      "avg_win_rate_pct": 25.0,
-      "total_trades_7d": 28,
-      "details": {
-        "BTC/USDT/15m": {
-          "total_return_pct": -2.57,
-          "sharpe_ratio": -2.0227,
-          "max_drawdown_pct": 2.65,
-          "win_rate": 14.29,
-          "profit_factor": 0.1955,
-          "total_trades": 14,
-          "avg_win_pct": 0.31,
-          "avg_loss_pct": 0.27,
-          "best_trade_pct": 0.6239,
-          "worst_trade_pct": -1.4649,
-          "final_equity": 9742.93,
-          "n_bars": 200,
-          "n_trades": 14
-        },
-        "ETH/USDT/15m": {
-          "total_return_pct": -3.68,
-          "sharpe_ratio": -2.5641,
-          "max_drawdown_pct": 3.68,
-          "win_rate": 35.71,
-          "profit_factor": 0.1257,
-          "total_trades": 14,
-          "avg_win_pct": 0.11,
-          "avg_loss_pct": 0.47,
-          "best_trade_pct": 0.2352,
-          "worst_trade_pct": -1.613,
-          "final_equity": 9631.96,
-          "n_bars": 200,
-          "n_trades": 14
-        }
-      }
+  "run_time": "2026-06-21T11:19:02.988686+00:00",
+  "data_range_days": 7,
+  "db_total_klines": 10080,
+  "strategies": [
+    {
+      "name": "TrendFollow_BTC",
+      "enabled": true,
+      "symbol": "BTC/USDT",
+      "tf": "15m",
+      "status": "OK",
+      "metrics": {
+        "total_return_pct": -1.79,
+        "sharpe_ratio": -0.3617,
+        "max_drawdown_pct": 3.41,
+        "win_rate": 29.41,
+        "profit_factor": 0.7062,
+        "total_trades": 17,
+        "avg_win_pct": 0.84,
+        "avg_loss_pct": 0.49
+      },
+      "flags": [
+        "\u26a0\ufe0f LOW WINRATE (29% < 30%)",
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.362)"
+      ],
+      "bars": 673
     },
-    "MA_Cross": {
-      "status": "negative_sharpe",
-      "avg_return_pct": -0.81,
-      "avg_sharpe": -1.68,
-      "avg_win_rate_pct": 25.0,
-      "total_trades_7d": 4,
-      "details": {
-        "BTC/USDT/1h": {
-          "total_return_pct": -0.81,
-          "sharpe_ratio": -1.6762,
-          "max_drawdown_pct": 0.81,
-          "win_rate": 25.0,
-          "profit_factor": 0.2407,
-          "total_trades": 4,
-          "avg_win_pct": 0.26,
-          "avg_loss_pct": 0.35,
-          "best_trade_pct": 0.2561,
-          "worst_trade_pct": -0.462,
-          "final_equity": 9919.3,
-          "n_bars": 168,
-          "n_trades": 4
-        }
-      }
+    {
+      "name": "TrendFollow_ETH",
+      "enabled": true,
+      "symbol": "ETH/USDT",
+      "tf": "1h",
+      "status": "OK",
+      "metrics": {
+        "total_return_pct": -0.51,
+        "sharpe_ratio": -0.567,
+        "max_drawdown_pct": 1.14,
+        "win_rate": 50.0,
+        "profit_factor": 0.5583,
+        "total_trades": 2,
+        "avg_win_pct": 0.64,
+        "avg_loss_pct": 1.14
+      },
+      "flags": [],
+      "bars": 169
     },
-    "RSI_MR": {
-      "status": "ok",
-      "avg_return_pct": 0.77,
-      "avg_sharpe": 2.01,
-      "avg_win_rate_pct": 75.0,
-      "total_trades_7d": 4,
-      "details": {
-        "BTC/USDT/1h": {
-          "total_return_pct": 0.77,
-          "sharpe_ratio": 2.012,
-          "max_drawdown_pct": 0.04,
-          "win_rate": 75.0,
-          "profit_factor": 19.6181,
-          "total_trades": 4,
-          "avg_win_pct": 0.27,
-          "avg_loss_pct": 0.04,
-          "best_trade_pct": 0.5158,
-          "worst_trade_pct": -0.0413,
-          "final_equity": 10077.07,
-          "n_bars": 168,
-          "n_trades": 4
-        }
-      }
+    {
+      "name": "RSI_MR",
+      "enabled": false,
+      "symbol": "BTC/USDT",
+      "tf": "1h",
+      "status": "OK",
+      "metrics": {
+        "total_return_pct": 1.92,
+        "sharpe_ratio": 2.0417,
+        "max_drawdown_pct": 0.0,
+        "win_rate": 100.0,
+        "profit_factor": Infinity,
+        "total_trades": 2,
+        "avg_win_pct": 0.96,
+        "avg_loss_pct": 0
+      },
+      "flags": [],
+      "bars": 169
+    },
+    {
+      "name": "TrendFollow_BTC_1h",
+      "enabled": true,
+      "symbol": "BTC/USDT",
+      "tf": "1h",
+      "status": "OK",
+      "metrics": {
+        "total_return_pct": 0.57,
+        "sharpe_ratio": 1.3161,
+        "max_drawdown_pct": 0.06,
+        "win_rate": 50.0,
+        "profit_factor": 9.8087,
+        "total_trades": 2,
+        "avg_win_pct": 0.64,
+        "avg_loss_pct": 0.06
+      },
+      "flags": [],
+      "bars": 169
+    },
+    {
+      "name": "MA_Cross",
+      "enabled": false,
+      "symbol": "BTC/USDT",
+      "tf": "1h",
+      "status": "OK",
+      "metrics": {
+        "total_return_pct": 2.46,
+        "sharpe_ratio": 1.2653,
+        "max_drawdown_pct": 1.19,
+        "win_rate": 66.67,
+        "profit_factor": 3.0759,
+        "total_trades": 3,
+        "avg_win_pct": 1.83,
+        "avg_loss_pct": 1.19
+      },
+      "flags": [],
+      "bars": 169
     }
-  },
-  "trade_summary": {
-    "open_positions": 2,
-    "closed_trades_7d": 4,
-    "total_pnl": 0.0
-  },
-  "warnings": [
-    "\u26a0\ufe0f TrendFollow: \u80dc\u7387 25.0% < 30% \u2014 \u5efa\u8bae\u6682\u505c",
-    "\u26a0\ufe0f TrendFollow: \u590f\u666e -2.29 < 0 \u2014 \u5efa\u8bae\u6682\u505c",
-    "\u26a0\ufe0f MA_Cross: \u80dc\u7387 25.0% < 30% \u2014 \u5efa\u8bae\u6682\u505c",
-    "\u26a0\ufe0f MA_Cross: \u590f\u666e -1.68 < 0 \u2014 \u5efa\u8bae\u6682\u505c"
   ],
-  "db_stats": {
-    "db_size_bytes": 126976,
-    "db_size_mb": 0.12,
-    "tables": {
-      "klines": 802,
-      "trades": 2,
-      "trades_log": 6
+  "ma_cross_sweep_top5": [
+    {
+      "symbol": "ETH/USDT",
+      "fast": 5,
+      "slow": 13,
+      "atr_sl": 2.0,
+      "atr_tp": 3.0,
+      "net": 5.33,
+      "sharpe": 1.254,
+      "dd": 2.48,
+      "wr": 60.0,
+      "pf": 3.1541,
+      "trades": 5
+    },
+    {
+      "symbol": "ETH/USDT",
+      "fast": 5,
+      "slow": 13,
+      "atr_sl": 1.5,
+      "atr_tp": 3.0,
+      "net": 4.53,
+      "sharpe": 1.0501,
+      "dd": 3.22,
+      "wr": 60.0,
+      "pf": 2.431,
+      "trades": 5
+    },
+    {
+      "symbol": "ETH/USDT",
+      "fast": 10,
+      "slow": 30,
+      "atr_sl": 2.0,
+      "atr_tp": 3.0,
+      "net": 4.41,
+      "sharpe": 1.3572,
+      "dd": 0.37,
+      "wr": 50.0,
+      "pf": 13.1325,
+      "trades": 2
+    },
+    {
+      "symbol": "ETH/USDT",
+      "fast": 10,
+      "slow": 30,
+      "atr_sl": 1.5,
+      "atr_tp": 3.0,
+      "net": 4.41,
+      "sharpe": 1.3572,
+      "dd": 0.37,
+      "wr": 50.0,
+      "pf": 13.1325,
+      "trades": 2
+    },
+    {
+      "symbol": "ETH/USDT",
+      "fast": 10,
+      "slow": 30,
+      "atr_sl": 2.0,
+      "atr_tp": 4.0,
+      "net": 4.41,
+      "sharpe": 1.3572,
+      "dd": 0.37,
+      "wr": 50.0,
+      "pf": 13.1325,
+      "trades": 2
     }
-  }
+  ],
+  "recommendations": [
+    "\u26d4 PAUSE TrendFollow_BTC: win rate 29% < 30%, Sharpe -0.362 < 0",
+    "\u2713 KEEP TrendFollow_ETH: Sharpe=-0.57 WR=50% Net=-0.51%",
+    "\u2713 KEEP TrendFollow_BTC_1h: Sharpe=+1.32 WR=50% Net=+0.57%",
+    "\ud83d\udca1 CONSIDER MA_Cross on BTC 1h: fast=12 slow=26 slm=2.0x tpm=3.0x \u2192 net=+3.63% sharpe=+2.02"
+  ],
+  "timestamp": "2026-06-21 11:19 UTC"
 }

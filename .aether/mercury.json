@@ -1,47 +1,42 @@
 {
-  "status": "ok",
-  "timestamp": "2026-06-21T09:03:50.321936+00:00",
-  "btc_price": 63899.0,
-  "eth_price": 1721.39,
-  "positions": 0,
-  "open_orders": 0,
-  "signals": {
-    "BTC/USDT/TrendFollow": {
-      "type": "LONG",
-      "price": 63899.0,
-      "reason": "Uptrend",
-      "confidence": 0.65,
-      "leverage": 3,
-      "quantity": 0.001,
-      "stop_loss": 62621.02,
-      "take_profit": 66454.96
-    },
-    "ETH/USDT/TrendFollow": {
-      "type": "HOLD",
-      "price": NaN,
-      "reason": "Cooldown",
-      "confidence": 1.0,
-      "leverage": 1,
-      "quantity": 0.0,
-      "stop_loss": NaN,
-      "take_profit": NaN
-    }
-  },
-  "executed": [
+  "timestamp": "2026-06-21T10:54:37.235206+00:00",
+  "positions": [
     {
-      "symbol": "BTCUSDT",
-      "action": "LONG",
-      "side": "buy",
-      "qty": 0.001,
-      "price": 62621.0,
-      "leverage": 3,
-      "strategy": "TrendFollow",
-      "reason": "Uptrend",
-      "order_id": "15835642972",
-      "order_status": "open"
+      "symbol": "BTC/USDT:USDT",
+      "side": "long",
+      "contracts": 0.001,
+      "entry_price": 63836.9,
+      "mark_price": 64351.02014493,
+      "unrealized_pnl": 0.51412014,
+      "liquidation_price": 0.0,
+      "leverage": 1,
+      "margin_mode": "cross",
+      "notional": 64.35102014
     }
   ],
-  "strategy": [
-    "TrendFollow"
-  ]
+  "balance": {
+    "balance": 4996.18632366,
+    "available": 4974.00586304,
+    "unrealized_pnl": 0.0
+  },
+  "summary": {
+    "closed_SHORT": {
+      "entry": 63646.9,
+      "exit": 63900.8,
+      "pnl_pct": -0.4,
+      "pnl_usdt": -0.25,
+      "reason": "1h\u8d8b\u52bf\u53cd\u8f6c LONG\u2190SHORT"
+    },
+    "opened_LONG": {
+      "entry": 63836.9,
+      "strategy": "TrendFollow_BTC_1h",
+      "sl": 62942.3,
+      "tp": 67095.8
+    },
+    "cancelled_SHORT": {
+      "reason": "15m/1h\u51b2\u7a81\u2014\u4f18\u51481h\u8d8b\u52bf",
+      "strategy": "TrendFollow_BTC",
+      "limit_px": 63964.7
+    }
+  }
 }

@@ -1,49 +1,65 @@
 {
-  "status": "ok",
-  "timestamp": "2026-06-21T09:07:00+00:00",
-  "risk_level": "green",
+  "timestamp": "2026-06-21T10:47:00Z",
   "account": {
-    "balance": 4996.76,
-    "available": 4975.88,
-    "unrealized_pnl": 0.0,
-    "margin_used": 0.0,
-    "margin_ratio": null,
-    "wallet_type": "testnet"
+    "balance": 4995.28,
+    "available": 4973.83,
+    "margin_used": 21.45,
+    "unrealized_pnl": -0.69,
+    "daily_pnl_pct": -0.108,
+    "total_equity_all_assets": 10638.63
   },
-  "positions": {
-    "count": 0,
-    "notional": 0.0,
-    "symbols": []
-  },
-  "open_orders": [
+  "positions": [
     {
-      "order_id": "15835642972",
       "symbol": "BTCUSDT",
-      "side": "BUY",
-      "type": "LIMIT",
-      "price": 62621.0,
-      "qty": 0.001,
-      "notional": 62.62,
-      "pct_of_balance": 1.25,
-      "status": "NEW"
+      "side": "SHORT",
+      "contracts": 0.001,
+      "entry_price": 63646.9,
+      "mark_price": 64335.0,
+      "unrealized_pnl": -0.69,
+      "position_pnl_pct": -3.2,
+      "liquidation_price": 5039453.52,
+      "notional": 64.34,
+      "leverage_setting": 1,
+      "effective_leverage": 0.013,
+      "margin_type": "cross",
+      "liq_distance_pct": 7733.1
     }
   ],
-  "risk_checks": {
-    "liquidation_risk": "none",
-    "daily_pnl_pct": 0.0,
-    "position_utilization_pct": 0.0,
-    "order_exposure_pct": 1.25,
-    "max_leverage_used": 3
+  "risk_metrics": {
+    "position_utilization_pct": 0.43,
+    "position_utilization_limit": 80,
+    "position_utilization_status": "OK",
+    "daily_pnl_pct": -0.108,
+    "daily_pnl_limit": 3.0,
+    "daily_pnl_status": "OK",
+    "liquidation_distance_pct": 7733.1,
+    "liquidation_threshold": 5.0,
+    "liquidation_status": "OK",
+    "effective_leverage": 0.013,
+    "open_orders": 0,
+    "overall_status": "GREEN"
   },
-  "alerts": [],
-  "stale_trades": [
+  "alerts": [
     {
-      "id": 5,
-      "symbol": "BTCUSDT",
-      "entry_price": 62598.9,
-      "order_id": "15832697313",
-      "issue": "No matching open order or position on exchange — likely cancelled/expired but not updated in DB"
+      "severity": "RESOLVED",
+      "type": "DUPLICATE_GUARD_FIXED",
+      "detail": "先前 0.006 BTC 重复开仓已通过 Mercury 强制平仓纠正。当前仅持有 1 笔 0.001 BTC SHORT。重复开仓守卫现已生效。"
+    },
+    {
+      "severity": "RESOLVED",
+      "type": "ATHENA_GOVERNANCE_RESTORED",
+      "detail": "Mercury 已遵守 Athena PAUSE 指令 — TrendFollow_BTC (15m) 被拦截，仅 TrendFollow_BTC_1h 活跃。治理链路已恢复。"
+    },
+    {
+      "severity": "YELLOW",
+      "type": "NO_SLTP_ORDERS",
+      "detail": "0.001 BTC SHORT 仓位无交易所级止损/止盈订单保护。Mercury 输出 SL/TP 逻辑值但未在 Binance 创建实际订单。风险敞口虽小（名义价值 ~64 USDT），但流程完整性需修复。"
+    },
+    {
+      "severity": "INFO",
+      "type": "POSITION_UNDERWATER",
+      "detail": "当前 SHORT 仓位浮亏 -0.69 USDT (-3.2%)，入场 63,646.9，市价 64,335。仓位极小，风险可控。"
     }
   ],
-  "notes": "测试网运行中，无实际风险敞口。唯一活跃挂单为TrendFollow限价单(0.001 BTC @ 62,621)，距市价约2%。trades_log ID#5为僵尸记录，交易所无对应挂单/持仓，建议手动清理或由下次心跳自动标记为CLOSED。"
+  "notes": "测试网模拟盘运行中，无实际风险敞口。总资产 ~10,639 USDT（含 5,000 USDC + 4,995 USDT + 0.01 BTC 现货）。唯一期货仓位 0.001 BTC SHORT，全仓模式下强平价超过 500 万 USDT，实际不可触发。三大流程问题中两项已修复（重复开仓守卫、Athena 治理链路），SL/TP 下单仍待实现。"
 }
