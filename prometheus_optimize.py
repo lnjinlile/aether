@@ -16,7 +16,7 @@ from data.storage import MarketStorage
 from backtest.engine import BacktestEngine
 
 # Import signal generators from athena_backtest
-from athena_backtest import trendfollow_signals, rsi_mr_signals, ma_cross_signals
+from athena_backtest import trendfollow_signals, rsi_mr_signals, ma_cross_signals, dynamic_grid_signals
 
 cfg = get_config()
 storage = MarketStorage(cfg.db_path)
@@ -304,6 +304,77 @@ if df is not None and len(df) > 100:
         for r in top:
             print(f"  RSI{r['rsi_p']} OS{r['os']} OB{r['ob']} "
                   f"net={r['net']:+.2f}% shp={r['sharpe']:+.2f} #T={r['trades']}")
+
+# ══════════════════════════════════════════════════════════════════════
+# 6. DynamicGrid Sweep — BTC 15m + ETH 15m (30d data)
+# ══════════════════════════════════════════════════════════════════════
+
+print("\n" + "=" * 80)
+print("6. DYNAMIC GRID SWEEP — BTC/USDT 15m + ETH/USDT 15m (30-day range)")
+print("=" * 80)
+
+dgt_sweep_btc = []
+dgt_sweep_eth = []
+
+for sym in ['BTC/USDT', 'ETH/USDT']:
+    df = data.get((sym, '15m'))
+    if df is None or len(df) < 200:
+        print(f"  ⚠️ {sym} 15m: insufficient data, skipping")
+        continue
+
+    n_combos = sum(1 for gr in [2.0, 3.0, 4.0, 5.0] for nl in [3, 5, 7] for sp in [0.15, 0.2, 0.3, 0.4] for rb in [8, 12, 16, 24] if gr > sp * 2)
+    for grid_range_pct in [2.0, 3.0, 4.0, 5.0]:
+        for num_levels in [3, 5, 7]:
+            for min_spread in [0.15, 0.2, 0.3, 0.4]:
+                if grid_range_pct <= min_spread * 2:
+                    continue
+                for rebalance_bars in [8, 12, 16, 24]:
+                    sig = dynamic_grid_signals(
+                        df, grid_range_pct, num_levels,
+                        qty_per_level=0.001 if sym == 'BTC/USDT' else 0.01,
+                        rebalance_interval_bars=rebalance_bars,
+                        min_spread_pct=min_spread,
+                    )
+                    res = engine.run(df, sig, n_trials=n_combos)
+                    m = res['metrics']
+                    entry = {
+                        'sym': sym, 'range_pct': grid_range_pct, 'levels': num_levels,
+                        'spread_pct': min_spread, 'rebal_bars': rebalance_bars,
+                        'net': m['total_return_pct'], 'sharpe': m['sharpe_ratio'],
+                        'dd': m['max_drawdown_pct'], 'wr': m['win_rate'],
+                        'pf': m['profit_factor'], 'trades': m['total_trades'],
+                    }
+                    if sym == 'BTC/USDT':
+                        dgt_sweep_btc.append(entry)
+                    else:
+                        dgt_sweep_eth.append(entry)
+
+    best_list = dgt_sweep_btc if sym == 'BTC/USDT' else dgt_sweep_eth
+    best_list.sort(key=lambda x: (x['sharpe'] if x['trades'] >= 10 else -999, x['net']), reverse=True)
+
+for sym, sweep, label in [
+    ('BTC/USDT', dgt_sweep_btc, 'BTC 15m'),
+    ('ETH/USDT', dgt_sweep_eth, 'ETH 15m'),
+]:
+    viable = [r for r in sweep if r['trades'] >= 10 and r['sharpe'] > 0.3]
+    if viable:
+        print(f"\n  Top 5 DynamicGrid {label} (≥10 trades, Sharpe>0.3):")
+        print(f"  {'Range%':>6s} {'Lvls':>4s} {'Sprd%':>6s} {'Rebal':>5s} {'Net%':>8s} {'Shp':>7s} {'DD%':>6s} {'WR%':>5s} {'PF':>6s} {'#T':>4s}")
+        for r in viable[:5]:
+            print(f"  {r['range_pct']:5.1f}% {r['levels']:4d} {r['spread_pct']:5.2f}% {r['rebal_bars']:5d} "
+                  f"{r['net']:+8.2f}% {r['sharpe']:+7.2f} {r['dd']:5.1f}% "
+                  f"{r['wr']:4.0f}% {r['pf']:5.2f} {r['trades']:4d}")
+        best = viable[0]
+        print(f"\n  ▶ BEST {label}: range={best['range_pct']}% levels={best['levels']} "
+              f"spread={best['spread_pct']}% rebal={best['rebal_bars']}b → "
+              f"net={best['net']:+.2f}% sharpe={best['sharpe']:+.2f} dd={best['dd']:.1f}%")
+    else:
+        print(f"\n  ⚠️ No viable DynamicGrid {label} configs found")
+        top = sweep[:5]
+        if top:
+            for r in top:
+                print(f"  range={r['range_pct']}% lvls={r['levels']} sp={r['spread_pct']}% "
+                      f"rebal={r['rebal_bars']}b net={r['net']:+.2f}% shp={r['sharpe']:+.2f} #T={r['trades']}")
 
 # ══════════════════════════════════════════════════════════════════════
 # SUMMARY & RECOMMENDATIONS

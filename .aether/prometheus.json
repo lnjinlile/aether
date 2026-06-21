@@ -1,10 +1,11 @@
 {
-  "last_run": "2026-06-21T19:10:00Z",
-  "version": "1.1.0",
+  "last_run": "2026-06-21T23:15:00Z",
+  "version": "1.2.0",
   "data": {
     "btc_1h_bars": 2160,
     "btc_15m_bars": 2880,
     "eth_1h_bars": 2160,
+    "eth_15m_bars": 2880,
     "lookback_days_btc": 90,
     "lookback_days_eth": 90
   },
@@ -45,15 +46,34 @@
       "net_after": 80.9,
       "improvement_pct": 56.6,
       "rationale": "ETH trends faster than BTC; EMA=50 gives better signal; SL=3% appropriate for ETH volatility"
+    },
+    {
+      "strategy": "athena_backtest.py",
+      "param": "new_signal_generator",
+      "changes": {
+        "added": "dynamic_grid_signals() — vectorized DynamicGrid backtest signal generator",
+        "routing": "DynamicGridStrategy → dynamic_grid_signals() in strategy type switch"
+      },
+      "rationale": "DynamicGrid_BTC and DynamicGrid_ETH were the main active strategies with ZERO backtest visibility. Athena could not evaluate them, Prometheus could not optimize parameters. Now both strategies have full backtest coverage."
+    },
+    {
+      "strategy": "prometheus_optimize.py",
+      "param": "new_sweep_section",
+      "changes": {
+        "added": "Section 6: DynamicGrid parameter sweep — grid_range_pct × num_levels × min_spread × rebalance_interval (192 combos per symbol on BTC/ETH 15m)"
+      },
+      "rationale": "Systematic parameter optimization for grid strategies — currently using hand-tuned defaults with no validation."
     }
   ],
   "disabled_strategies": ["RSI_MR", "MA_Cross"],
-  "disabled_reason": "RSI_MR and MA_Cross showed negative net returns (-999% baseline) in audit scan; not viable without regime filter or confirmation logic",
-  "total_projected_improvement": "+84.3% aggregate net across 3 active strategies",
+  "disabled_reason": "RSI_MR and MA_Cross showed negative net returns (-999% baseline) in audit scan; not viable without regime filter or confirmation logic. MA_Cross_BTC/ETH now enabled with optimized params from separate sweeps.",
+  "total_projected_improvement": "+84.3% aggregate net across 3 active strategies (legacy TrendFollow params)",
   "next_priorities": [
-    "Monitor live performance of optimized parameters for 7 days",
-    "Add volume/volatility filters to RSI_MR and MA_Cross to make them viable",
+    "Run DynamicGrid parameter sweep (prometheus_optimize.py section 6) to find optimal grid configs",
+    "Run walk-forward validation on DynamicGrid to verify WFE > 0.5 before deploying optimized params",
+    "Enable RSI_MR ETH 1h (rsi=7, os=35, ob=65) — 7d backtest net=+7.29% sharpe=+3.65, wr=88%",
+    "Add volume/volatility filters to RSI_MR and MA_Cross to improve regime detection",
     "Explore funding-rate based strategy for futures",
-    "Add market regime detection (trending vs ranging)"
+    "Add market regime detection (trending vs ranging) for strategy gating"
   ]
 }

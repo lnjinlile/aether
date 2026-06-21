@@ -187,6 +187,81 @@ def rsi_mr_signals(df: pd.DataFrame, rsi_period: int,
     return pd.Series(signals, index=df.index)
 
 
+def dynamic_grid_signals(df: pd.DataFrame, grid_range_pct: float, num_levels: int,
+                         qty_per_level: float, rebalance_interval_bars: int,
+                         min_spread_pct: float, leverage: int = 3) -> pd.Series:
+    """Vectorized DynamicGrid — signals: 1=LONG (grid buy fill), 0=EXIT (grid sell fill).
+
+    Simulates grid trading as sequential entries/exits for backtest engine compatibility.
+    Tracks multiple grid levels; each buy-fill maps to 1 signal, each sell-fill maps to 0.
+    When multiple levels fill on the same bar, only the first is emitted (single-pos engine).
+    """
+    close = df['close'].values
+    high = df['high'].values
+    low = df['low'].values
+    n = len(close)
+    signals = np.zeros(n, dtype=int)
+
+    half_range = grid_range_pct / 2.0
+    step = half_range / num_levels
+
+    # Grid state: list of dicts {buy_price, sell_price, buy_filled, sell_filled}
+    levels = []
+    centre = 0.0
+    bars_since_rebalance = 0
+
+    # We emit 1 signal per bar max (1=enter, 0=exit, keep=current)
+    min_bars = 50  # need some data before grid starts
+    for i in range(min_bars, n):
+        price = close[i]
+        bar_high = high[i]
+        bar_low = low[i]
+        bars_since_rebalance += 1
+
+        # Initialize or rebalance grid
+        if len(levels) == 0 or bars_since_rebalance > rebalance_interval_bars:
+            centre = price
+            levels = []
+            for j in range(num_levels):
+                buy_px = centre * (1.0 - half_range / 100.0 + j * step / 100.0)
+                sell_px = buy_px * (1.0 + min_spread_pct / 100.0 + step / 100.0)
+                if sell_px <= buy_px * (1.0 + min_spread_pct / 100.0):
+                    sell_px = buy_px * (1.0 + min_spread_pct / 100.0 + step / 100.0)
+                levels.append({
+                    'buy': round(buy_px, 1), 'sell': round(sell_px, 1),
+                    'buy_filled': False, 'sell_filled': False,
+                })
+            bars_since_rebalance = 0
+
+        # Check for sell fills (exit) — any filled buy whose sell is triggered
+        exited = False
+        for lv in levels:
+            if lv['buy_filled'] and not lv['sell_filled']:
+                if bar_high >= lv['sell'] or (
+                    i > 0 and close[i-1] < lv['sell'] and price >= lv['sell']
+                ):
+                    lv['sell_filled'] = True
+                    lv['buy_filled'] = False  # reset for reuse
+                    signals[i] = 0  # exit
+                    exited = True
+                    break  # one exit per bar
+
+        if exited:
+            continue
+
+        # Check for buy fills (entry)
+        for lv in levels:
+            if not lv['buy_filled']:
+                if bar_low <= lv['buy'] or (
+                    i > 0 and close[i-1] > lv['buy'] and price <= lv['buy']
+                ):
+                    lv['buy_filled'] = True
+                    signals[i] = 1  # enter long
+                    break  # one entry per bar
+
+    return pd.Series(signals, index=df.index)
+
+
 def ma_cross_signals(df: pd.DataFrame, fast_period: int, slow_period: int,
                      atr_period: int, atr_sl_mult: float, atr_tp_mult: float,
                      cooldown_bars: int) -> pd.Series:
@@ -354,6 +429,10 @@ for s in strategies_list:
         signals = ma_cross_signals(df, p['fast_period'], p['slow_period'],
                                     p['atr_period'], p['atr_sl_mult'], p['atr_tp_mult'],
                                     p['cooldown_bars'])
+    elif strategy_type == 'DynamicGridStrategy':
+        signals = dynamic_grid_signals(df, p['grid_range_pct'], p['num_levels'],
+                                        p['qty_per_level'], p['rebalance_interval_bars'],
+                                        p['min_spread_pct'], p.get('leverage', 3))
     else:
         print(f"\n  ⚠️ {name}: unknown strategy type {strategy_type} — skipping")
         results_summary.append({

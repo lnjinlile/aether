@@ -677,3 +677,6 @@ Full results: .aether/athena.json
 
 ---
 ### 06-21 15:06 — Mercury: 监控中 | 持仓1 | 无信号
+
+---
+### 06-21 15:12 — 🧪 测试: Mercury 执行一笔 LONG BTC/USDT @ 64000 止损62560 止盈66560
