@@ -1,0 +1,49 @@
+{
+  "status": "ok",
+  "timestamp": "2026-06-21T09:07:00+00:00",
+  "risk_level": "green",
+  "account": {
+    "balance": 4996.76,
+    "available": 4975.88,
+    "unrealized_pnl": 0.0,
+    "margin_used": 0.0,
+    "margin_ratio": null,
+    "wallet_type": "testnet"
+  },
+  "positions": {
+    "count": 0,
+    "notional": 0.0,
+    "symbols": []
+  },
+  "open_orders": [
+    {
+      "order_id": "15835642972",
+      "symbol": "BTCUSDT",
+      "side": "BUY",
+      "type": "LIMIT",
+      "price": 62621.0,
+      "qty": 0.001,
+      "notional": 62.62,
+      "pct_of_balance": 1.25,
+      "status": "NEW"
+    }
+  ],
+  "risk_checks": {
+    "liquidation_risk": "none",
+    "daily_pnl_pct": 0.0,
+    "position_utilization_pct": 0.0,
+    "order_exposure_pct": 1.25,
+    "max_leverage_used": 3
+  },
+  "alerts": [],
+  "stale_trades": [
+    {
+      "id": 5,
+      "symbol": "BTCUSDT",
+      "entry_price": 62598.9,
+      "order_id": "15832697313",
+      "issue": "No matching open order or position on exchange — likely cancelled/expired but not updated in DB"
+    }
+  ],
+  "notes": "测试网运行中，无实际风险敞口。唯一活跃挂单为TrendFollow限价单(0.001 BTC @ 62,621)，距市价约2%。trades_log ID#5为僵尸记录，交易所无对应挂单/持仓，建议手动清理或由下次心跳自动标记为CLOSED。"
+}

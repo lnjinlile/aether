@@ -130,7 +130,18 @@ class MarketStorage:
 
         conn = self._get_conn()
         try:
-            df.to_sql("klines", conn, if_exists="append", index=False)
+            # Use INSERT OR REPLACE to handle duplicate (symbol, timeframe, open_time)
+            rows = df.to_dict(orient="records")
+            conn.executemany(
+                """INSERT OR REPLACE INTO klines
+                   (symbol, timeframe, open_time, open, high, low, close, volume, quote_volume, trades_count)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                [(r["symbol"], r["timeframe"], r["open_time"],
+                  r["open"], r["high"], r["low"], r["close"],
+                  r["volume"], r.get("quote_volume", 0), r.get("trades_count", 0))
+                 for r in rows]
+            )
+            conn.commit()
 
             # Auto-prune old klines
             if timeframe == "1m":

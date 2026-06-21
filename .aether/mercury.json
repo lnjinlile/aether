@@ -1,0 +1,47 @@
+{
+  "status": "ok",
+  "timestamp": "2026-06-21T09:03:50.321936+00:00",
+  "btc_price": 63899.0,
+  "eth_price": 1721.39,
+  "positions": 0,
+  "open_orders": 0,
+  "signals": {
+    "BTC/USDT/TrendFollow": {
+      "type": "LONG",
+      "price": 63899.0,
+      "reason": "Uptrend",
+      "confidence": 0.65,
+      "leverage": 3,
+      "quantity": 0.001,
+      "stop_loss": 62621.02,
+      "take_profit": 66454.96
+    },
+    "ETH/USDT/TrendFollow": {
+      "type": "HOLD",
+      "price": NaN,
+      "reason": "Cooldown",
+      "confidence": 1.0,
+      "leverage": 1,
+      "quantity": 0.0,
+      "stop_loss": NaN,
+      "take_profit": NaN
+    }
+  },
+  "executed": [
+    {
+      "symbol": "BTCUSDT",
+      "action": "LONG",
+      "side": "buy",
+      "qty": 0.001,
+      "price": 62621.0,
+      "leverage": 3,
+      "strategy": "TrendFollow",
+      "reason": "Uptrend",
+      "order_id": "15835642972",
+      "order_status": "open"
+    }
+  ],
+  "strategy": [
+    "TrendFollow"
+  ]
+}
