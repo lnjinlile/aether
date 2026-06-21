@@ -281,15 +281,29 @@ class MLEnsembleStrategy(BaseStrategy):
             )
         return (lgb, xgb, rf)
 
+    # Label mapping: our labels (-1, 0, 1) -> sklearn labels (0, 1, 2)
+    _LABEL_MAP = {-1: 0, 0: 1, 1: 2}
+    _LABEL_INV = {0: -1, 1: 0, 2: 1}
+
+    def _remap_labels(self, y: np.ndarray) -> np.ndarray:
+        """Remap labels from [-1, 0, 1] to [0, 1, 2] for sklearn classifiers."""
+        y_remapped = y.copy().astype(int)
+        y_remapped += 1  # -1->0, 0->1, 1->2
+        return y_remapped
+
     def _fit_models(self, symbol: str, X: np.ndarray, y: np.ndarray):
         """Fit all three models on the training data."""
         lgb, xgb, rf = self._models.get(
             symbol, self._build_models()
         )
         try:
-            lgb.fit(X, y)
-            xgb.fit(X, y)
-            rf.fit(X, y)
+            if self.params["model_type"] == "classifier":
+                y_mapped = self._remap_labels(y)
+            else:
+                y_mapped = y
+            lgb.fit(X, y_mapped)
+            xgb.fit(X, y_mapped)
+            rf.fit(X, y_mapped)
         except Exception as e:
             logger.warning(f"MLEnsemble fit error for {symbol}: {e}")
             return
@@ -314,13 +328,8 @@ class MLEnsembleStrategy(BaseStrategy):
                 avg_prob = (prob_lgb + prob_xgb + prob_rf) / 3.0
                 pred_class = int(np.argmax(avg_prob, axis=1)[0])
 
-                # Map class to direction and confidence
-                class_to_dir = {}
-                if hasattr(lgb, "classes_"):
-                    for idx, cls in enumerate(lgb.classes_):
-                        class_to_dir[idx] = int(cls)
-
-                direction = class_to_dir.get(pred_class, 0)
+                # Remap from sklearn label (0,1,2) to our direction (-1,0,1)
+                direction = pred_class - 1  # 0->-1, 1->0, 2->1
                 confidence = float(np.max(avg_prob))
             else:
                 # Regression: average predictions

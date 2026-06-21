@@ -1049,3 +1049,43 @@ Full results: .aether/athena.json
 | RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=65.6% | 32t |
 | RSI_MR_ETH | 🟢 +9.56% | SR=+0.57 | WR=77.8% | 9t |
 | TrendFollow_BTC_1h | 🟢 +12.66% | SR=+0.37 | WR=34.7% | 49t |
+
+---
+### 06-21 17:09 — Engine ♡ | 风控 ? | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -9.96% | SR=-0.79 | WR=42.4% | 59t |
+| DynamicGrid_ETH | 🔴 -17.07% | SR=-1.41 | WR=38.2% | 55t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🟢 +11.13% | SR=+1.25 | WR=33.3% | 3t |
+| MA_Cross_ETH | 🟢 +30.10% | SR=+1.42 | WR=60.0% | 5t |
+| TrendFollow_BTC | 🟢 +6.42% | SR=+0.56 | WR=40.0% | 10t |
+| TrendFollow_ETH | 🔴 -7.87% | SR=-2.08 | WR=0.0% | 2t |
+| TrendFollow_BTC_1h | 🔴 -3.15% | SR=-1.91 | WR=0.0% | 2t |
+| RSI_MR_BTC | 🟢 +6.14% | SR=+2.05 | WR=100.0% | 2t |
+| RSI_MR_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_BTC | ⚪ no metrics | — | — | — |
+| MLEnsemble_ETH | ⚪ no metrics | — | — | — |
+| RegimeSwitch_BTC | ⚪ no metrics | — | — | — |
+| RegimeSwitch_ETH | ⚪ no metrics | — | — | — |
+
+---
+### 06-21 17:09 — Engine ♡ | 风控 ? | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -9.96% | SR=-0.79 | WR=42.4% | 59t |
+| DynamicGrid_ETH | 🔴 -17.07% | SR=-1.41 | WR=38.2% | 55t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🟢 +11.13% | SR=+1.25 | WR=33.3% | 3t |
+| MA_Cross_ETH | 🟢 +30.10% | SR=+1.42 | WR=60.0% | 5t |
+| TrendFollow_BTC | 🟢 +6.42% | SR=+0.56 | WR=40.0% | 10t |
+| TrendFollow_ETH | 🔴 -7.87% | SR=-2.08 | WR=0.0% | 2t |
+| TrendFollow_BTC_1h | 🔴 -3.15% | SR=-1.91 | WR=0.0% | 2t |
+| RSI_MR_BTC | 🟢 +6.14% | SR=+2.05 | WR=100.0% | 2t |
+| RSI_MR_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_BTC | ⚪ no metrics | — | — | — |
+| MLEnsemble_ETH | ⚪ no metrics | — | — | — |
+| RegimeSwitch_BTC | ⚪ no metrics | — | — | — |
+| RegimeSwitch_ETH | ⚪ no metrics | — | — | — |
