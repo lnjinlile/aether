@@ -120,11 +120,15 @@ def agent_tasks(agent):
 
 # ---- ORACLE SECTION ----
 oracle_state = load_json(os.path.join(STATE_DIR, "oracle.json"))
+pipeline_state = load_json(os.path.join(STATE_DIR, "pipeline.json"))
 oracle_lines = []
+pipe_status = pipeline_state.get("status", "unknown")
+pipe_color = "#22c55e" if pipe_status == "running" else "#ef4444"
 oracle_lines.append(stat_row([
-    ("数据表","klines:"+str(db_stats.get("klines",0))+"行"),
-    ("trades_log",str(db_stats.get("trades_log",0))+"笔"),
-    ("最近更新",oracle_state.get("_updated_at","N/A")[:16]),
+    ("数据管道", f'<span style="color:{pipe_color}">● {pipe_status}</span>'),
+    ("K线数据", str(db_stats.get("klines",0))+"行"),
+    ("交易记录", str(db_stats.get("trades_log",0))+"笔"),
+    ("最近采集", pipeline_state.get("last_run","N/A")[:16]),
 ]))
 if kline_detail:
     oracle_lines.append('<table class="mini-table"><tr><th>标的</th><th>周期</th><th>K线数</th><th>最新时间</th></tr>')
