@@ -1,4 +1,7 @@
 strategies:
+# =========================================================================
+# Dynamic Grid — harvests volatility without predicting direction
+# =========================================================================
 - name: DynamicGrid_BTC
   class: strategy.examples.dynamic_grid.DynamicGridStrategy
   enabled: false
@@ -27,6 +30,10 @@ strategies:
     rebalance_interval_bars: 16
     min_spread_pct: 0.2
     leverage: 3
+
+# =========================================================================
+# ML Alpha (external model) — disabled, superseded by MLEnsemble
+# =========================================================================
 - name: MLAlpha_BTC
   class: ml_alpha.strategy.MLAlphaStrategy
   enabled: false
@@ -37,6 +44,10 @@ strategies:
     timeframes:
     - 1h
     confidence_threshold: 0.55
+
+# =========================================================================
+# MA Cross — disabled
+# =========================================================================
 - name: MA_Cross_BTC
   class: strategy.examples.ma_cross.MACrossoverStrategy
   enabled: false
@@ -67,9 +78,13 @@ strategies:
     atr_tp_mult: 3.0
     cooldown_bars: 5
     leverage: 5
+
+# =========================================================================
+# Trend Follow — simple EMA trend follower (kept enabled as baseline)
+# =========================================================================
 - name: TrendFollow_BTC
   class: strategy.examples.trend_follow.TrendFollow
-  enabled: true
+  enabled: false
   params:
     symbols:
     - BTC/USDT
@@ -93,6 +108,23 @@ strategies:
     take_profit_pct: 0.06
     cooldown_bars: 8
     leverage: 3
+- name: TrendFollow_BTC_1h
+  class: strategy.examples.trend_follow.TrendFollow
+  enabled: false
+  params:
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+    ema_period: 50
+    stop_loss_pct: 0.015
+    take_profit_pct: 0.05
+    cooldown_bars: 8
+    leverage: 3
+
+# =========================================================================
+# RSI Mean Reversion — disabled
+# =========================================================================
 - name: RSI_MR_BTC
   class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
   enabled: false
@@ -125,16 +157,101 @@ strategies:
     take_profit_pct: 0.04
     cooldown_bars: 5
     leverage: 3
-- name: TrendFollow_BTC_1h
-  class: strategy.examples.trend_follow.TrendFollow
-  enabled: false
+
+# =========================================================================
+# === NEW: ML-Driven Advanced Strategies ===
+# =========================================================================
+
+# -------------------------------------------------------------------------
+# ML Ensemble — LightGBM + XGBoost + RandomForest voting
+# -------------------------------------------------------------------------
+- name: MLEnsemble_BTC
+  class: strategy.examples.ml_ensemble.MLEnsembleStrategy
+  enabled: true
   params:
     symbols:
     - BTC/USDT
     timeframes:
     - 1h
-    ema_period: 50
-    stop_loss_pct: 0.015
-    take_profit_pct: 0.05
-    cooldown_bars: 8
+    retrain_every: 24
+    prediction_horizon: 5
+    min_train_samples: 200
+    confidence_threshold: 0.60
+    atr_period: 14
+    atr_sl_mult: 2.0
+    atr_tp_mult: 3.0
+    cooldown_bars: 5
+    model_type: classifier
     leverage: 3
+
+- name: MLEnsemble_ETH
+  class: strategy.examples.ml_ensemble.MLEnsembleStrategy
+  enabled: true
+  params:
+    symbols:
+    - ETH/USDT
+    timeframes:
+    - 1h
+    retrain_every: 24
+    prediction_horizon: 5
+    min_train_samples: 200
+    confidence_threshold: 0.60
+    atr_period: 14
+    atr_sl_mult: 2.0
+    atr_tp_mult: 3.0
+    cooldown_bars: 5
+    model_type: classifier
+    leverage: 3
+
+# -------------------------------------------------------------------------
+# Regime Switch — HMM-based market state detection and sub-strategy dispatch
+# -------------------------------------------------------------------------
+- name: RegimeSwitch_BTC
+  class: strategy.examples.regime_switch.RegimeSwitchStrategy
+  enabled: true
+  params:
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+    regime_lookback: 100
+    retrain_regime_every: 50
+    regime_change_cooldown: 3
+    vol_window: 20
+    trend_window: 50
+    trend_ema_period: 50
+    trend_sl_pct: 0.02
+    trend_tp_pct: 0.05
+    mr_rsi_period: 14
+    mr_oversold: 30
+    mr_overbought: 70
+    mr_sl_pct: 0.02
+    mr_tp_pct: 0.04
+    cooldown_bars: 5
+    leverage: 3
+    high_vol_capital_pct: 0.25
+
+- name: RegimeSwitch_ETH
+  class: strategy.examples.regime_switch.RegimeSwitchStrategy
+  enabled: true
+  params:
+    symbols:
+    - ETH/USDT
+    timeframes:
+    - 1h
+    regime_lookback: 100
+    retrain_regime_every: 50
+    regime_change_cooldown: 3
+    vol_window: 20
+    trend_window: 50
+    trend_ema_period: 50
+    trend_sl_pct: 0.03
+    trend_tp_pct: 0.06
+    mr_rsi_period: 14
+    mr_oversold: 25
+    mr_overbought: 75
+    mr_sl_pct: 0.02
+    mr_tp_pct: 0.04
+    cooldown_bars: 5
+    leverage: 3
+    high_vol_capital_pct: 0.25

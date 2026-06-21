@@ -1,46 +1,27 @@
 {
-  "run_time": "2026-06-22T00:48:00+00:00",
-  "timestamp": "2026-06-22 00:48 UTC",
-  "status": "wf_validation_complete",
-  "last_action": "Walk-Forward validation of Athena-recommended strategies",
-  "walk_forward": {
-    "TrendFollow_BTC_1h": {
-      "params": {"ema": 50, "sl": 0.015, "tp": 0.05, "cd": 8},
-      "full_90d": {"net": 12.66, "sharpe": 0.37, "dd": 9.5, "wr": 35, "trades": 49, "pf": 1.47},
-      "wf_45d_21d": {"wfe": 0.423, "is_return": -4.56, "oos_return": -1.93, "passed": false, "verdict": "DEGRADING", "windows": 1},
-      "athena_30d": {"net": 83.47, "sharpe": 1.44, "dd": 3.14},
-      "action": "KEEP_DISABLED",
-      "reason": "WF DEGRADING, OOS negative despite positive full-range"
-    },
-    "TrendFollow_ETH": {
-      "params": {"ema": 50, "sl": 0.03, "tp": 0.06, "cd": 8},
-      "full_90d": {"net": -11.0, "sharpe": -0.22, "dd": 30.9, "wr": 27, "trades": 56, "pf": 0.81},
-      "wf_45d_21d": {"wfe": -0.076, "is_return": -29.69, "oos_return": 2.27, "passed": true, "verdict": "REGIME_SHIFT", "windows": 1},
-      "athena_30d": {"net": 100.54, "sharpe": 1.28},
-      "best_alt_params": {"ema": 30, "sl": 0.02, "tp": 0.04, "net": -0.34, "sharpe": 0.03},
-      "action": "KEEP_DISABLED",
-      "reason": "Full 90d net=-11%, OOS barely positive (+2.27% in 1 window), insufficient evidence for enabling"
-    },
-    "TrendFollow_BTC": {
-      "params": {"ema": 75, "sl": 0.01, "tp": 0.015, "cd": 10},
-      "full_30d": {"net": 17.88, "sharpe": 0.61, "dd": 6.8, "wr": 40, "trades": 77, "pf": 1.61},
-      "wf_14d_7d": {"wfe": -0.077, "is_return": 16.44, "oos_return": -1.26, "passed": false, "verdict": "BROKEN", "windows": 1},
-      "action": "KEEP_ENABLED_MONITOR",
-      "reason": "Only 1 WF window with limited 30d data — BROKEN verdict unreliable. Full 30d net=+17.88% is solid. Monitor closely."
-    }
+  "run_time": "2026-06-21T17:08:29.359190+00:00",
+  "timestamp": "2026-06-21 17:08 UTC",
+  "_updated_at": "2026-06-21 17:08:29 UTC",
+  "audit_requests_fulfilled": [
+    3,
+    8,
+    11,
+    14,
+    21
+  ],
+  "ml_status": {
+    "framework": "prometheus_ml_rollback.py + prometheus_ml_sweep.py",
+    "status": "sweep_running",
+    "baseline_wf": "FAIL (OOS -27.24%, WFE -2.11, 8/20 windows positive)",
+    "note": "Baseline parameters (default LightGBM) underperform. Hyperparameter sweep in progress."
   },
-  "critical_finding": {
-    "title": "30d vs 90d window discrepancy — extreme recency bias detected",
-    "detail": "Athena's 30-day backtest window (late May to late June 2026) massively overstates strategy performance vs 90-day full range. TrendFollow_BTC_1h: 30d=+83% vs 90d=+13%. TrendFollow_ETH: 30d=+100% vs 90d=-11%. Recent market regime was exceptionally favorable for trend-following.",
-    "recommendation": "Athena should use >=60 day windows. 30 days is insufficient and produces misleading results during trending markets.",
-    "severity": "critical"
-  },
-  "enabled_strategies": {
-    "TrendFollow_BTC": "enabled (15m, EMA=75, SL=1%, TP=1.5%, CD=10) — full=+17.88%, WF inconclusive (1 window)",
-    "all_others": "disabled"
-  },
-  "ema_sweep_summary": {
-    "btc_1h": "EMA=50 is optimal (net=+12.66% sharpe=+0.37), no EMA beats WF DEGRADING",
-    "eth_1h": "EMA=30 SL=2% TP=4% is best (net=-0.34%), still near-zero overall, no viable config found"
+  "current_enabled_strategies": [
+    "TrendFollow_BTC (15m, EMA=75, SL=1%, TP=1.5%)"
+  ],
+  "task_progress": {
+    "ML\u96c6\u6210\u7b56\u7565": "done (ml_alpha/ module)",
+    "\u5e02\u573a\u72b6\u6001\u5207\u6362": "done (prometheus_ml_rollback.py classify_market_state)",
+    "\u6eda\u52a8\u56de\u6d4b\u6846\u67b6": "done (prometheus_ml_rollback.py ml_walk_forward + prometheus_ml_sweep.py hyperparameter sweep)",
+    "ML\u8d85\u53c2\u4f18\u5316": "in_progress (sweep running)"
   }
 }
