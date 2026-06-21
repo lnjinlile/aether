@@ -1,193 +1,338 @@
 #!/usr/bin/env python3
-"""Generate Aether dashboard HTML from shared state."""
-import json, os
-from datetime import datetime, timezone
+"""Aether 运营指挥中心 — 全量数据仪表盘"""
+import json, os, sqlite3, yaml
+from datetime import datetime, timezone, timedelta
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATE_DIR = os.path.join(BASE, ".aether", "state")
 REQ_FILE = os.path.join(BASE, ".aether", "requests", "requests.json")
 BULLETIN = os.path.join(BASE, ".aether", "bulletin.md")
+DB = os.path.join(BASE, "data", "market.db")
+STRATEGIES = os.path.join(BASE, "config", "strategies.yaml")
 OUTPUT = os.path.join(BASE, "dashboard.html")
 
-AGENTS = ["oracle", "athena", "guardian", "mercury", "prometheus"]
-AGENT_NAMES = {
-    "oracle": "Oracle 数据", "athena": "Athena 策略",
-    "guardian": "Guardian 风控", "mercury": "Mercury 交易",
-    "prometheus": "Prometheus 优化"
+AGENTS = {
+    "oracle":    {"name":"Oracle 数据","icon":"🔵","color":"#3b82f6","role":"数据采集与质量管理"},
+    "mercury":   {"name":"Mercury 交易","icon":"💹","color":"#22c55e","role":"信号执行与订单管理"},
+    "athena":    {"name":"Athena 策略","icon":"🧠","color":"#a855f7","role":"策略评估与优化建议"},
+    "guardian":  {"name":"Guardian 风控","icon":"🛡️","color":"#ef4444","role":"风险监控与告警"},
+    "prometheus":{"name":"Prometheus 优化","icon":"🔥","color":"#f59e0b","role":"系统自优化引擎"},
 }
-AGENT_ICONS = {"oracle":"🔵","athena":"🟢","guardian":"🛡️","mercury":"💹","prometheus":"🔥"}
 
-def load_state(agent):
-    path = os.path.join(STATE_DIR, f"{agent}.json")
+now_utc = datetime.now(timezone.utc)
+now_str = now_utc.strftime("%Y-%m-%d %H:%M UTC")
+
+def load_json(path):
     if not os.path.exists(path): return {}
     try:
         with open(path) as f: return json.load(f)
     except: return {}
 
-def load_requests():
-    if not os.path.exists(REQ_FILE): return []
-    try:
-        with open(REQ_FILE) as f: return json.load(f)
-    except: return []
+def db_query(sql, params=()):
+    if not os.path.exists(DB): return []
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(sql, params).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 def load_bulletin():
     if not os.path.exists(BULLETIN): return []
-    with open(BULLETIN) as f:
-        return [l.strip().lstrip("#").strip() for l in f.readlines()[-30:] if l.strip() and not l.startswith("|")]
+    with open(BULLETIN) as f: return [l.strip() for l in f.readlines() if l.strip() and not l.startswith("|")]
 
-def load_trades():
-    """Read trades from SQLite."""
-    import sqlite3
-    db = os.path.join(BASE, "data", "market.db")
-    if not os.path.exists(db): return []
+def load_strategies():
+    if not os.path.exists(STRATEGIES): return []
     try:
-        conn = sqlite3.connect(db)
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute("SELECT * FROM trades_log ORDER BY id DESC LIMIT 15").fetchall()
-        conn.close()
-        return [dict(r) for r in rows]
+        with open(STRATEGIES) as f: return yaml.safe_load(f).get("strategies", [])
     except: return []
 
-def agent_card(agent):
-    s = load_state(agent)
-    updated = s.get("_updated_at", "never")[:16]
-    status = s.get("status", "unknown")
-    color = {"ok":"#22c55e","active":"#22c55e","error":"#ef4444","warn":"#f59e0b"}.get(status, "#6b7280")
-    extras = ""
-    for k, v in s.items():
-        if k.startswith("_"): continue
-        if isinstance(v, (int, float)):
-            extras += f'<span class="stat">{k}: <b>{v}</b></span>'
-    return f'''
-    <div class="card">
-      <div class="card-header">
-        <span class="icon">{AGENT_ICONS[agent]}</span>
-        <span class="name">{AGENT_NAMES[agent]}</span>
-        <span class="dot" style="background:{color}"></span>
-      </div>
-      <div class="card-body">
-        <div class="stat-row">{extras or '<span class="stat">状态: <b>'+status+'</b></span>'}</div>
-      </div>
-      <div class="card-footer">更新: {updated}</div>
-    </div>'''
+# ============ DATA COLLECTION ============
 
-def request_table():
-    reqs = load_requests()
-    if not reqs: return '<div class="empty">无请求记录</div>'
-    rows = ""
-    for r in reqs[-15:]:
-        st = r["status"]
-        sc = {"pending":"#f59e0b","fulfilled":"#22c55e","rejected":"#ef4444"}.get(st,"#6b7280")
-        rows += f'''<tr>
-          <td>#{r["id"]}</td>
-          <td>{r.get("from","?")}</td>
-          <td>→ {r.get("target","?")}</td>
-          <td>{r.get("type","?")}</td>
-          <td><span style="color:{sc}">● {st}</span></td>
-          <td class="reason">{r.get("data",{}).get("reason","")[:50]}</td>
-        </tr>'''
-    return f'<table><tr><th>ID</th><th>发起</th><th>接收</th><th>类型</th><th>状态</th><th>原因</th></tr>{rows}</table>'
+# DB stats
+db_stats = {}
+try:
+    conn = sqlite3.connect(DB)
+    for table in ["klines","trades","trades_log"]:
+        try:
+            cnt = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            db_stats[table] = cnt
+        except: db_stats[table] = 0
+    # klines by symbol/timeframe
+    kline_data = conn.execute("SELECT symbol, timeframe, COUNT(*) as cnt, MAX(open_time) as latest FROM klines GROUP BY symbol, timeframe").fetchall()
+    kline_detail = [{"symbol":r[0],"timeframe":r[1],"count":r[2],"latest":r[3]} for r in kline_data]
+    conn.close()
+except: kline_detail = []
 
-def trade_table():
-    trades = load_trades()
-    if not trades: return '<div class="empty">无交易记录</div>'
-    rows = ""
-    for t in trades:
+# Trades
+trades = db_query("SELECT * FROM trades_log ORDER BY id DESC LIMIT 100")
+open_trades = [t for t in trades if t["status"] == "OPEN"]
+closed_trades = [t for t in trades if t["status"] == "CLOSED"]
+total_pnl = sum(t.get("pnl",0) or 0 for t in closed_trades)
+wins = [t for t in closed_trades if (t.get("pnl") or 0) > 0]
+win_rate = len(wins)/len(closed_trades)*100 if closed_trades else 0
+
+# Requests v2
+import sys; sys.path.insert(0, os.path.join(BASE, ".aether"))
+from request_system import get_all as get_all_requests, get_stats as get_req_stats
+all_requests = get_all_requests()
+req_stats = get_req_stats()
+
+# Strategies
+strategies = load_strategies()
+active_strats = [s for s in strategies if s.get("enabled")]
+inactive_strats = [s for s in strategies if not s.get("enabled")]
+
+# Bulletin
+bulletin_lines = load_bulletin()
+recent_bulletin = [l for l in bulletin_lines[-40:] if l.strip()]
+
+# ============ HTML GENERATION ============
+
+def card(title, content, color="#3b82f6"):
+    return f'<div class="card" style="border-top:3px solid {color}"><h3>{title}</h3><div class="card-content">{content}</div></div>'
+
+def stat_row(items):
+    return '<div class="stat-row">' + "".join(
+        f'<div class="stat"><span class="stat-label">{k}</span><span class="stat-value">{v}</span></div>'
+        for k,v in items
+    ) + '</div>'
+
+def badge(text, color="#252840"):
+    return f'<span class="badge" style="background:{color}">{text}</span>'
+
+def progress_bar(pct, label="", color="#22c55e"):
+    return f'''<div class="progress-wrap">
+      <span class="progress-label">{label}</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:{min(pct,100)}%;background:{color}"></div></div>
+      <span class="progress-pct">{pct:.0f}%</span></div>'''
+
+# ---- ORACLE SECTION ----
+oracle_state = load_json(os.path.join(STATE_DIR, "oracle.json"))
+oracle_lines = []
+oracle_lines.append(stat_row([
+    ("数据表","klines:"+str(db_stats.get("klines",0))+"行"),
+    ("trades_log",str(db_stats.get("trades_log",0))+"笔"),
+    ("最近更新",oracle_state.get("_updated_at","N/A")[:16]),
+]))
+if kline_detail:
+    oracle_lines.append('<table class="mini-table"><tr><th>标的</th><th>周期</th><th>K线数</th><th>最新时间</th></tr>')
+    for k in kline_detail:
+        oracle_lines.append(f'<tr><td>{k["symbol"]}</td><td>{k["timeframe"]}</td><td>{k["count"]}</td><td>{str(k["latest"])[:16]}</td></tr>')
+    oracle_lines.append('</table>')
+oracle_lines.append('<div class="note">数据消费者: Athena(回测), Mercury(信号), Prometheus(参数扫描)</div>')
+
+# ---- ATHENA SECTION ----
+athena_state = load_json(os.path.join(STATE_DIR, "athena.json"))
+athena_lines = []
+athena_lines.append(stat_row([
+    ("活跃策略",str(len(active_strats))+"个"),
+    ("禁用策略",str(len(inactive_strats))+"个"),
+    ("最近评估",athena_state.get("_updated_at","N/A")[:16]),
+]))
+if active_strats:
+    athena_lines.append('<table class="mini-table"><tr><th>策略名</th><th>标的</th><th>周期</th><th>状态</th></tr>')
+    for s in active_strats:
+        syms = ",".join(s.get("params",{}).get("symbols",["?"]))
+        tfs = ",".join(s.get("params",{}).get("timeframes",["?"]))
+        athena_lines.append(f'<tr><td>{s["name"]}</td><td>{syms}</td><td>{tfs}</td><td>{badge("启用","#22c55e")}</td></tr>')
+    athena_lines.append('</table>')
+# Try to get backtest metrics from athena state
+bt = athena_state.get("backtest", {})
+if bt:
+    athena_lines.append(stat_row([
+        ("净收益",f'{bt.get("net","?"):+.1f}%'),
+        ("夏普",f'{bt.get("sharpe","?"):.2f}'),
+        ("回撤",f'{bt.get("dd","?"):.1f}%'),
+        ("胜率",f'{bt.get("wr","?"):.0f}%'),
+    ]))
+
+# ---- GUARDIAN SECTION ----
+guardian_state = load_json(os.path.join(STATE_DIR, "guardian.json"))
+guardian_lines = []
+guardian_lines.append(stat_row([
+    ("持仓数",str(len(open_trades))+"笔"),
+    ("风险等级","🟢 正常" if len(open_trades)<3 else "🟡 关注"),
+    ("最近检查",guardian_state.get("_updated_at","N/A")[:16]),
+]))
+if open_trades:
+    guardian_lines.append('<table class="mini-table"><tr><th>标的</th><th>方向</th><th>入场</th><th>数量</th></tr>')
+    for t in open_trades:
+        guardian_lines.append(f'<tr><td>{t["symbol"]}</td><td>{t["side"]}</td><td>{t["entry_price"]}</td><td>{t["quantity"]}</td></tr>')
+    guardian_lines.append('</table>')
+
+# ---- MERCURY SECTION ----
+mercury_state = load_json(os.path.join(STATE_DIR, "mercury.json"))
+mercury_lines = []
+mercury_lines.append(stat_row([
+    ("总交易",str(len(trades))+"笔"),
+    ("持仓中",str(len(open_trades))+"笔"),
+    ("已平仓",str(len(closed_trades))+"笔"),
+    ("胜率",f'{win_rate:.0f}%'),
+    ("累计盈亏",f'{total_pnl:+.4f}'),
+]))
+if trades:
+    mercury_lines.append(progress_bar(win_rate, "胜率", "#22c55e" if win_rate>50 else "#f59e0b"))
+    mercury_lines.append('<table class="mini-table"><tr><th>ID</th><th>标的</th><th>方向</th><th>入场</th><th>出场</th><th>PnL</th><th>状态</th></tr>')
+    for t in trades[:15]:
         pnl = t.get("pnl") or 0
-        pnl_color = "#22c55e" if float(pnl) > 0 else ("#ef4444" if float(pnl) < 0 else "#6b7280")
-        rows += f'''<tr>
-          <td>#{t["id"]}</td>
-          <td>{t.get("symbol","")}</td>
-          <td>{t.get("side","")}</td>
-          <td>{t.get("entry_price","")}</td>
-          <td>{t.get("exit_price") or "—"}</td>
-          <td style="color:{pnl_color}">{float(pnl):+.4f}</td>
-          <td><span class="badge">{t.get("status","")}</span></td>
-          <td class="reason">{t.get("strategy_name","")}</td>
-        </tr>'''
-    return f'<table><tr><th>ID</th><th>标的</th><th>方向</th><th>入场</th><th>出场</th><th>PnL</th><th>状态</th><th>策略</th></tr>{rows}</table>'
+        pc = "#22c55e" if float(pnl)>0 else ("#ef4444" if float(pnl)<0 else "#6b7280")
+        mercury_lines.append(f'<tr><td>#{t["id"]}</td><td>{t["symbol"]}</td><td>{t["side"]}</td><td>{t["entry_price"]}</td><td>{t.get("exit_price") or "—"}</td><td style="color:{pc}">{float(pnl):+.4f}</td><td>{badge(t["status"],"#22c55e" if t["status"]=="OPEN" else "#6b7280")}</td></tr>')
+    mercury_lines.append('</table>')
 
-def bulletin_feed():
-    lines = load_bulletin()
-    if not lines: return '<div class="empty">公告板为空</div>'
-    html = ""
-    for line in lines[-15:]:
-        line = line.replace("---","").strip()
-        if not line: continue
-        if "Oracle" in line: cls = "oracle"
-        elif "Athena" in line: cls = "athena"
-        elif "Guardian" in line: cls = "guardian"
-        elif "Mercury" in line: cls = "mercury"
-        elif "Prometheus" in line: cls = "prometheus"
-        else: cls = ""
-        html += f'<div class="bulletin-item {cls}">{line[:120]}</div>'
-    return html
+# ---- PROMETHEUS SECTION ----
+prom_state = load_json(os.path.join(STATE_DIR, "prometheus.json"))
+prom_lines = []
+prom_lines.append(stat_row([
+    ("状态",prom_state.get("status","active")),
+    ("最近行动",prom_state.get("last_action","初始化中")),
+    ("更新",prom_state.get("_updated_at","N/A")[:16]),
+]))
+# Research-based tasks
+prom_lines.append('<div class="task-list">')
+prom_lines.append('<div class="task-item"><span class="task-dot" style="background:#22c55e"></span> 论文调研完成 — 7篇,6个可行方向</div>')
+prom_lines.append('<div class="task-item"><span class="task-dot" style="background:#f59e0b"></span> 动态网格(DGT)策略 — 评估中</div>')
+prom_lines.append('<div class="task-item"><span class="task-dot" style="background:#6b7280"></span> 防过拟合框架 — 待启动</div>')
+prom_lines.append('<div class="task-item"><span class="task-dot" style="background:#6b7280"></span> 波动率预测ML — 待启动</div>')
+prom_lines.append('</div>')
 
+# ---- REQUESTS TABLE ----
+req_html = ""
+p_count = req_stats["pending"] + req_stats["acknowledged"] + req_stats["processing"]
+f_count = req_stats["fulfilled"]
+r_count = req_stats["rejected"]
+req_html = f'<div class="stat-row">'
+req_html += f'<div class="stat"><span class="stat-label">待处理</span><span class="stat-value" style="color:#f59e0b">{p_count}</span></div>'
+req_html += f'<div class="stat"><span class="stat-label">已完成</span><span class="stat-value" style="color:#22c55e">{f_count}</span></div>'
+req_html += f'<div class="stat"><span class="stat-label">已拒绝</span><span class="stat-value" style="color:#ef4444">{r_count}</span></div>'
+req_html += f'<div class="stat"><span class="stat-label">总计</span><span class="stat-value">{req_stats["total"]}</span></div>'
+req_html += '</div>'
+
+if all_requests:
+    status_names = {"pending":"⏳ 待接收","acknowledged":"📨 已接收","processing":"🔄 处理中","fulfilled":"✅ 已完成","rejected":"❌ 已拒绝"}
+    status_colors = {"pending":"#f59e0b","acknowledged":"#3b82f6","processing":"#a855f7","fulfilled":"#22c55e","rejected":"#ef4444"}
+    for r in all_requests[-15:]:
+        sc = status_colors.get(r["status"],"#6b7280")
+        sn = status_names.get(r["status"],r["status"])
+        req_html += f'<div class="request-card">'
+        req_html += f'<div class="req-header"><span class="req-id">#{r["id"]}</span> <b>{r.get("from","?")}</b> → <b>{r.get("target","?")}</b> · {r.get("type","?")}</div>'
+        req_html += f'<div class="req-reason">📝 {r.get("data",{}).get("reason","无说明")}</div>'
+        # Timeline
+        timeline = r.get("timeline", [])
+        if timeline:
+            req_html += '<div class="req-timeline">'
+            for step in timeline:
+                tsc = status_colors.get(step.get("status",""),"#6b7280")
+                req_html += f'<div class="tl-step"><span class="tl-dot" style="background:{tsc}"></span> <span class="tl-time">{step.get("time","?")}</span> <span class="tl-msg">{step.get("msg","")}</span></div>'
+            req_html += '</div>'
+        # Result
+        if r.get("result"):
+            req_html += f'<div class="req-result">📊 结果: {json.dumps(r["result"], ensure_ascii=False)}</div>'
+        req_html += f'<span class="req-status" style="color:{sc}">{sn}</span>'
+        req_html += '</div>'
+else:
+    req_html += '<div class="empty">暂无请求记录</div>'
+
+# ---- BULLETIN FEED ----
+bulletin_html = ""
+agent_classes = {"Oracle":"oracle","Athena":"athena","Guardian":"guardian","Mercury":"mercury","Prometheus":"prometheus"}
+for line in recent_bulletin[-30:]:
+    line_clean = line.replace("#","").replace("---","").strip()
+    if not line_clean: continue
+    cls = ""
+    for aname, aclass in agent_classes.items():
+        if aname in line_clean: cls = aclass; break
+    bulletin_html += f'<div class="bulletin-item {cls}">{line_clean[:150]}</div>'
+
+# ---- FULL HTML ----
 html = f'''<!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta http-equiv="refresh" content="300">
-<title>Aether 运营仪表盘</title>
+<title>Aether 运营指挥中心</title>
 <style>
 *{{margin:0;padding:0;box-sizing:border-box}}
-body{{background:#0f1117;color:#e5e7eb;font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:20px}}
-h1{{font-size:24px;margin-bottom:5px}}
-h1 span{{color:#f59e0b}}
-.subtitle{{color:#6b7280;margin-bottom:20px;font-size:13px}}
-.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}}
-.card{{background:#1a1d2e;border-radius:10px;padding:14px;border:1px solid #2d3148}}
-.card-header{{display:flex;align-items:center;gap:8px;margin-bottom:8px}}
-.icon{{font-size:20px}}
-.name{{font-weight:600;font-size:14px;flex:1}}
-.dot{{width:8px;height:8px;border-radius:50%}}
-.card-body{{font-size:12px}}
-.stat-row{{display:flex;flex-wrap:wrap;gap:6px}}
-.stat{{background:#252840;padding:3px 8px;border-radius:4px;font-size:11px}}
-.stat b{{color:#f59e0b}}
-.card-footer{{color:#6b7280;font-size:10px;margin-top:8px}}
-.section{{background:#1a1d2e;border-radius:10px;padding:16px;margin-bottom:16px;border:1px solid #2d3148}}
-.section h2{{font-size:16px;margin-bottom:12px;color:#f59e0b}}
-table{{width:100%;border-collapse:collapse;font-size:12px}}
-th{{text-align:left;padding:8px 6px;border-bottom:1px solid #2d3148;color:#6b7280;font-weight:500}}
-td{{padding:6px;border-bottom:1px solid #1f2237}}
-.reason{{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#9ca3af}}
-.badge{{background:#252840;padding:2px 7px;border-radius:4px;font-size:10px}}
-.empty{{color:#6b7280;text-align:center;padding:20px}}
-.bulletin-item{{padding:6px 10px;border-left:3px solid #2d3148;margin:4px 0;font-size:12px;border-radius:0 4px 4px 0}}
+body{{background:#0a0c15;color:#d1d5db;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:24px;line-height:1.5}}
+h1{{font-size:26px;margin-bottom:4px;color:#f8fafc}} h1 span{{color:#f59e0b;font-weight:300}}
+.subtitle{{color:#6b7280;font-size:12px;margin-bottom:24px}}
+.grid2{{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px;margin-bottom:20px}}
+.grid3{{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:20px}}
+.card{{background:#141829;border-radius:12px;padding:18px;border:1px solid #1e2540}}
+.card h3{{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}}
+.card-content{{font-size:13px}}
+.stat-row{{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}}
+.stat{{background:#1a1f35;padding:8px 12px;border-radius:8px;flex:1;min-width:80px;text-align:center}}
+.stat-label{{display:block;font-size:10px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px}}
+.stat-value{{display:block;font-size:16px;font-weight:700;color:#f8fafc}}
+.progress-wrap{{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:12px}}
+.progress-label{{width:50px;color:#9ca3af}}
+.progress-bar{{flex:1;height:6px;background:#1e2540;border-radius:3px;overflow:hidden}}
+.progress-fill{{height:100%;border-radius:3px;transition:width 0.5s}}
+.progress-pct{{width:40px;text-align:right;color:#9ca3af;font-variant-numeric:tabular-nums}}
+.mini-table{{width:100%;border-collapse:collapse;font-size:11px;margin:8px 0}}
+.mini-table th{{text-align:left;padding:6px 8px;border-bottom:1px solid #1e2540;color:#6b7280;font-weight:500}}
+.mini-table td{{padding:5px 8px;border-bottom:1px solid #141829}}
+.badge{{padding:2px 8px;border-radius:4px;font-size:10px;color:#fff;white-space:nowrap}}
+.reason{{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#9ca3af}}
+.note{{color:#6b7280;font-size:11px;margin-top:6px;font-style:italic}}
+.task-list{{margin-top:8px}}
+.task-item{{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:#9ca3af}}
+.task-dot{{width:8px;height:8px;border-radius:50%;flex-shrink:0}}
+.bulletin-item{{padding:6px 12px;border-left:3px solid #1e2540;margin:3px 0;font-size:11px;border-radius:0 6px 6px 0;background:#0d101e}}
 .bulletin-item.oracle{{border-left-color:#3b82f6}}
 .bulletin-item.mercury{{border-left-color:#22c55e}}
 .bulletin-item.athena{{border-left-color:#a855f7}}
 .bulletin-item.guardian{{border-left-color:#ef4444}}
 .bulletin-item.prometheus{{border-left-color:#f59e0b}}
-.footer{{text-align:center;color:#374151;font-size:11px;margin-top:20px}}
+.empty{{color:#6b7280;text-align:center;padding:30px;font-size:13px}}
+.request-card{{background:#0d101e;border-radius:8px;padding:12px;margin:8px 0;border:1px solid #1e2540}}
+.req-header{{font-size:13px;margin-bottom:6px}}
+.req-id{{background:#1e2540;padding:2px 8px;border-radius:4px;font-size:11px;margin-right:8px}}
+.req-reason{{font-size:11px;color:#9ca3af;margin-bottom:8px}}
+.req-timeline{{margin:6px 0;padding-left:4px}}
+.tl-step{{display:flex;align-items:center;gap:8px;font-size:11px;padding:2px 0;color:#9ca3af}}
+.tl-dot{{width:6px;height:6px;border-radius:50%;flex-shrink:0}}
+.tl-time{{color:#6b7280;font-size:10px;width:85px;flex-shrink:0}}
+.tl-msg{{flex:1}}
+.req-result{{background:#141829;padding:6px 10px;border-radius:4px;font-size:11px;margin:6px 0;color:#22c55e}}
+.req-status{{font-size:11px;font-weight:600}}
+.footer{{text-align:center;color:#374151;font-size:11px;margin-top:30px;padding:16px;border-top:1px solid #1e2540}}
+.section-title{{font-size:18px;color:#f8fafc;margin:24px 0 12px;padding-bottom:8px;border-bottom:1px solid #1e2540}}
 </style>
 </head>
 <body>
-<h1>⚡ Aether <span>运营仪表盘</span></h1>
-<div class="subtitle">自动刷新 · 每5分钟 · {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}</div>
+<h1>⚡ Aether <span>运营指挥中心</span></h1>
+<div class="subtitle">自动刷新 · 每5分钟 · {now_str} · <span id="ago">刚刚</span></div>
 
-<div class="grid">
-{''.join(agent_card(a) for a in AGENTS)}
+<div class="grid3">
+{card("🔵 Oracle 数据专员","".join(oracle_lines), "#3b82f6")}
+{card("🧠 Athena 策略专员","".join(athena_lines), "#a855f7")}
+{card("🛡️ Guardian 风控专员","".join(guardian_lines), "#ef4444")}
 </div>
 
-<div class="section">
-  <h2>📋 公告板</h2>
-  {bulletin_feed()}
+<div class="grid2">
+{card("💹 Mercury 交易专员","".join(mercury_lines), "#22c55e")}
+{card("🔥 Prometheus 优化专员","".join(prom_lines), "#f59e0b")}
 </div>
 
-<div class="section">
-  <h2>📨 请求队列</h2>
-  {request_table()}
+<div class="section-title">📨 专员间协作请求 · 生命周期追踪</div>
+<div class="card">
+<h3>请求队列 (⏳{p_count}处理中 / ✅{f_count}已完成)</h3>
+{req_html}
 </div>
 
-<div class="section">
-  <h2>📊 交易记录</h2>
-  {trade_table()}
+<div class="section-title">📋 实时公告板</div>
+<div class="card">
+{bulletin_html or '<div class="empty">公告板为空,等待专员首次报告...</div>'}
 </div>
 
-<div class="footer">Aether Dashboard · Generated by platform.py</div>
+<div class="footer">
+Aether Dashboard · 每5分钟自动刷新 · {now_str}<br>
+专员: Oracle(15m) | Mercury(15m) | Athena(20m) | Guardian(20m) | Prometheus(20m)
+</div>
+<script>
+document.getElementById("ago").textContent = new Date().toLocaleString();
+</script>
 </body>
 </html>'''
 

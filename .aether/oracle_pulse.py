@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Fix: .aether/ added to sys.path by Python (script directory) shadows stdlib 'platform'
+sys.path = [p for p in sys.path if os.path.abspath(p) != os.path.dirname(os.path.abspath(__file__))]
+
 from data.collector import BinanceDataCollector
 from data.storage import MarketStorage
 

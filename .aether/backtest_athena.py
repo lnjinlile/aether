@@ -4,6 +4,12 @@
 import json, math, sys, os
 from datetime import datetime, timezone, timedelta
 import sqlite3
+
+# Fix: .aether/platform.py shadows stdlib platform → breaks pandas
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+if _script_dir in sys.path:
+    sys.path.remove(_script_dir)
+
 import pandas as pd
 import numpy as np
 

@@ -1,0 +1,80 @@
+{
+  "BTC/USDT": {
+    "symbol": "BTC/USDT",
+    "timeframe": "15m",
+    "period": "673 bars (7.0 days)",
+    "start_date": "2026-06-14 10:00:00",
+    "end_date": "2026-06-21 10:00:00",
+    "params": {
+      "grid_range_pct": 3.0,
+      "num_levels": 5,
+      "qty_per_level": 0.001,
+      "min_spread_pct": 0.2,
+      "leverage": 3,
+      "rebalance_hours": 4.0
+    },
+    "performance": {
+      "initial_capital": 100.0,
+      "final_equity": 122.83,
+      "total_pnl": 22.8344,
+      "total_pnl_pct": 22.83,
+      "total_trades": 160,
+      "winning_trades": 125,
+      "losing_trades": 35,
+      "win_rate": 78.1,
+      "avg_win": 0.2828,
+      "avg_loss": -0.3577,
+      "profit_factor": 2.82,
+      "sharpe_ratio": 18.23,
+      "max_drawdown_pct": 5.87,
+      "pnl_per_volume_pct": 0.22,
+      "exit_reasons": {
+        "rebalance": 50,
+        "tp": 110
+      }
+    },
+    "grid_stats": {
+      "avg_active_levels": 0,
+      "total_grid_rebuilds": 0
+    }
+  },
+  "ETH/USDT": {
+    "symbol": "ETH/USDT",
+    "timeframe": "15m",
+    "period": "673 bars (7.0 days)",
+    "start_date": "2026-06-14 10:00:00",
+    "end_date": "2026-06-21 10:00:00",
+    "params": {
+      "grid_range_pct": 4.0,
+      "num_levels": 5,
+      "qty_per_level": 0.01,
+      "min_spread_pct": 0.3,
+      "leverage": 3,
+      "rebalance_hours": 4.0
+    },
+    "performance": {
+      "initial_capital": 100.0,
+      "final_equity": 105.35,
+      "total_pnl": 5.3524,
+      "total_pnl_pct": 5.35,
+      "total_trades": 114,
+      "winning_trades": 89,
+      "losing_trades": 25,
+      "win_rate": 78.1,
+      "avg_win": 0.098,
+      "avg_loss": -0.1349,
+      "profit_factor": 2.59,
+      "sharpe_ratio": 13.57,
+      "max_drawdown_pct": 1.86,
+      "pnl_per_volume_pct": 0.27,
+      "exit_reasons": {
+        "rebalance": 38,
+        "tp": 76
+      }
+    },
+    "grid_stats": {
+      "avg_active_levels": 0,
+      "total_grid_rebuilds": 0
+    }
+  }
+}

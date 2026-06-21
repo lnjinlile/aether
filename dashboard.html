@@ -1,201 +1,94 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta http-equiv="refresh" content="300">
-<title>Aether 运营仪表盘</title>
+<title>Aether 运营指挥中心</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0f1117;color:#e5e7eb;font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:20px}
-h1{font-size:24px;margin-bottom:5px}
-h1 span{color:#f59e0b}
-.subtitle{color:#6b7280;margin-bottom:20px;font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
-.card{background:#1a1d2e;border-radius:10px;padding:14px;border:1px solid #2d3148}
-.card-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.icon{font-size:20px}
-.name{font-weight:600;font-size:14px;flex:1}
-.dot{width:8px;height:8px;border-radius:50%}
-.card-body{font-size:12px}
-.stat-row{display:flex;flex-wrap:wrap;gap:6px}
-.stat{background:#252840;padding:3px 8px;border-radius:4px;font-size:11px}
-.stat b{color:#f59e0b}
-.card-footer{color:#6b7280;font-size:10px;margin-top:8px}
-.section{background:#1a1d2e;border-radius:10px;padding:16px;margin-bottom:16px;border:1px solid #2d3148}
-.section h2{font-size:16px;margin-bottom:12px;color:#f59e0b}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{text-align:left;padding:8px 6px;border-bottom:1px solid #2d3148;color:#6b7280;font-weight:500}
-td{padding:6px;border-bottom:1px solid #1f2237}
-.reason{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#9ca3af}
-.badge{background:#252840;padding:2px 7px;border-radius:4px;font-size:10px}
-.empty{color:#6b7280;text-align:center;padding:20px}
-.bulletin-item{padding:6px 10px;border-left:3px solid #2d3148;margin:4px 0;font-size:12px;border-radius:0 4px 4px 0}
+body{background:#0a0c15;color:#d1d5db;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:24px;line-height:1.5}
+h1{font-size:26px;margin-bottom:4px;color:#f8fafc} h1 span{color:#f59e0b;font-weight:300}
+.subtitle{color:#6b7280;font-size:12px;margin-bottom:24px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px;margin-bottom:20px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:20px}
+.card{background:#141829;border-radius:12px;padding:18px;border:1px solid #1e2540}
+.card h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card-content{font-size:13px}
+.stat-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.stat{background:#1a1f35;padding:8px 12px;border-radius:8px;flex:1;min-width:80px;text-align:center}
+.stat-label{display:block;font-size:10px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px}
+.stat-value{display:block;font-size:16px;font-weight:700;color:#f8fafc}
+.progress-wrap{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:12px}
+.progress-label{width:50px;color:#9ca3af}
+.progress-bar{flex:1;height:6px;background:#1e2540;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width 0.5s}
+.progress-pct{width:40px;text-align:right;color:#9ca3af;font-variant-numeric:tabular-nums}
+.mini-table{width:100%;border-collapse:collapse;font-size:11px;margin:8px 0}
+.mini-table th{text-align:left;padding:6px 8px;border-bottom:1px solid #1e2540;color:#6b7280;font-weight:500}
+.mini-table td{padding:5px 8px;border-bottom:1px solid #141829}
+.badge{padding:2px 8px;border-radius:4px;font-size:10px;color:#fff;white-space:nowrap}
+.reason{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#9ca3af}
+.note{color:#6b7280;font-size:11px;margin-top:6px;font-style:italic}
+.task-list{margin-top:8px}
+.task-item{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:#9ca3af}
+.task-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.bulletin-item{padding:6px 12px;border-left:3px solid #1e2540;margin:3px 0;font-size:11px;border-radius:0 6px 6px 0;background:#0d101e}
 .bulletin-item.oracle{border-left-color:#3b82f6}
 .bulletin-item.mercury{border-left-color:#22c55e}
 .bulletin-item.athena{border-left-color:#a855f7}
 .bulletin-item.guardian{border-left-color:#ef4444}
 .bulletin-item.prometheus{border-left-color:#f59e0b}
-.footer{text-align:center;color:#374151;font-size:11px;margin-top:20px}
+.empty{color:#6b7280;text-align:center;padding:30px;font-size:13px}
+.request-card{background:#0d101e;border-radius:8px;padding:12px;margin:8px 0;border:1px solid #1e2540}
+.req-header{font-size:13px;margin-bottom:6px}
+.req-id{background:#1e2540;padding:2px 8px;border-radius:4px;font-size:11px;margin-right:8px}
+.req-reason{font-size:11px;color:#9ca3af;margin-bottom:8px}
+.req-timeline{margin:6px 0;padding-left:4px}
+.tl-step{display:flex;align-items:center;gap:8px;font-size:11px;padding:2px 0;color:#9ca3af}
+.tl-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.tl-time{color:#6b7280;font-size:10px;width:85px;flex-shrink:0}
+.tl-msg{flex:1}
+.req-result{background:#141829;padding:6px 10px;border-radius:4px;font-size:11px;margin:6px 0;color:#22c55e}
+.req-status{font-size:11px;font-weight:600}
+.footer{text-align:center;color:#374151;font-size:11px;margin-top:30px;padding:16px;border-top:1px solid #1e2540}
+.section-title{font-size:18px;color:#f8fafc;margin:24px 0 12px;padding-bottom:8px;border-bottom:1px solid #1e2540}
 </style>
 </head>
 <body>
-<h1>⚡ Aether <span>运营仪表盘</span></h1>
-<div class="subtitle">自动刷新 · 每5分钟 · 2026-06-21 11:39 UTC</div>
+<h1>⚡ Aether <span>运营指挥中心</span></h1>
+<div class="subtitle">自动刷新 · 每5分钟 · 2026-06-21 12:10 UTC · <span id="ago">刚刚</span></div>
 
-<div class="grid">
-
-    <div class="card">
-      <div class="card-header">
-        <span class="icon">🔵</span>
-        <span class="name">Oracle 数据</span>
-        <span class="dot" style="background:#22c55e"></span>
-      </div>
-      <div class="card-body">
-        <div class="stat-row"><span class="stat">btc_price: <b>63485.9</b></span><span class="stat">eth_price: <b>1731.04</b></span><span class="stat">btc_klines: <b>200</b></span><span class="stat">eth_klines: <b>200</b></span><span class="stat">data_fresh: <b>True</b></span><span class="stat">eth_change_pct: <b>0.3967</b></span><span class="stat">btc_change: <b>-413.1</b></span><span class="stat">db_klines: <b>4002</b></span><span class="stat">db_size_mb: <b>0.44</b></span></div>
-      </div>
-      <div class="card-footer">更新: 2026-06-21T10:08</div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <span class="icon">🟢</span>
-        <span class="name">Athena 策略</span>
-        <span class="dot" style="background:#22c55e"></span>
-      </div>
-      <div class="card-body">
-        <div class="stat-row"><span class="stat">状态: <b>ok</b></span></div>
-      </div>
-      <div class="card-footer">更新: 06-21 08:53</div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <span class="icon">🛡️</span>
-        <span class="name">Guardian 风控</span>
-        <span class="dot" style="background:#22c55e"></span>
-      </div>
-      <div class="card-body">
-        <div class="stat-row"><span class="stat">状态: <b>active</b></span></div>
-      </div>
-      <div class="card-footer">更新: 2026-06-21T11:35</div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <span class="icon">💹</span>
-        <span class="name">Mercury 交易</span>
-        <span class="dot" style="background:#22c55e"></span>
-      </div>
-      <div class="card-body">
-        <div class="stat-row"><span class="stat">btc_price: <b>63974.7</b></span><span class="stat">eth_price: <b>1725.57</b></span><span class="stat">open_positions: <b>2</b></span><span class="stat">total_trades: <b>4</b></span></div>
-      </div>
-      <div class="card-footer">更新: 2026-06-21T08:34</div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <span class="icon">🔥</span>
-        <span class="name">Prometheus 优化</span>
-        <span class="dot" style="background:#22c55e"></span>
-      </div>
-      <div class="card-body">
-        <div class="stat-row"><span class="stat">状态: <b>active</b></span></div>
-      </div>
-      <div class="card-footer">更新: 2026-06-21T11:35</div>
-    </div>
+<div class="grid3">
+<div class="card" style="border-top:3px solid #3b82f6"><h3>🔵 Oracle 数据专员</h3><div class="card-content"><div class="stat-row"><div class="stat"><span class="stat-label">数据表</span><span class="stat-value">klines:10084行</span></div><div class="stat"><span class="stat-label">trades_log</span><span class="stat-value">8笔</span></div><div class="stat"><span class="stat-label">最近更新</span><span class="stat-value">2026-06-21T12:03</span></div></div><table class="mini-table"><tr><th>标的</th><th>周期</th><th>K线数</th><th>最新时间</th></tr><tr><td>BTC/USDT</td><td>15m</td><td>2880</td><td>1782036000000</td></tr><tr><td>BTC/USDT</td><td>1h</td><td>2162</td><td>1782043200000</td></tr><tr><td>ETH/USDT</td><td>15m</td><td>2880</td><td>1782036000000</td></tr><tr><td>ETH/USDT</td><td>1h</td><td>2162</td><td>1782043200000</td></tr></table><div class="note">数据消费者: Athena(回测), Mercury(信号), Prometheus(参数扫描)</div></div></div>
+<div class="card" style="border-top:3px solid #a855f7"><h3>🧠 Athena 策略专员</h3><div class="card-content"><div class="stat-row"><div class="stat"><span class="stat-label">活跃策略</span><span class="stat-value">3个</span></div><div class="stat"><span class="stat-label">禁用策略</span><span class="stat-value">5个</span></div><div class="stat"><span class="stat-label">最近评估</span><span class="stat-value">2026-06-21T12:10</span></div></div><table class="mini-table"><tr><th>策略名</th><th>标的</th><th>周期</th><th>状态</th></tr><tr><td>DynamicGrid_BTC</td><td>BTC/USDT</td><td>15m</td><td><span class="badge" style="background:#22c55e">启用</span></td></tr><tr><td>DynamicGrid_ETH</td><td>ETH/USDT</td><td>15m</td><td><span class="badge" style="background:#22c55e">启用</span></td></tr><tr><td>MLAlpha_BTC</td><td>BTC/USDT</td><td>1h</td><td><span class="badge" style="background:#22c55e">启用</span></td></tr></table></div></div>
+<div class="card" style="border-top:3px solid #ef4444"><h3>🛡️ Guardian 风控专员</h3><div class="card-content"><div class="stat-row"><div class="stat"><span class="stat-label">持仓数</span><span class="stat-value">1笔</span></div><div class="stat"><span class="stat-label">风险等级</span><span class="stat-value">🟢 正常</span></div><div class="stat"><span class="stat-label">最近检查</span><span class="stat-value">2026-06-21T11:46</span></div></div><table class="mini-table"><tr><th>标的</th><th>方向</th><th>入场</th><th>数量</th></tr><tr><td>BTCUSDT</td><td>SHORT</td><td>63725.6</td><td>0.004</td></tr></table></div></div>
 </div>
 
-<div class="section">
-  <h2>📋 公告板</h2>
-  <div class="bulletin-item athena">**风控结论**: 所有量化指标全绿。仓位极小(1.29%)，强平不可能。唯一风险是流程层面的：Athena→strategies.yaml→Mercury 的治理链路需在代码层面闭环，而非依赖 Mercury 自行判断。</div><div class="bulletin-item ">`guardian.json` 已更新。下次心跳 ≈ 11:35 UTC。</div><div class="bulletin-item mercury">Mercury Pulse | 11:22 UTC</div><div class="bulletin-item ">**Actions:** 1 CLOSE + 1 OPEN</div><div class="bulletin-item ">**Close Reason:** TrendFollow_BTC flipped to SHORT → trend reversal close.</div><div class="bulletin-item ">**New Position:** `BTCUSDT SHORT 0.0018 @ 63,738.31` | Mark: 64,304.67 | uPNL: −1.02 | Leverage: 1x (set to 5x, pending </div><div class="bulletin-item ">**Account:** 4,994.55 USDT | Available: 4,971.40 | uPNL: 0.00</div><div class="bulletin-item ">**Strategies Active:** MLAlpha_BTC (TrendFollow_BTC/ETH/1h, RSI_MR, MA_Cross all disabled per strategies.yaml update)</div><div class="bulletin-item ">**ETH/USDT:** No signal (MLAlpha only configured for BTC)</div><div class="bulletin-item ">**Risk Note:** Position at 1x leverage, liquidation at 2,827,741 (effectively none). SHORT SL=65,013, TP=61,189. Minimal</div><div class="bulletin-item oracle">06-21 11:25 — 🟢 Oracle 心跳 — BTC=63,840.8 | ETH=1,724.7 | K线(200/200)</div>
+<div class="grid2">
+<div class="card" style="border-top:3px solid #22c55e"><h3>💹 Mercury 交易专员</h3><div class="card-content"><div class="stat-row"><div class="stat"><span class="stat-label">总交易</span><span class="stat-value">8笔</span></div><div class="stat"><span class="stat-label">持仓中</span><span class="stat-value">1笔</span></div><div class="stat"><span class="stat-label">已平仓</span><span class="stat-value">7笔</span></div><div class="stat"><span class="stat-label">胜率</span><span class="stat-value">14%</span></div><div class="stat"><span class="stat-label">累计盈亏</span><span class="stat-value">+0.0000</span></div></div><div class="progress-wrap">
+      <span class="progress-label">胜率</span>
+      <div class="progress-bar"><div class="progress-fill" style="width:14.285714285714285%;background:#f59e0b"></div></div>
+      <span class="progress-pct">14%</span></div><table class="mini-table"><tr><th>ID</th><th>标的</th><th>方向</th><th>入场</th><th>出场</th><th>PnL</th><th>状态</th></tr><tr><td>#8</td><td>BTCUSDT</td><td>SHORT</td><td>63725.6</td><td>—</td><td style="color:#6b7280">+0.0000</td><td><span class="badge" style="background:#22c55e">OPEN</span></td></tr><tr><td>#7</td><td>BTCUSDT</td><td>LONG</td><td>63899.0</td><td>—</td><td style="color:#6b7280">+0.0000</td><td><span class="badge" style="background:#6b7280">CLOSED</span></td></tr><tr><td>#6</td><td>BTCUSDT</td><td>LONG</td><td>62621.0</td><td>—</td><td style="color:#6b7280">+0.0000</td><td><span class="badge" style="background:#6b7280">CLOSED</span></td></tr><tr><td>#5</td><td>BTCUSDT</td><td>LONG</td><td>62598.9</td><td>—</td><td style="color:#6b7280">+0.0000</td><td><span class="badge" style="background:#6b7280">CLOSED</span></td></tr><tr><td>#4</td><td>BTCUSDT</td><td>LONG</td><td>63974.7</td><td>—</td><td style="color:#6b7280">+0.0000</td><td><span class="badge" style="background:#6b7280">CLOSED</span></td></tr><tr><td>#3</td><td>BTCUSDT</td><td>LONG</td><td>64000.0</td><td>64500.0</td><td style="color:#22c55e">+0.5000</td><td><span class="badge" style="background:#6b7280">CLOSED</span></td></tr><tr><td>#2</td><td>ETHUSDT</td><td>SHORT</td><td>3500.0</td><td>3450.0</td><td style="color:#ef4444">-0.5000</td><td><span class="badge" style="background:#6b7280">CLOSED</span></td></tr><tr><td>#1</td><td>BTCUSDT</td><td>LONG</td><td>64000.0</td><td>—</td><td style="color:#6b7280">+0.0000</td><td><span class="badge" style="background:#6b7280">CLOSED</span></td></tr></table></div></div>
+<div class="card" style="border-top:3px solid #f59e0b"><h3>🔥 Prometheus 优化专员</h3><div class="card-content"><div class="stat-row"><div class="stat"><span class="stat-label">状态</span><span class="stat-value">active</span></div><div class="stat"><span class="stat-label">最近行动</span><span class="stat-value">初始化中</span></div><div class="stat"><span class="stat-label">更新</span><span class="stat-value">2026-06-21T11:41</span></div></div><div class="task-list"><div class="task-item"><span class="task-dot" style="background:#22c55e"></span> 论文调研完成 — 7篇,6个可行方向</div><div class="task-item"><span class="task-dot" style="background:#f59e0b"></span> 动态网格(DGT)策略 — 评估中</div><div class="task-item"><span class="task-dot" style="background:#6b7280"></span> 防过拟合框架 — 待启动</div><div class="task-item"><span class="task-dot" style="background:#6b7280"></span> 波动率预测ML — 待启动</div></div></div></div>
 </div>
 
-<div class="section">
-  <h2>📨 请求队列</h2>
-  <table><tr><th>ID</th><th>发起</th><th>接收</th><th>类型</th><th>状态</th><th>原因</th></tr><tr>
-          <td>#1</td>
-          <td>athena</td>
-          <td>→ oracle</td>
-          <td>fetch_data</td>
-          <td><span style="color:#22c55e">● fulfilled</span></td>
-          <td class="reason">Athena: 1h backtest needs 300+ warmup bars</td>
-        </tr></table>
+<div class="section-title">📨 专员间协作请求 · 生命周期追踪</div>
+<div class="card">
+<h3>请求队列 (⏳0处理中 / ✅1已完成)</h3>
+<div class="stat-row"><div class="stat"><span class="stat-label">待处理</span><span class="stat-value" style="color:#f59e0b">0</span></div><div class="stat"><span class="stat-label">已完成</span><span class="stat-value" style="color:#22c55e">1</span></div><div class="stat"><span class="stat-label">已拒绝</span><span class="stat-value" style="color:#ef4444">0</span></div><div class="stat"><span class="stat-label">总计</span><span class="stat-value">1</span></div></div><div class="request-card"><div class="req-header"><span class="req-id">#1</span> <b>athena</b> → <b>oracle</b> · fetch_data</div><div class="req-reason">📝 Athena: 1h backtest needs 300+ warmup bars</div><div class="req-timeline"><div class="tl-step"><span class="tl-dot" style="background:#22c55e"></span> <span class="tl-time">2026-06-21T11:20</span> <span class="tl-msg">请求已发起</span></div><div class="tl-step"><span class="tl-dot" style="background:#22c55e"></span> <span class="tl-time">2026-06-21T11:35</span> <span class="tl-msg">已完成</span></div></div><div class="req-result">📊 结果: {"rows": 2160}</div><span class="req-status" style="color:#22c55e">✅ 已完成</span></div>
 </div>
 
-<div class="section">
-  <h2>📊 交易记录</h2>
-  <table><tr><th>ID</th><th>标的</th><th>方向</th><th>入场</th><th>出场</th><th>PnL</th><th>状态</th><th>策略</th></tr><tr>
-          <td>#8</td>
-          <td>BTCUSDT</td>
-          <td>SHORT</td>
-          <td>63725.6</td>
-          <td>—</td>
-          <td style="color:#6b7280">+0.0000</td>
-          <td><span class="badge">OPEN</span></td>
-          <td class="reason">TrendFollow</td>
-        </tr><tr>
-          <td>#7</td>
-          <td>BTCUSDT</td>
-          <td>LONG</td>
-          <td>63899.0</td>
-          <td>—</td>
-          <td style="color:#6b7280">+0.0000</td>
-          <td><span class="badge">CLOSED</span></td>
-          <td class="reason">TrendFollow</td>
-        </tr><tr>
-          <td>#6</td>
-          <td>BTCUSDT</td>
-          <td>LONG</td>
-          <td>62621.0</td>
-          <td>—</td>
-          <td style="color:#6b7280">+0.0000</td>
-          <td><span class="badge">CLOSED</span></td>
-          <td class="reason">TrendFollow</td>
-        </tr><tr>
-          <td>#5</td>
-          <td>BTCUSDT</td>
-          <td>LONG</td>
-          <td>62598.9</td>
-          <td>—</td>
-          <td style="color:#6b7280">+0.0000</td>
-          <td><span class="badge">CLOSED</span></td>
-          <td class="reason">System</td>
-        </tr><tr>
-          <td>#4</td>
-          <td>BTCUSDT</td>
-          <td>LONG</td>
-          <td>63974.7</td>
-          <td>—</td>
-          <td style="color:#6b7280">+0.0000</td>
-          <td><span class="badge">CLOSED</span></td>
-          <td class="reason">MA_Cross</td>
-        </tr><tr>
-          <td>#3</td>
-          <td>BTCUSDT</td>
-          <td>LONG</td>
-          <td>64000.0</td>
-          <td>64500.0</td>
-          <td style="color:#22c55e">+0.5000</td>
-          <td><span class="badge">CLOSED</span></td>
-          <td class="reason">MA_Cross</td>
-        </tr><tr>
-          <td>#2</td>
-          <td>ETHUSDT</td>
-          <td>SHORT</td>
-          <td>3500.0</td>
-          <td>3450.0</td>
-          <td style="color:#ef4444">-0.5000</td>
-          <td><span class="badge">CLOSED</span></td>
-          <td class="reason">RSI_MR</td>
-        </tr><tr>
-          <td>#1</td>
-          <td>BTCUSDT</td>
-          <td>LONG</td>
-          <td>64000.0</td>
-          <td>—</td>
-          <td style="color:#6b7280">+0.0000</td>
-          <td><span class="badge">CLOSED</span></td>
-          <td class="reason">test</td>
-        </tr></table>
+<div class="section-title">📋 实时公告板</div>
+<div class="card">
+<div class="bulletin-item ">**New Position:** `BTCUSDT SHORT 0.0018 @ 63,738.31` | Mark: 64,304.67 | uPNL: −1.02 | Leverage: 1x (set to 5x, pending next position)</div><div class="bulletin-item ">**Account:** 4,994.55 USDT | Available: 4,971.40 | uPNL: 0.00</div><div class="bulletin-item ">**Strategies Active:** MLAlpha_BTC (TrendFollow_BTC/ETH/1h, RSI_MR, MA_Cross all disabled per strategies.yaml update)</div><div class="bulletin-item ">**ETH/USDT:** No signal (MLAlpha only configured for BTC)</div><div class="bulletin-item ">**Risk Note:** Position at 1x leverage, liquidation at 2,827,741 (effectively none). SHORT SL=65,013, TP=61,189. Minimal exposure (~0.02% of account).</div><div class="bulletin-item oracle">06-21 11:25 — 🟢 Oracle 心跳 — BTC=63,840.8 | ETH=1,724.7 | K线(200/200)</div><div class="bulletin-item prometheus">06-21 11:41 — Prometheus: Dynamic Grid Trading deployed. BTC backtest +28.2% (7d, 169 trades, 82.8% WR, PF=3.99, maxDD=5.3%). ETH +1.87% (80 trades, 6</div><div class="bulletin-item mercury">06-21 11:42 -- Mercury: heartbeat -- monitoring | positions:1 | BTC~63820.7</div><div class="bulletin-item mercury">06-21 11:42 — Mercury: 监控中 — 持仓1(BTC SHORT) | 信号: DynamicGrid_BTC LONG(被反向持仓阻止) | BTC=63820.7 ETH=1724.0</div><div class="bulletin-item athena">06-21 11:44 — Athena: 06-21 11:43 — Strategy evaluation complete. DynamicGrid_BTC: net=+28.25% Sharpe=+19.30 WR=82.8% (169 trades, 7d) — dominant. Dyn</div><div class="bulletin-item oracle">06-21 11:45 — Oracle: BTC=63645.30 ETH=1720.31 | K线就绪</div><div class="bulletin-item guardian">06-21 11:46 — Guardian: 🟢 风控正常 | 持仓1(BTC SHORT) | 保证金2.3% | 强平距∞(1x杠杆) | 余额,994.66 | 无风险告警</div><div class="bulletin-item mercury">06-21 11:59 -- Mercury: heartbeat -- monitoring | positions:1 | BTC~63577.4</div><div class="bulletin-item mercury">06-21 11:59 — Mercury: 监控中 | 持仓1(BTC SHORT 0.0018@63738) | BTC=63577 ETH=1706 | 信号: DynamicGrid_BTC LONG(被反向持仓阻止)</div><div class="bulletin-item oracle">06-21 12:03 — 🟢 Oracle 心跳 — BTC=63,771.4 | ETH=1,717.5 | K线(200/200)</div><div class="bulletin-item oracle">06-21 12:03 — Oracle: BTC=63,771.4 ETH=1,717.5 | K线就绪</div><div class="bulletin-item mercury">06-21 12:05 -- Mercury: LONG ETHUSDT @ 1720.5 (Grid buy level 4/5 @ 1706.7)</div><div class="bulletin-item mercury">06-21 12:08 — Mercury: 监控中 | 持仓1(BTC SHORT) | BTC=3,601 ETH=,721 | DynamicGrid_BTC LONG被阻·DynamicGrid_ETH LONG下单失败(名义.72<最低0)</div><div class="bulletin-item athena">06-21 12:10 — Athena: Strategy eval complete | BTC=63771 ETH=1717 | DynamicGrid: BTC +22.8% ETH +5.4% | MLAlpha: -1.45% (consider disable) | New: MA_C</div>
 </div>
 
-<div class="footer">Aether Dashboard · Generated by platform.py</div>
+<div class="footer">
+Aether Dashboard · 每5分钟自动刷新 · 2026-06-21 12:10 UTC<br>
+专员: Oracle(15m) | Mercury(15m) | Athena(20m) | Guardian(20m) | Prometheus(20m)
+</div>
+<script>
+document.getElementById("ago").textContent = new Date().toLocaleString();
+</script>
 </body>
 </html>

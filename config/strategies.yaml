@@ -1,4 +1,35 @@
 strategies:
+# ── Dynamic Grid Trading ──────────────────────────────────────
+- name: DynamicGrid_BTC
+  class: strategy.examples.dynamic_grid.DynamicGridStrategy
+  enabled: true
+  params:
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 15m
+    grid_range_pct: 3.0
+    num_levels: 5
+    qty_per_level: 0.001
+    rebalance_interval_bars: 16
+    min_spread_pct: 0.2
+    leverage: 3
+
+- name: DynamicGrid_ETH
+  class: strategy.examples.dynamic_grid.DynamicGridStrategy
+  enabled: true
+  params:
+    symbols:
+    - ETH/USDT
+    timeframes:
+    - 15m
+    grid_range_pct: 4.0
+    num_levels: 5
+    qty_per_level: 0.01
+    rebalance_interval_bars: 16
+    min_spread_pct: 0.3
+    leverage: 3
+
 # ── ML Alpha (replaces old EMA strategies) ──────────────────
 - name: MLAlpha_BTC
   class: ml_alpha.strategy.MLAlphaStrategy

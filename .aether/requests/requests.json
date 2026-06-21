@@ -17,6 +17,20 @@
     "fulfilled_at": "2026-06-21T11:35:18.711559+00:00",
     "result": {
       "rows": 2160
-    }
+    },
+    "timeline": [
+      {
+        "time": "2026-06-21T11:20",
+        "status": "fulfilled",
+        "by": "athena",
+        "msg": "请求已发起"
+      },
+      {
+        "time": "2026-06-21T11:35",
+        "status": "fulfilled",
+        "by": "oracle",
+        "msg": "已完成"
+      }
+    ]
   }
 ]

@@ -1,7 +1,20 @@
 #!/usr/bin/env python3
 """Mercury auto-execution script — runs every 15m via cron."""
 
-import json, sys, os
+import sys, os
+# Fix: .aether/platform.py shadows stdlib 'platform' module (pandas needs it).
+# Remove .aether/ from sys.path[0] when running from within .aether/ dir.
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+if sys.path[0] == _script_dir or sys.path[0] == '':
+    # Pop the script dir so stdlib 'platform' resolves correctly
+    if sys.path[0] in (_script_dir, ''):
+        sys.path.pop(0)
+    # Ensure project root is first for our package imports
+    _project_root = os.path.dirname(_script_dir)
+    if _project_root not in sys.path:
+        sys.path.insert(0, _project_root)
+
+import json
 from datetime import datetime, timezone
 import numpy as np
 import pandas as pd

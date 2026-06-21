@@ -1,35 +1,67 @@
 {
-  "timestamp": "2026-06-21T11:23:58.737021+00:00",
-  "trades": [
+  "status": "ok",
+  "timestamp": "2026-06-21T12:05:56.778170+00:00",
+  "btc_price": 63601.4,
+  "balance": 4994.74502564,
+  "available": 4971.63530444,
+  "positions": 1,
+  "open_orders": 1,
+  "action": "EXECUTED",
+  "signals": {
+    "BTC/USDT/DynamicGrid_BTC": {
+      "type": "LONG",
+      "price": 63410.6,
+      "reason": "Grid buy level 5/5 @ 63410.6",
+      "confidence": 0.85,
+      "leverage": 3,
+      "quantity": 0.001,
+      "stop_loss": 61508.282,
+      "take_profit": 63727.6
+    },
+    "ETH/USDT/DynamicGrid_ETH": {
+      "type": "LONG",
+      "price": 1706.7,
+      "reason": "Grid buy level 4/5 @ 1706.7",
+      "confidence": 0.85,
+      "leverage": 3,
+      "quantity": 0.01,
+      "stop_loss": 1655.499,
+      "take_profit": 1718.6
+    }
+  },
+  "executed": [
     {
-      "action": "SHORT",
-      "symbol": "BTC/USDT",
-      "strategy": "MLAlpha_BTC",
-      "price": 63738.305555555555,
+      "symbol": "ETHUSDT",
+      "action": "LONG",
+      "side": "buy",
+      "price": 1720.46,
+      "limit_px": 1718.7,
       "qty": 0.001,
-      "notional": 63.738305555555556,
-      "margin": 12.74766111111111,
-      "leverage": 5,
-      "sl": 65013.07166666667,
-      "tp": 61188.77333333333,
-      "liq": 2827741.05336432,
-      "order_id": "15855442955",
-      "reason": "ML SHORT signal (prob=0.3848)",
-      "time": "2026-06-21T11:23:58.737021+00:00"
+      "leverage": 3,
+      "notional": 1.72046,
+      "margin": 0.5734866666666667,
+      "sl": 1655.499,
+      "tp": 1718.6,
+      "liq": 1155.5756333333336,
+      "liq_dist": 32.83333333333332,
+      "strategy": "DynamicGrid_ETH",
+      "reason": "Grid buy level 4/5 @ 1706.7",
+      "order_id": "?"
     }
   ],
-  "total_trades": 1,
-  "positions": [
+  "exits": [],
+  "current_positions": [
     {
-      "sym": "BTC/USDT:USDT",
+      "symbol": "BTC/USDT:USDT",
       "side": "short",
-      "qty": 0.0018,
-      "entry": 63738.305555555555,
-      "mark": 64305.15240942,
-      "pnl": -1.02032433
+      "contracts": 0.0018,
+      "entry_price": 63738.305555555555,
+      "mark_price": 64193.67,
+      "unrealized_pnl": -0.819656,
+      "liquidation_price": 2827741.05336432,
+      "leverage": 1,
+      "margin_mode": "cross",
+      "notional": 115.548606
     }
-  ],
-  "balance": 4994.54435731,
-  "available": 4971.39450244,
-  "uPNL": 0.0
+  ]
 }

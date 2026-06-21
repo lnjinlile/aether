@@ -9,11 +9,14 @@ import sys
 import traceback
 from datetime import datetime, timezone
 
-import pandas as pd
-
 # Inject project root into path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
+
+# Fix: .aether/ added to sys.path by Python (script directory) shadows stdlib 'platform'
+sys.path = [p for p in sys.path if os.path.abspath(p) != os.path.dirname(os.path.abspath(__file__))]
+
+import pandas as pd
 
 from data.collector import BinanceDataCollector
 from data.storage import MarketStorage
