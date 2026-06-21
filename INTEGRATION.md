@@ -1,162 +1,118 @@
-# Integration Guide — Data Layer
+# Aether (以太) — Integration Guide
 
-This document explains how other agents (Execution, Strategy, Backtest, Risk, Monitor) can import and use the Data Layer modules.
+## Overview
 
----
+Aether is a modular, event-driven quantitative trading system for Binance USDT-M Futures. Each module is independently testable with well-defined interfaces.
 
-## 1. Configuration Interface
+## Module Interface Reference
 
-```python
-from config.settings import get_config, reset_config
-
-cfg = get_config()  # Returns Config dataclass singleton
-
-# Key attributes:
-cfg.api_key          # str  — Binance API key from .env
-cfg.api_secret       # str  — Binance API secret from .env
-cfg.testnet          # bool — True when BINANCE_TESTNET=true
-cfg.db_path          # str  — Absolute path to SQLite database (data/market.db)
-cfg.default_symbol   # str  — "BTC/USDT"
-cfg.default_timeframe # str — "1h"
-cfg.default_leverage # int  — 5
-cfg.symbols          # list — ["BTC/USDT", "ETH/USDT"]
-```
-
-The `.env` file at the project root is auto-loaded via `python-dotenv`.
-
----
-
-## 2. Data Collector (`data.collector.BinanceDataCollector`)
-
-Fetches historical klines from Binance Futures (auto-selects testnet/mainnet based on config).
-
-```python
-from data.collector import BinanceDataCollector
-
-collector = BinanceDataCollector()
-
-# Get recent candles
-df = collector.fetch_current_klines("BTC/USDT", "1h", lookback_bars=500)
-# Returns DataFrame with columns:
-#   open_time, open, high, low, close, volume, quote_volume, trades_count
-
-# Get a specific batch
-df = collector.fetch_klines("ETH/USDT", "5m", since=1719000000000, limit=100)
-
-# Get multi-day history (handles pagination >1000 candles)
-df = collector.fetch_historical("BTC/USDT", "1h", days=30)
-
-# Direct access to ccxt exchange for custom calls
-info = collector.exchange.fetch_ticker("BTC/USDT")
-```
-
----
-
-## 3. WebSocket Streamer (`data.websocket_stream.BinanceWebSocket`)
-
-Real-time streaming via Binance Futures WebSocket. Supports klines, mark price, and mini-tickers.
-
-```python
-import asyncio
-from data.websocket_stream import BinanceWebSocket
-
-ws = BinanceWebSocket(testnet=True)
-
-# Register callbacks
-@ws.on_kline
-def handle_kline(data):
-    print(f"Kline: {data['symbol']} close={data['kline']['close']}")
-
-@ws.on_mark_price
-def handle_mark(data):
-    print(f"Mark: {data['symbol']} price={data['mark_price']}")
-
-@ws.on_ticker
-def handle_ticker(data):
-    print(f"Ticker: {data['symbol']} last={data['close_price']}")
-
-# Connect to combined streams
-async def main():
-    streams = [
-        ws.build_stream_name("btcusdt", "kline_1h"),
-        ws.build_stream_name("ethusdt", "kline_1m"),
-        ws.build_stream_name("btcusdt", "markPrice@1s"),
-        ws.build_stream_name("btcusdt", "miniTicker"),
-    ]
-    await ws.connect_combined_stream(streams)
-
-asyncio.run(main())
-```
-
-**Supported stream types:**
-- `kline_1m`, `kline_5m`, `kline_15m`, `kline_1h`, `kline_4h`, `kline_1d`
-- `markPrice@1s`
-- `miniTicker`
-
----
-
-## 4. Storage Layer (`data.storage.MarketStorage`)
-
-SQLite-backed persistence at `<project_root>/data/market.db`.
-
-```python
-from data.storage import MarketStorage
-
-storage = MarketStorage()  # Uses db_path from config
-
-# Save klines (DataFrame must have columns: open_time, open, high, low, close, volume, quote_volume, trades_count)
-storage.save_klines(df, "BTC/USDT", "1h")
-
-# Load klines with optional time range (timestamps in ms)
-df = storage.load_klines("BTC/USDT", "1h", start=1719000000000, end=1720000000000)
-
-# Save trades (list of dicts)
-trades = [
-    {"symbol": "BTC/USDT", "trade_id": 12345, "price": 65100.0, "quantity": 0.1,
-     "time": 1719001000000, "is_buyer_maker": 0},
-]
-storage.save_trades(trades)
-```
-
-**Database tables:**
-- `klines(symbol, timeframe, open_time, open, high, low, close, volume, quote_volume, trades_count)` — PK: (symbol, timeframe, open_time)
-- `trades(symbol, trade_id, price, quantity, time, is_buyer_maker)` — PK: (symbol, trade_id)
-
----
-
-## 5. Typical Workflow for Other Agents
+### Config (`config.settings`)
 
 ```python
 from config.settings import get_config
-from data.collector import BinanceDataCollector
-from data.storage import MarketStorage
-
 cfg = get_config()
-collector = BinanceDataCollector()
-storage = MarketStorage()
-
-# Fetch + store historical data
-for symbol in cfg.symbols:
-    df = collector.fetch_current_klines(symbol, cfg.default_timeframe, 500)
-    storage.save_klines(df, symbol, cfg.default_timeframe)
-
-# Load data for strategy/backtest
-df = storage.load_klines("BTC/USDT", "1h")
-print(f"Loaded {len(df)} candles")
+# cfg.api_key, cfg.api_secret, cfg.testnet, cfg.symbols, cfg.default_timeframe
 ```
 
----
+### Data Layer (`data.*`)
 
-## 6. File Locations
+| Class | Import | Key Methods |
+|-------|--------|-------------|
+| BinanceDataCollector | `data.collector` | `fetch_klines()`, `fetch_historical()`, `fetch_current_klines()` |
+| MarketStorage | `data.storage` | `save_klines()`, `load_klines()`, `log_trade()`, `vacuum()`, `prune_old_klines()` |
+| BinanceWebSocket | `data.websocket_stream` | `connect_combined_stream()`, callbacks |
+
+### Execution (`execution.*`)
+
+| Class | Import | Key Methods |
+|-------|--------|-------------|
+| BinanceFuturesClient | `execution.client` | `get_balance()`, `get_positions()`, `place_order()`, `cancel_order()`, `get_ticker()`, `get_exchange_info()` |
+| OrderExecutionEngine | `execution.engine` | `execute_signal(signal_dict, account_info)` |
+
+### Risk (`risk.manager`)
+
+```python
+from risk.manager import RiskManager
+risk = RiskManager(max_positions=3, max_leverage=10)
+result = risk.check_signal(signal_dict, account_info_dict)
+# result.action in ('ALLOW', 'REJECT', 'REDUCE')
+```
+
+### Strategy (`strategy.*`)
+
+```python
+from strategy.base import BaseStrategy, Signal, SignalType
+from strategy.manager import StrategyManager
+
+# Register strategies
+mgr = StrategyManager()
+mgr.load_from_yaml('config/strategies.yaml')  # or register() manually
+
+# Feed data and get signals
+mgr.feed_data_only('BTC/USDT', '1h', df)
+signals = mgr.generate_all_signals('BTC/USDT')
+```
+
+### Backtest (`backtest.engine`)
+
+```python
+from backtest.engine import BacktestEngine
+engine = BacktestEngine(initial_capital=10000, commission=0.0004)
+result = engine.run(df, signal_series)
+engine.print_report(result)
+```
+
+## Data Flow
 
 ```
-binance_quant/
-├── config/settings.py        # Config dataclass, get_config()
-├── data/
-│   ├── collector.py          # BinanceDataCollector
-│   ├── websocket_stream.py   # BinanceWebSocket
-│   ├── storage.py            # MarketStorage
-│   └── market.db             # SQLite database (created at runtime)
-├── .env                      # API keys (gitignored)
-└── requirements.txt          # Python dependencies
+Market Data (ccxt/REST)
+    │
+    ▼
+BinanceDataCollector  ──► MarketStorage (SQLite)
+    │
+    ▼
+StrategyManager.feed_data_only()
+    │
+    ▼
+Strategy.generate_signal()  ──► Signal[]
+    │
+    ▼
+RiskManager.check_signal()
+    │
+    ▼
+OrderExecutionEngine.execute_signal()
+    │
+    ▼
+BinanceFuturesClient.place_order()
+    │
+    ▼
+Trade Logged → MarketStorage.log_trade()
 ```
+
+## Adding a New Strategy
+
+1. Create `strategy/examples/my_strategy.py`:
+```python
+from strategy.base import BaseStrategy, Signal, SignalType
+
+class MyStrategy(BaseStrategy):
+    def generate_signal(self, symbol: str) -> Signal:
+        df = self.get_data(symbol)
+        # Your logic here
+        return Signal(SignalType.HOLD, symbol)
+```
+
+2. Register in `config/strategies.yaml`:
+```yaml
+strategies:
+  - name: MyStrategy
+    class: strategy.examples.my_strategy.MyStrategy
+    enabled: true
+    params:
+      symbols: [BTC/USDT]
+      timeframes: [1h]
+```
+
+## Error Handling
+
+All external API calls have ccxt + direct REST fallback. Database operations use parameterized queries. Rate limiting is handled by ccxt's built-in rate limiter.

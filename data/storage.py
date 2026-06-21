@@ -1,16 +1,19 @@
 """
-SQLite storage layer for market data.
-Handles persistence of klines and trades into a local SQLite database.
+SQLite storage layer for market data and trade logging.
+Handles persistence of klines, trades, and trade logs into a local SQLite database.
 """
 
 import os
 import sqlite3
+import time
+from typing import Dict, List, Optional
+
 import pandas as pd
 
 
 class MarketStorage:
     """
-    SQLite-backed storage for klines and trade data.
+    SQLite-backed storage for klines, trade data, and trade logging.
 
     Database location: <project_root>/data/market.db
     """
@@ -34,7 +37,9 @@ class MarketStorage:
 
     def _get_conn(self) -> sqlite3.Connection:
         """Create and return a new SQLite connection."""
-        return sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
 
     def _init_tables(self):
         """Create tables if they do not exist."""
@@ -66,6 +71,36 @@ class MarketStorage:
                     PRIMARY KEY (symbol, trade_id)
                 )
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS trades_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT NOT NULL,
+                    side TEXT NOT NULL CHECK(side IN ('LONG', 'SHORT')),
+                    entry_time REAL NOT NULL,
+                    exit_time REAL,
+                    entry_price REAL NOT NULL,
+                    exit_price REAL,
+                    quantity REAL NOT NULL,
+                    pnl REAL DEFAULT 0.0,
+                    pnl_pct REAL DEFAULT 0.0,
+                    fee REAL DEFAULT 0.0,
+                    strategy_name TEXT NOT NULL,
+                    reason TEXT DEFAULT '',
+                    status TEXT NOT NULL DEFAULT 'OPEN' CHECK(status IN ('OPEN', 'CLOSED'))
+                )
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_trades_log_symbol
+                ON trades_log(symbol)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_trades_log_status
+                ON trades_log(status)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_trades_log_strategy
+                ON trades_log(strategy_name)
+            """)
             conn.commit()
         finally:
             conn.close()
@@ -96,6 +131,15 @@ class MarketStorage:
         conn = self._get_conn()
         try:
             df.to_sql("klines", conn, if_exists="append", index=False)
+
+            # Auto-prune old klines
+            if timeframe == "1m":
+                keep_days = 90
+            elif timeframe == "1h":
+                keep_days = 365
+            else:
+                keep_days = 365  # default for other timeframes
+            self._prune_old_klines_conn(conn, symbol, timeframe, keep_days)
         finally:
             conn.close()
 
@@ -161,3 +205,218 @@ class MarketStorage:
             df.to_sql("trades", conn, if_exists="append", index=False)
         finally:
             conn.close()
+
+    # ──────────────────────────────────────────────
+    # Trade Logging (trades_log table)
+    # ──────────────────────────────────────────────
+
+    def log_trade(self, trade_dict: dict) -> int:
+        """
+        Log a new trade entry (open position).
+
+        Args:
+            trade_dict: dict with keys:
+                symbol, side, entry_price, quantity, strategy_name (required)
+                entry_time, reason, fee, pnl, pnl_pct (optional)
+                status is set to 'OPEN' automatically.
+
+        Returns:
+            The id of the newly inserted trade log row.
+        """
+        required = ("symbol", "side", "entry_price", "quantity", "strategy_name")
+        for key in required:
+            if key not in trade_dict:
+                raise ValueError(f"Missing required field: {key}")
+
+        conn = self._get_conn()
+        try:
+            entry_time = trade_dict.get("entry_time", time.time())
+            reason = trade_dict.get("reason", "")
+            fee = trade_dict.get("fee", 0.0)
+            pnl = trade_dict.get("pnl", 0.0)
+            pnl_pct = trade_dict.get("pnl_pct", 0.0)
+
+            cursor = conn.execute("""
+                INSERT INTO trades_log
+                    (symbol, side, entry_time, entry_price, quantity,
+                     strategy_name, reason, fee, pnl, pnl_pct, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN')
+            """, (
+                trade_dict["symbol"],
+                trade_dict["side"],
+                entry_time,
+                trade_dict["entry_price"],
+                trade_dict["quantity"],
+                trade_dict["strategy_name"],
+                reason,
+                fee,
+                pnl,
+                pnl_pct,
+            ))
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def update_trade_close(
+        self, trade_id: int, exit_price: float,
+        exit_time: float = None, pnl: float = None,
+        pnl_pct: float = None, fee: float = None
+    ):
+        """
+        Mark a trade as CLOSED with exit details.
+
+        Args:
+            trade_id: The id of the trade to close.
+            exit_price: The price at which the position was closed.
+            exit_time: Timestamp of exit (defaults to now).
+            pnl: Profit/loss in quote currency.
+            pnl_pct: Profit/loss as percentage.
+            fee: Total fee for this trade.
+        """
+        if exit_time is None:
+            exit_time = time.time()
+
+        conn = self._get_conn()
+        try:
+            updates = ["exit_price = ?", "exit_time = ?", "status = 'CLOSED'"]
+            params = [exit_price, exit_time]
+
+            if pnl is not None:
+                updates.append("pnl = ?")
+                params.append(pnl)
+            if pnl_pct is not None:
+                updates.append("pnl_pct = ?")
+                params.append(pnl_pct)
+            if fee is not None:
+                updates.append("fee = ?")
+                params.append(fee)
+
+            params.append(trade_id)
+            conn.execute(
+                f"UPDATE trades_log SET {', '.join(updates)} WHERE id = ?",
+                params,
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_trade_history(
+        self, symbol: str = None, limit: int = 50
+    ) -> List[Dict]:
+        """
+        Retrieve trade history, optionally filtered by symbol.
+
+        Args:
+            symbol: Filter by symbol (e.g. 'BTCUSDT'). None for all.
+            limit: Maximum number of rows to return (default 50).
+
+        Returns:
+            List of trade dicts, ordered by id DESC.
+        """
+        conn = self._get_conn()
+        try:
+            if symbol:
+                rows = conn.execute(
+                    "SELECT * FROM trades_log WHERE symbol = ? "
+                    "ORDER BY id DESC LIMIT ?",
+                    (symbol, limit),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM trades_log ORDER BY id DESC LIMIT ?",
+                    (limit,),
+                ).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def get_open_trades(self) -> List[Dict]:
+        """
+        Retrieve all currently open trades.
+
+        Returns:
+            List of trade dicts with status='OPEN'.
+        """
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM trades_log WHERE status = 'OPEN' ORDER BY id DESC"
+            ).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    # ──────────────────────────────────────────────
+    # Database Maintenance
+    # ──────────────────────────────────────────────
+
+    def vacuum(self):
+        """Reclaim unused space in the SQLite database."""
+        conn = self._get_conn()
+        try:
+            conn.execute("VACUUM")
+        finally:
+            conn.close()
+
+    def get_db_stats(self) -> Dict:
+        """
+        Get database statistics including table sizes and row counts.
+
+        Returns:
+            dict with keys: db_size_bytes, db_size_mb, tables (dict of table->rows).
+        """
+        conn = self._get_conn()
+        try:
+            # Database file size
+            db_size_bytes = os.path.getsize(self.db_path) if os.path.exists(self.db_path) else 0
+            db_size_mb = round(db_size_bytes / (1024 * 1024), 2)
+
+            # Row counts per table
+            tables = {}
+            for table in ("klines", "trades", "trades_log"):
+                row = conn.execute(
+                    f"SELECT COUNT(*) as cnt FROM {table}"
+                ).fetchone()
+                tables[table] = row["cnt"] if row else 0
+
+            return {
+                "db_size_bytes": db_size_bytes,
+                "db_size_mb": db_size_mb,
+                "tables": tables,
+            }
+        finally:
+            conn.close()
+
+    def prune_old_klines(
+        self, symbol: str, timeframe: str, keep_days: int = 90
+    ) -> int:
+        """
+        Delete klines older than keep_days.
+
+        Args:
+            symbol: Trading symbol.
+            timeframe: Kline interval.
+            keep_days: Number of days of data to retain.
+
+        Returns:
+            Number of rows deleted.
+        """
+        conn = self._get_conn()
+        try:
+            return self._prune_old_klines_conn(conn, symbol, timeframe, keep_days)
+        finally:
+            conn.close()
+
+    def _prune_old_klines_conn(
+        self, conn: sqlite3.Connection,
+        symbol: str, timeframe: str, keep_days: int
+    ) -> int:
+        """Internal: prune old klines using an existing connection."""
+        cutoff_ms = int((time.time() - keep_days * 86400) * 1000)
+        cursor = conn.execute(
+            "DELETE FROM klines WHERE symbol = ? AND timeframe = ? AND open_time < ?",
+            (symbol, timeframe, cutoff_ms),
+        )
+        conn.commit()
+        return cursor.rowcount

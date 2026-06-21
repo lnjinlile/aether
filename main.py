@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Aether (以太) — Binance USDT-M Futures 全自动量化交易系统
+Aether (以太) — Binance USDT-M Futures 全自动量化交易系统 主程序
 
 运行模式:
-  python main.py --mode paper             # 模拟盘 (测试网)
   python main.py --mode backtest          # 回测模式
+  python main.py --mode paper             # 模拟盘 (测试网)
   python main.py --mode live              # 实盘 (需确认)
-  python main.py --maintenance            # 数据库维护
+  python main.py --maintenance            # 数据库维护 (vacuum + prune + stats)
 
 用法:
   python main.py --mode paper --symbols BTC/USDT,ETH/USDT --timeframe 15m
@@ -33,8 +33,6 @@ from execution.engine import OrderExecutionEngine
 from risk.manager import RiskManager
 from strategy.base import Signal, SignalType
 from strategy.manager import StrategyManager
-from strategy.examples.ma_cross import MACrossoverStrategy
-from strategy.examples.rsi_mean_reversion import RSIMeanReversionStrategy
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -99,19 +97,15 @@ def run_backtest(symbols: List[str], timeframe: str, lookback_days: int = 90):
 
         logger.info("\n📊 ====== %s 回测 ======", sym)
 
-        # 创建策略管理器并注册策略
-        mgr = StrategyManager()
-        ma_strat = MACrossoverStrategy(
-            symbols=[sym], timeframes=[timeframe],
-            fast_period=7, slow_period=25,
-            atr_period=14, atr_sl_mult=2.0, atr_tp_mult=3.0,
-        )
-        rsi_strat = RSIMeanReversionStrategy(
-            symbols=[sym], timeframes=[timeframe],
-            rsi_period=14, oversold=30, overbought=70,
-        )
-        mgr.register(ma_strat)
-        mgr.register(rsi_strat)
+        # 创建策略管理器并加载YAML配置
+        mgr = StrategyManager.load_from_yaml('config/strategies.yaml')
+        # Override symbols/timeframes to match backtest params
+        for name in mgr.get_active_strategies():
+            strat = mgr.get_strategy(name)
+            strat.symbols = [sym]
+            strat.timeframes = [timeframe]
+
+        logger.info("✅ 已加载策略: %s", mgr.get_active_strategies())
 
         # 喂入全部历史数据
         mgr.feed_data_only(sym, timeframe, df)
@@ -120,7 +114,7 @@ def run_backtest(symbols: List[str], timeframe: str, lookback_days: int = 90):
         signals_list = []
         for i in range(100, len(df)):  # 跳过前100根(指标计算需要)
             window = df.iloc[:i+1]
-            for strategy in [ma_strat, rsi_strat]:
+            for strategy in mgr._strategies.values():
                 strategy.feed_data(sym, timeframe, window)
                 sig = strategy.generate_signal(sym)
                 if sig.type in (SignalType.LONG, SignalType.SHORT):
@@ -140,7 +134,7 @@ def run_backtest(symbols: List[str], timeframe: str, lookback_days: int = 90):
             full_sig = pd.Series(0, index=df.index)
 
         # 分别回测
-        for strat_name, strat_obj in [("MA Crossover", ma_strat), ("RSI Mean Reversion", rsi_strat)]:
+        for strat_name, strat_obj in mgr._strategies.items():
             print(f"\n{'='*50}")
             print(f"  策略: {strat_name} | 标的: {sym}")
             print(f"{'='*50}")
@@ -182,19 +176,13 @@ def run_live(mode: str, symbols: List[str], timeframe: str,
     )
     storage = MarketStorage()
 
-    # ---- 注册策略 ----
-    mgr = StrategyManager()
-    ma_strat = MACrossoverStrategy(
-        symbols=symbols, timeframes=[timeframe],
-        fast_period=7, slow_period=25,
-        atr_period=14, atr_sl_mult=2.0, atr_tp_mult=3.0,
-    )
-    rsi_strat = RSIMeanReversionStrategy(
-        symbols=symbols, timeframes=[timeframe],
-        rsi_period=14, oversold=30, overbought=70,
-    )
-    mgr.register(ma_strat)
-    mgr.register(rsi_strat)
+    # ---- 注册策略 (from YAML) ----
+    mgr = StrategyManager.load_from_yaml('config/strategies.yaml')
+    # Override symbols/timeframes to match CLI args
+    for name in mgr.get_active_strategies():
+        strat = mgr.get_strategy(name)
+        strat.symbols = symbols
+        strat.timeframes = [timeframe]
     logger.info("✅ 已注册策略: %s", mgr.get_active_strategies())
 
     # ---- 加载历史数据作为策略基础 ----
@@ -258,6 +246,13 @@ def run_live(mode: str, symbols: List[str], timeframe: str,
             time.sleep(1)
 
     logger.info("👋 系统已停止")
+
+    # Auto-vacuum on shutdown
+    try:
+        storage.vacuum()
+        logger.info("🗜️ 数据库已清理 (VACUUM)")
+    except Exception as e:
+        logger.debug("VACUUM skipped: %s", e)
 
 
 def _get_account_snapshot(client: BinanceFuturesClient,
@@ -408,17 +403,76 @@ def _paper_execute(symbol: str, signal: Signal, sig_dict: Dict,
 
 
 # ===========================================================================
+# 数据库维护模式
+# ===========================================================================
+def run_maintenance(cfg):
+    """Run database maintenance: prune old klines, vacuum, print stats."""
+    from config.settings import _PROJECT_ROOT
+    storage = MarketStorage()
+
+    print("\n" + "=" * 60)
+    print("  Aether (以太) — 数据库维护")
+    print("=" * 60)
+
+    # 1. Stats before
+    print("\n📊 维护前状态:")
+    stats_before = storage.get_db_stats()
+    print(f"  数据库大小: {stats_before['db_size_mb']} MB")
+    for table, count in stats_before["tables"].items():
+        print(f"  {table}: {count} 行")
+
+    # 2. Prune old klines
+    print("\n🧹 清理过期K线数据...")
+    total_deleted = 0
+    for sym in cfg.symbols:
+        for tf in ["1m", "1h", "4h", "1d"]:
+            if tf == "1m":
+                keep_days = 90
+            elif tf == "1h":
+                keep_days = 365
+            else:
+                keep_days = 365
+            try:
+                deleted = storage.prune_old_klines(sym, tf, keep_days)
+                if deleted > 0:
+                    print(f"  {sym} {tf}: 删除 {deleted} 条 (保留 {keep_days} 天)")
+                    total_deleted += deleted
+            except Exception as e:
+                print(f"  {sym} {tf}: 跳过 ({e})")
+    if total_deleted == 0:
+        print("  ✅ 无需清理")
+
+    # 3. Vacuum
+    print("\n🗜️ 回收数据库空间 (VACUUM)...")
+    storage.vacuum()
+
+    # 4. Stats after
+    print("\n📊 维护后状态:")
+    stats_after = storage.get_db_stats()
+    print(f"  数据库大小: {stats_after['db_size_mb']} MB "
+          f"(节省 {stats_before['db_size_mb'] - stats_after['db_size_mb']:.2f} MB)")
+    for table, count in stats_after["tables"].items():
+        print(f"  {table}: {count} 行")
+
+    print("\n✅ 维护完成\n")
+
+
+# ===========================================================================
 # 主入口
 # ===========================================================================
 if __name__ == "__main__":
     cfg = get_config()
 
     parser = argparse.ArgumentParser(
-        description="币安 U本位合约 全自动量化交易系统",
+        description="Aether (以太) — 币安 U本位合约 全自动量化交易系统",
     )
     parser.add_argument(
         "--mode", choices=["backtest", "paper", "live"],
         default="paper", help="运行模式 (默认: paper)"
+    )
+    parser.add_argument(
+        "--maintenance", action="store_true",
+        help="运行数据库维护 (prune + vacuum + stats) 后退出"
     )
     parser.add_argument(
         "--symbols", default=",".join(cfg.symbols),
@@ -441,6 +495,11 @@ if __name__ == "__main__":
         help="交易循环检查间隔(秒) (默认: 60)"
     )
     args = parser.parse_args()
+
+    # --maintenance mode
+    if args.maintenance:
+        run_maintenance(cfg)
+        sys.exit(0)
 
     symbols = [s.strip() for s in args.symbols.split(",")]
 

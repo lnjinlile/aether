@@ -1,0 +1,38 @@
+# Aether (以太) Strategy Configuration
+# =====================================
+# Define active strategies and their parameters here.
+# Strategies are loaded at startup by StrategyManager.load_from_yaml().
+#
+# Each strategy entry requires:
+#   name     - Unique identifier for the strategy
+#   class    - Python import path to the strategy class
+#   enabled  - Whether the strategy is active (true/false)
+#   params   - Strategy-specific parameters passed to __init__
+
+strategies:
+  - name: MA_Cross
+    class: strategy.examples.ma_cross.MACrossoverStrategy
+    enabled: true
+    params:
+      symbols: [BTC/USDT, ETH/USDT]
+      timeframes: [1h]
+      fast_period: 7
+      slow_period: 25
+      atr_period: 14
+      atr_sl_mult: 2.0
+      atr_tp_mult: 3.0
+      cooldown_bars: 5
+
+  - name: RSI_MR
+    class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
+    enabled: true
+    params:
+      symbols: [BTC/USDT, ETH/USDT]
+      timeframes: [1h]
+      rsi_period: 14
+      oversold: 30
+      overbought: 70
+      exit_rsi: 50
+      stop_loss_pct: 0.03
+      take_profit_pct: 0.06
+      cooldown_bars: 5

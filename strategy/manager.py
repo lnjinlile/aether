@@ -1,9 +1,16 @@
 """Strategy Manager - orchestrates multiple strategies."""
 
+import importlib
+import logging
+import os
 from typing import Dict, List, Optional
+
 import pandas as pd
+import yaml
 
 from .base import BaseStrategy, Signal
+
+logger = logging.getLogger(__name__)
 
 
 class StrategyManager:
@@ -13,6 +20,9 @@ class StrategyManager:
         mgr = StrategyManager()
         mgr.register(ma_cross_strategy)
         mgr.register(rsi_strategy)
+
+        # Or load from YAML config:
+        mgr.load_from_yaml('config/strategies.yaml')
 
         # On new kline data:
         mgr.on_kline_update("BTC/USDT", "15m", df)
@@ -94,6 +104,73 @@ class StrategyManager:
             if symbol in strategy.symbols:
                 results[name] = strategy.generate_signal(symbol)
         return results
+
+    @classmethod
+    def load_from_yaml(cls, yaml_path: str) -> "StrategyManager":
+        """Create a StrategyManager and load strategies from a YAML config file.
+
+        The YAML file should have the following structure:
+
+            strategies:
+              - name: MA_Cross
+                class: strategy.examples.ma_cross.MACrossoverStrategy
+                enabled: true
+                params:
+                  symbols: [BTC/USDT, ETH/USDT]
+                  timeframes: [1h]
+                  fast_period: 7
+                  ...
+
+        Only strategies with ``enabled: true`` are registered.
+
+        Args:
+            yaml_path: Path to the YAML configuration file.
+
+        Returns:
+            StrategyManager instance with strategies loaded and registered.
+
+        Raises:
+            FileNotFoundError: If the YAML file doesn't exist.
+            ImportError: If a strategy class cannot be imported.
+        """
+        if not os.path.isabs(yaml_path):
+            # Resolve relative paths from the project root
+            from config.settings import _PROJECT_ROOT
+            yaml_path = os.path.join(_PROJECT_ROOT, yaml_path)
+
+        with open(yaml_path, "r") as f:
+            config = yaml.safe_load(f)
+
+        mgr = cls()
+        strategies = config.get("strategies", [])
+
+        for strat_cfg in strategies:
+            if not strat_cfg.get("enabled", True):
+                logger.info("Strategy '%s' is disabled, skipping.", strat_cfg.get("name", "unknown"))
+                continue
+
+            name = strat_cfg["name"]
+            class_path = strat_cfg["class"]
+            params = strat_cfg.get("params", {})
+
+            # Dynamically import the strategy class
+            module_path, class_name = class_path.rsplit(".", 1)
+            try:
+                module = importlib.import_module(module_path)
+                strategy_cls = getattr(module, class_name)
+            except (ImportError, AttributeError) as e:
+                logger.error("Failed to import strategy '%s' from '%s': %s",
+                             name, class_path, e)
+                raise ImportError(f"Cannot import {class_path}: {e}") from e
+
+            # Instantiate with params from YAML (name is passed explicitly)
+            params_with_name = {"name": name, **params}
+            strategy = strategy_cls(**params_with_name)
+            mgr.register(strategy)
+            logger.info("Loaded strategy '%s' from %s (params: %s)", name, class_path, params)
+
+        logger.info("Loaded %d strategies from %s", len(mgr), yaml_path)
+        return mgr
 
     def __len__(self) -> int:
         return len(self._strategies)

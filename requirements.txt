@@ -4,3 +4,5 @@ numpy
 websockets
 apscheduler
 python-dotenv
+pyyaml
+matplotlib
