@@ -74,6 +74,7 @@ win_rate = len(wins)/len(closed_trades)*100 if closed_trades else 0
 # Requests v2
 import sys; sys.path.insert(0, os.path.join(BASE, ".aether"))
 from request_system import get_all as get_all_requests, get_stats as get_req_stats
+from task_system import get_tasks, TASK_STATUS
 all_requests = get_all_requests()
 req_stats = get_req_stats()
 
@@ -106,6 +107,17 @@ def progress_bar(pct, label="", color="#22c55e"):
       <div class="progress-bar"><div class="progress-fill" style="width:{min(pct,100)}%;background:{color}"></div></div>
       <span class="progress-pct">{pct:.0f}%</span></div>'''
 
+def agent_tasks(agent):
+    """Render per-agent task queue."""
+    tasks = get_tasks(agent)
+    if not tasks: return ""
+    h = '<div style="margin-top:8px;border-top:1px solid #1e2540;padding-top:6px"><div style="font-size:10px;color:#6b7280;margin-bottom:4px">📋 工作排期</div>'
+    for t in tasks:
+        ts = TASK_STATUS.get(t["status"], {"icon":"?","color":"#6b7280","label":t["status"]})
+        h += f'<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0"><span style="color:{ts["color"]}">{ts["icon"]}</span><span style="flex:1">{t["title"]}</span><span style="color:{ts["color"]};font-size:10px">{ts["label"]}</span></div>'
+    h += '</div>'
+    return h
+
 # ---- ORACLE SECTION ----
 oracle_state = load_json(os.path.join(STATE_DIR, "oracle.json"))
 oracle_lines = []
@@ -120,6 +132,7 @@ if kline_detail:
         oracle_lines.append(f'<tr><td>{k["symbol"]}</td><td>{k["timeframe"]}</td><td>{k["count"]}</td><td>{str(k["latest"])[:16]}</td></tr>')
     oracle_lines.append('</table>')
 oracle_lines.append('<div class="note">数据消费者: Athena(回测), Mercury(信号), Prometheus(参数扫描)</div>')
+oracle_lines.append(agent_tasks("oracle"))
 
 # ---- ATHENA SECTION ----
 athena_state = load_json(os.path.join(STATE_DIR, "athena.json"))
@@ -146,6 +159,7 @@ if bt:
         ("胜率",f'{bt.get("wr","?"):.0f}%'),
     ]))
 
+athena_lines.append(agent_tasks("athena"))
 # ---- GUARDIAN SECTION ----
 guardian_state = load_json(os.path.join(STATE_DIR, "guardian.json"))
 guardian_lines = []
@@ -160,6 +174,7 @@ if open_trades:
         guardian_lines.append(f'<tr><td>{t["symbol"]}</td><td>{t["side"]}</td><td>{t["entry_price"]}</td><td>{t["quantity"]}</td></tr>')
     guardian_lines.append('</table>')
 
+guardian_lines.append(agent_tasks("guardian"))
 # ---- MERCURY SECTION ----
 mercury_state = load_json(os.path.join(STATE_DIR, "mercury.json"))
 mercury_lines = []
@@ -179,6 +194,7 @@ if trades:
         mercury_lines.append(f'<tr><td>#{t["id"]}</td><td>{t["symbol"]}</td><td>{t["side"]}</td><td>{t["entry_price"]}</td><td>{t.get("exit_price") or "—"}</td><td style="color:{pc}">{float(pnl):+.4f}</td><td>{badge(t["status"],"#22c55e" if t["status"]=="OPEN" else "#6b7280")}</td></tr>')
     mercury_lines.append('</table>')
 
+mercury_lines.append(agent_tasks("mercury"))
 # ---- PROMETHEUS SECTION ----
 prom_state = load_json(os.path.join(STATE_DIR, "prometheus.json"))
 prom_lines = []
@@ -195,6 +211,7 @@ prom_lines.append('<div class="task-item"><span class="task-dot" style="backgrou
 prom_lines.append('<div class="task-item"><span class="task-dot" style="background:#6b7280"></span> 波动率预测ML — 待启动</div>')
 prom_lines.append('</div>')
 
+prom_lines.append(agent_tasks("prometheus"))
 # ---- REQUESTS TABLE ----
 req_html = ""
 p_count = req_stats["pending"] + req_stats["acknowledged"] + req_stats["processing"]
