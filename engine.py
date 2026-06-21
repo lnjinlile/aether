@@ -26,53 +26,217 @@ def write_json(filename, data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+def sync_trades_db():
+    """Reconcile trades_log in market.db with live exchange state.
+    
+    Reads live_exchange.json (already fetched by engine) and:
+    1. Closes stale DB records whose position no longer exists on exchange
+    2. Inserts exchange positions missing from DB
+    """
+    try:
+        import sqlite3
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "market.db")
+        if not os.path.exists(db_path):
+            return
+
+        live_state = os.path.join(STATE_DIR, "live_exchange.json")
+        if not os.path.exists(live_state):
+            return
+        with open(live_state) as f:
+            live = json.load(f)
+
+        positions = live.get("positions", [])
+        if not positions:
+            return
+
+        db = sqlite3.connect(db_path)
+        db.row_factory = sqlite3.Row
+        now = time.time()
+
+        open_trades = db.execute("SELECT * FROM trades_log WHERE status='OPEN'").fetchall()
+
+        # Build exchange key set
+        ex_keys = set()
+        for ep in positions:
+            sym = ep["symbol"].replace(":USDT", "")
+            ex_keys.add(f'{sym}:{ep["side"].upper()}')
+
+        changes = 0
+        # 1. Close stale DB records
+        for dt in open_trades:
+            db_sym = dt["symbol"].replace(":USDT", "")
+            db_key = f'{db_sym}:{dt["side"].upper()}'
+            if db_key not in ex_keys:
+                db.execute(
+                    "UPDATE trades_log SET status='CLOSED', exit_time=?, reason=reason || ' [SYNC: position not on exchange]' WHERE id=?",
+                    (now, dt["id"]))
+                logger.info("DB sync: closed stale ID#%d (%s %s)", dt["id"], dt["symbol"], dt["side"])
+                changes += 1
+
+        # 2. Insert missing exchange positions
+        db_keys = {f'{dt["symbol"].replace(":USDT", "")}:{dt["side"].upper()}' for dt in open_trades}
+        for ep in positions:
+            sym = ep["symbol"].replace(":USDT", "")
+            ex_key = f'{sym}:{ep["side"].upper()}'
+            if ex_key not in db_keys:
+                db.execute("""
+                    INSERT INTO trades_log (symbol, side, entry_time, entry_price, quantity, pnl, pnl_pct, fee, strategy_name, reason, status)
+                    VALUES (?, ?, ?, ?, ?, 0.0, 0.0, 0.0, 'SYNC', '[SYNC: from exchange via engine]', 'OPEN')
+                """, (sym, ep["side"], now, ep["entry_price"], ep["contracts"]))
+                logger.info("DB sync: inserted %s %s x%s @ %s", sym, ep["side"], ep["contracts"], ep["entry_price"])
+                changes += 1
+
+        db.commit()
+        db.close()
+        if changes:
+            logger.info("DB sync complete: %d change(s)", changes)
+    except Exception as e:
+        logger.error("DB sync error: %s", e)
+
+
 def run_backtests():
-    """Run backtests on all enabled strategies, write results."""
+    """Run backtests on all enabled strategies using BacktestEngine, write results."""
     try:
         from strategy.manager import StrategyManager
         from data.storage import MarketStorage
+        from backtest.engine import BacktestEngine
+        from backtest.signal_gen import (
+            trendfollow_signals, rsi_mr_signals,
+            dynamic_grid_signals, ma_cross_signals,
+        )
         import numpy as np
+        import yaml
 
-        mgr = StrategyManager.load_from_yaml("config/strategies.yaml")
+        # Load ALL strategies from YAML (enabled+disabled) to know params for disabled ones
+        yaml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "strategies.yaml")
+        with open(yaml_path, "r") as f:
+            strat_cfg = yaml.safe_load(f)
+        all_strategies = strat_cfg.get("strategies", [])
+
         storage = MarketStorage()
+        engine = BacktestEngine(initial_capital=10000.0, commission=0.0004, slippage=0.0001)
 
         results = {}
-        for name in mgr.get_active_strategies():
-            strat = mgr.get_strategy(name)
-            if not strat: continue
-            sym = strat.symbols[0]
-            tf = strat.timeframes[0]
+        for s in all_strategies:
+            name = s["name"]
+            enabled = s.get("enabled", True)
+            p = s.get("params", {})
+            sym = p.get("symbols", [None])[0]
+            tf = p.get("timeframes", [None])[0]
+            strategy_type = s["class"].split(".")[-1]
+
+            if not sym or not tf:
+                results[name] = {"status": "no_config", "error": "Missing symbols/timeframes"}
+                continue
 
             try:
                 df = storage.load_klines(sym, tf)
-                if df.empty:
-                    results[name] = {"status": "no_data", "error": f"No data for {sym} {tf}"}
+                if df.empty or len(df) < 50:
+                    results[name] = {
+                        "status": "no_data",
+                        "symbol": sym, "timeframe": tf,
+                        "data_rows": len(df),
+                        "error": f"Insufficient data ({len(df)} bars) for {sym} {tf}",
+                    }
                     continue
 
-                # Simple backtest
-                mgr.feed_data_only(sym, tf, df)
-                signals = []
-                for i in range(100, len(df)):
-                    window = df.iloc[:i+1]
-                    strat.feed_data(sym, tf, window)
-                    sig = strat.generate_signal(sym)
-                    if sig.type.name != "HOLD":
-                        signals.append({"time": str(df.index[i]), "signal": sig.type.value, "price": float(df.iloc[i]["close"])})
+                # Generate signals based on strategy type
+                try:
+                    if strategy_type == "TrendFollow":
+                        signals = trendfollow_signals(
+                            df, p["ema_period"], p["stop_loss_pct"],
+                            p["take_profit_pct"], p["cooldown_bars"],
+                        )
+                    elif strategy_type == "RSIMeanReversionStrategy":
+                        signals = rsi_mr_signals(
+                            df, p["rsi_period"], p["oversold"], p["overbought"],
+                            p["exit_rsi"], p["stop_loss_pct"], p["take_profit_pct"],
+                            p["cooldown_bars"],
+                        )
+                    elif strategy_type == "MACrossoverStrategy":
+                        signals = ma_cross_signals(
+                            df, p["fast_period"], p["slow_period"],
+                            p["atr_period"], p["atr_sl_mult"], p["atr_tp_mult"],
+                            p["cooldown_bars"],
+                        )
+                    elif strategy_type == "DynamicGridStrategy":
+                        signals = dynamic_grid_signals(
+                            df, p["grid_range_pct"], p["num_levels"],
+                            p["qty_per_level"], p["rebalance_interval_bars"],
+                            p["min_spread_pct"], p.get("leverage", 3),
+                        )
+                    else:
+                        results[name] = {
+                            "status": "skipped",
+                            "symbol": sym, "timeframe": tf,
+                            "data_rows": len(df),
+                            "error": f"Unknown strategy type: {strategy_type}",
+                        }
+                        continue
+                except KeyError as ke:
+                    results[name] = {
+                        "status": "error",
+                        "symbol": sym, "timeframe": tf,
+                        "data_rows": len(df),
+                        "error": f"Missing param {ke} for {strategy_type}",
+                    }
+                    continue
+
+                # Run BacktestEngine
+                bt_result = engine.run(df, signals)
+                m = bt_result["metrics"]
+
+                # Count signals for backward compatibility
+                signal_count = int((signals != 0).sum())
+
+                # Build signal list
+                signal_times = df.index[signals != 0]
+                signal_values = signals[signals != 0]
+                sig_list = []
+                for i in range(len(signal_times)):
+                    sig_list.append({
+                        "time": str(signal_times[i]),
+                        "signal": "LONG" if signal_values.iloc[i] == 1 else (
+                            "SHORT" if signal_values.iloc[i] == -1 else "EXIT"
+                        ),
+                        "price": float(df.loc[signal_times[i], "close"]),
+                    })
 
                 results[name] = {
                     "status": "ok",
-                    "symbol": sym, "timeframe": tf,
+                    "enabled": enabled,
+                    "symbol": sym,
+                    "timeframe": tf,
                     "data_rows": len(df),
-                    "signals_count": len(signals),
-                    "latest_signal": signals[-1] if signals else None,
-                    "last_5_signals": signals[-5:] if signals else [],
+                    "signals_count": signal_count,
+                    "latest_signal": sig_list[-1] if sig_list else None,
+                    "last_5_signals": sig_list[-5:] if sig_list else [],
+                    # Real backtest metrics (NEW)
+                    "metrics": {
+                        "total_return_pct": m["total_return_pct"],
+                        "sharpe_ratio": m["sharpe_ratio"],
+                        "deflated_sharpe_ratio": m["deflated_sharpe_ratio"],
+                        "max_drawdown_pct": m["max_drawdown_pct"],
+                        "win_rate": m["win_rate"],
+                        "profit_factor": m["profit_factor"],
+                        "total_trades": m["total_trades"],
+                        "avg_win_pct": m["avg_win_pct"],
+                        "avg_loss_pct": m["avg_loss_pct"],
+                        "final_equity": m["final_equity"],
+                    },
                 }
             except Exception as e:
                 logger.error("Backtest error for '%s': %s", name, e)
-                results[name] = {"status": "error", "error": str(e)}
+                results[name] = {
+                    "status": "error",
+                    "symbol": sym, "timeframe": tf,
+                    "error": str(e),
+                }
 
         write_json("backtest_results.json", {"strategies": results})
-        logger.info("Backtests: %d strategies evaluated", len(results))
+        # Summary log
+        ok_count = sum(1 for r in results.values() if r.get("status") == "ok")
+        logger.info("Backtests: %d/%d strategies evaluated with real metrics", ok_count, len(results))
     except Exception as e:
         logger.error("Backtest error: %s", e)
         write_json("backtest_results.json", {"error": str(e), "status": "error"})
@@ -224,7 +388,15 @@ def sync_agent_states():
         bt = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
         strat_summary = {}
         for name, s in bt.get("strategies", {}).items():
-            strat_summary[name] = {"signals": s.get("signals_count",0), "status": s.get("status","?")}
+            entry = {"signals": s.get("signals_count", 0), "status": s.get("status", "?")}
+            if "metrics" in s:
+                m = s["metrics"]
+                entry["return_pct"] = m.get("total_return_pct", 0)
+                entry["sharpe"] = m.get("sharpe_ratio", 0)
+                entry["win_rate"] = m.get("win_rate", 0)
+                entry["trades"] = m.get("total_trades", 0)
+                entry["max_dd"] = m.get("max_drawdown_pct", 0)
+            strat_summary[name] = entry
         merge_state("athena", {"status": "ok", "strategies": strat_summary})
 
         risk = load_json(os.path.join(STATE_DIR, "risk_check.json"))
@@ -233,7 +405,29 @@ def sync_agent_states():
         sig = load_json(os.path.join(STATE_DIR, "signals.json"))
         merge_state("mercury", {"status": "ok", "signals_active": len(sig.get("signals",{})), "signals": sig.get("signals",{})})
 
-        merge_state("prometheus", {"status": "active", "dgt_deployed": True, "dgt_btc_pnl": "+22.8%", "dgt_eth_pnl": "+5.4%", "next": "anti_overfitting"})
+        # Prometheus: pull real backtest metrics, never hardcode PnL
+        prom_state = {"status": "active", "strategies": {}}
+        for name, s in bt.get("strategies", {}).items():
+            if "metrics" not in s:
+                continue
+            m = s["metrics"]
+            prom_state["strategies"][name] = {
+                "return_pct": m.get("total_return_pct", 0),
+                "sharpe": m.get("sharpe_ratio", 0),
+                "win_rate": m.get("win_rate", 0),
+                "trades": m.get("total_trades", 0),
+                "max_dd": m.get("max_drawdown_pct", 0),
+            }
+        # Also preserve any Prometheus-specific fields from existing state
+        existing_prom = load_json(os.path.join(STATE_DIR, "prometheus.json"))
+        for key in ("dsr_implemented", "walk_forward_implemented", "anti_overfitting_run", "wf_findings", "next"):
+            if key in existing_prom:
+                prom_state[key] = existing_prom[key]
+        # Clean up stale hardcoded fake fields (replaced by strategies dict)
+        prom_state["dgt_deployed"] = None
+        prom_state["dgt_btc_pnl"] = None
+        prom_state["dgt_eth_pnl"] = None
+        merge_state("prometheus", prom_state)
     except Exception as e:
         logger.error("State sync error: %s", e)
 
@@ -242,6 +436,53 @@ def sync_agent_states():
         import subprocess, sys
         subprocess.run([sys.executable, "generate_dashboard.py"], capture_output=True, timeout=30)
     except: pass
+
+    # Post engine heartbeat summary to bulletin (keeps bulletin fresh every tick)
+    try:
+        from datetime import datetime, timezone
+        risk = load_json(os.path.join(STATE_DIR, "risk_check.json"))
+        bt = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
+        ts = datetime.now(timezone.utc).strftime("%m-%d %H:%M")
+
+        # Build strategy performance summary
+        strat_lines = []
+        for name, s in bt.get("strategies", {}).items():
+            m = s.get("metrics", {})
+            if m:
+                ret = m.get("total_return_pct", 0)
+                sr = m.get("sharpe_ratio", 0)
+                wr = m.get("win_rate", 0)
+                tr = m.get("total_trades", 0)
+                sign = "🟢" if ret > 0 else "🔴"
+                strat_lines.append(f"| {name} | {sign} {ret:+.2f}% | SR={sr:+.2f} | WR={wr:.1f}% | {tr}t |")
+            else:
+                strat_lines.append(f"| {name} | ⚪ no metrics | — | — | — |")
+
+        strat_table = "\n".join(strat_lines) if strat_lines else "| — | — | — | — | — |"
+
+        pos_info = "无持仓"
+        positions = risk.get("positions", [])
+        if positions:
+            p = positions[0]
+            pnl = p.get("unrealized_pnl", 0)
+            pnl_sign = "🟢" if pnl >= 0 else "🔴"
+            pos_info = f"{p.get('side','?')} {p.get('symbol','?')} {p.get('contracts','?')} @ {p.get('entry_price','?')} | uPNL {pnl_sign} {pnl:+.2f}"
+
+        bulletin_entry = (
+            f"\n---\n"
+            f"### {ts} — Engine ♡ | 风控 {risk.get('risk_level','?')} | {pos_info}\n\n"
+            f"| 策略 | 收益 | 夏普 | 胜率 | 笔数 |\n"
+            f"|------|------|------|------|------|\n"
+            f"{strat_table}\n"
+        )
+        bulletin_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "bulletin.md")
+        with open(bulletin_path, "a") as bf:
+            bf.write(bulletin_entry)
+    except Exception:
+        pass  # bulletin is non-critical
+
+    # Sync trades_log DB with exchange (auto-reconcile each heartbeat)
+    sync_trades_db()
 
 
 def load_json(path):
