@@ -28,6 +28,8 @@ from ml_alpha.trainer import AlphaModel
 from backtest.engine import BacktestEngine
 from prometheus_ml_rollback import classify_market_state
 
+Oracle_df_global = None  # module-level cache for oracle features
+
 
 def ml_single_backtest(
     df: pd.DataFrame,
@@ -42,6 +44,7 @@ def ml_single_backtest(
     state_filter: str = None,  # 'TREND', 'RANGE', 'VOLATILE', or None (all)
 ) -> dict:
     """Single train/test split and backtest."""
+    global Oracle_df_global
     engineer = FeatureEngineer()
     engine = BacktestEngine(initial_capital=10000.0, commission=0.0004, slippage=0.0001)
 
@@ -51,8 +54,12 @@ def ml_single_backtest(
     if len(train_df) < 100 or len(test_df) < 10:
         return None
 
-    X_train, y_train = engineer.build_features(train_df)
-    X_test, y_test = engineer.build_features(test_df)
+    # Slice oracle features to match
+    oracle_train = Oracle_df_global.loc[train_df.index] if Oracle_df_global is not None else None
+    oracle_test = Oracle_df_global.loc[test_df.index] if Oracle_df_global is not None else None
+
+    X_train, y_train = engineer.build_features(train_df, oracle_df=oracle_train)
+    X_test, y_test = engineer.build_features(test_df, oracle_df=oracle_test)
 
     if len(X_train) < 100:
         return None
@@ -283,5 +290,16 @@ if __name__ == '__main__':
     df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
     df.set_index('open_time', inplace=True)
     df.sort_index(inplace=True)
+
+    # Load oracle features once for all backtest runs
+    try:
+        from ml_alpha.oracle_features import merge_oracle_features
+        enriched = merge_oracle_features(df, 'BTCUSDT')
+        oracle_cols = [c for c in enriched.columns if c not in df.columns]
+        if oracle_cols:
+            Oracle_df_global = enriched[oracle_cols]
+            print(f"Oracle features loaded: {len(oracle_cols)} columns")
+    except Exception as e:
+        print(f"Oracle features unavailable: {e}")
 
     results = run_sweep(df)

@@ -33,8 +33,25 @@ print(f"Data: {len(df)} bars, {(df.index[-1]-df.index[0]).days}d")
 # Pre-build features ONCE
 engineer = FeatureEngineer()
 print("Building features (once)...")
-X_full, y_full = engineer.build_features(df)
+# Try to enrich with oracle features (OI/funding/orderbook)
+oracle_df = None
+try:
+    from ml_alpha.oracle_features import merge_oracle_features
+    enriched = merge_oracle_features(df, 'BTCUSDT')
+    oracle_cols = [c for c in enriched.columns if c not in df.columns]
+    if oracle_cols:
+        oracle_df = enriched[oracle_cols]
+        print(f"  Oracle features loaded: {len(oracle_cols)} columns")
+    else:
+        print("  No oracle features available (testnet)")
+except Exception as e:
+    print(f"  Oracle features unavailable: {e}")
+
+X_full, y_full = engineer.build_features(df, oracle_df=oracle_df)
 print(f"Features: {X_full.shape}")
+oracle_feats_in_X = [c for c in X_full.columns if c.startswith(('ob_','fund_','oi_'))]
+if oracle_feats_in_X:
+    print(f"  Including oracle: {oracle_feats_in_X}")
 
 # Pre-compute market states
 states = classify_market_state(df)

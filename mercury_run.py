@@ -44,9 +44,21 @@ def fmt_pnl(p: float) -> str:
 def debug_log(msg: str):
     print(f"  [{datetime.now().strftime('%H:%M:%S')}] {msg}")
 
-# ──────────────────────────────────────────────────────────────
-# Main Execution
-# ──────────────────────────────────────────────────────────────
+# ── Strategy Priority (90d Sharpe-based, Oracle verified 2026-06-22) ──
+# Higher score = higher priority. When two strategies conflict on the same
+# symbol, the higher-priority strategy wins and the lower one is suppressed.
+# Scores derived from Oracle 90d backtest: Sharpe * sqrt(trades) to account
+# for statistical significance (higher trade count = more reliable).
+STRATEGY_PRIORITY = {
+    "TrendFollow_BTC_1h":   0.42 * (49 ** 0.5),  # Sharpe 0.42, 49 trades → 2.94
+    "RSI_MR_ETH":           0.60 * (9 ** 0.5),   # Sharpe 0.60, 9 trades  → 1.80
+    "RegimeSwitch_BTC":     0.20 * (49 ** 0.5),  # Sharpe 0.20, 49 trades → 1.40
+    "MLEnsemble_BTC":       0.17 * (10 ** 0.5),  # Sharpe 0.17, 10 trades → 0.54
+}
+
+def get_strategy_priority(name: str) -> float:
+    """Return priority score for a strategy. Unknown strategies get 0."""
+    return STRATEGY_PRIORITY.get(name, 0.0)
 
 def main():
     cfg = get_config()
@@ -231,6 +243,56 @@ def main():
                   f"| 置信度:{sd.get('confidence',0):.1%}")
             if sd.get("reason"):
                 print(f"      理由: {sd['reason'][:80]}")
+
+    # ── 5.5. Conflict Resolution: prevent weak strategies from reversing strong ones ──
+    # Group signals by symbol, detect opposing signals, keep only highest-priority
+    if len(all_signals) >= 2:
+        by_symbol: Dict[str, list] = {}
+        for sname, sym, sig, sdict in all_signals:
+            by_symbol.setdefault(sym, []).append((sname, sig, sdict))
+
+        conflicts_resolved = []
+        for sym, sigs in by_symbol.items():
+            longs = [(sname, sig, sdict) for sname, sig, sdict in sigs
+                     if sig.type == SignalType.LONG]
+            shorts = [(sname, sig, sdict) for sname, sig, sdict in sigs
+                      if sig.type == SignalType.SHORT]
+            # Non-directional signals (CLOSE) pass through unchanged
+            others = [(sname, sig, sdict) for sname, sig, sdict in sigs
+                      if sig.type not in (SignalType.LONG, SignalType.SHORT)]
+
+            if longs and shorts:
+                # Conflict detected — resolve by priority
+                best_long = max(longs, key=lambda x: get_strategy_priority(x[0]))
+                best_short = max(shorts, key=lambda x: get_strategy_priority(x[0]))
+                best_long_prio = get_strategy_priority(best_long[0])
+                best_short_prio = get_strategy_priority(best_short[0])
+
+                if best_long_prio >= best_short_prio:
+                    winner = best_long
+                    loser_side = "SHORT"
+                else:
+                    winner = best_short
+                    loser_side = "LONG"
+
+                for sname, sig, sdict in sigs:
+                    loser_sigs = shorts if loser_side == "SHORT" else longs
+                    if (sname, sig, sdict) in loser_sigs:
+                        print(f"  ⚔️  策略冲突 [{sym}]: {sname}({loser_side}) "
+                              f"被 {winner[0]} 压制 (优先级: "
+                              f"{get_strategy_priority(sname):.2f} < {get_strategy_priority(winner[0]):.2f})")
+                        trades_skipped += 1
+                        execution_results.append({
+                            "symbol": sym, "strategy": sname,
+                            "signal": sig.type.value, "status": "SUPPRESSED",
+                            "reason": f"策略冲突: 被 {winner[0]} 压制"
+                        })
+                    else:
+                        conflicts_resolved.append((sname, sym, sig, sdict))
+            else:
+                conflicts_resolved.extend(sigs)
+
+        all_signals = conflicts_resolved
 
     # ── 6. Risk check & Execute ──────────────────────────────
     trades_executed = 0

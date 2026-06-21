@@ -11,6 +11,7 @@ from data.storage import MarketStorage
 from config.settings import get_config
 from ml_alpha.features import FeatureEngineer
 from ml_alpha.trainer import AlphaModel
+from ml_alpha.oracle_features import merge_oracle_features, get_oracle_feature_names
 from backtest.engine import BacktestEngine
 
 cfg = get_config()
@@ -28,7 +29,19 @@ df.sort_index(inplace=True)
 print(f"Data: {len(df)} bars, {(df.index[-1]-df.index[0]).days}d")
 
 engineer = FeatureEngineer()
-X_full, _ = engineer.build_features(df)
+
+# Load oracle features
+oracle_df = None
+try:
+    enriched = merge_oracle_features(df, 'BTCUSDT')
+    oracle_cols = [c for c in enriched.columns if c not in df.columns]
+    if oracle_cols:
+        oracle_df = enriched[oracle_cols]
+        print(f"  Oracle features: {len(oracle_cols)} columns loaded")
+except Exception as e:
+    print(f"  Oracle features unavailable: {e}")
+
+X_full, _ = engineer.build_features(df, oracle_df=oracle_df)
 print(f"Features: {X_full.shape}")
 
 # Test different prediction horizons

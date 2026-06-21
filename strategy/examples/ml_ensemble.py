@@ -32,8 +32,15 @@ logger = logging.getLogger(__name__)
 # Feature engineering
 # ---------------------------------------------------------------------------
 
-def compute_features(df: pd.DataFrame, lookback: int = 100) -> pd.DataFrame:
-    """Compute 20+ features from OHLCV data.
+def compute_features(df: pd.DataFrame, lookback: int = 100,
+                      oracle_df: pd.DataFrame = None) -> pd.DataFrame:
+    """Compute 20+ features from OHLCV data, optionally enriched with oracle features.
+
+    Args:
+        df: OHLCV DataFrame
+        lookback: Minimum bars for rolling calculations
+        oracle_df: Optional DataFrame with oracle features (OI/funding/orderbook),
+                   must share index with df.
 
     Returns a DataFrame of features aligned with df.index.
     """
@@ -100,6 +107,17 @@ def compute_features(df: pd.DataFrame, lookback: int = 100) -> pd.DataFrame:
     # --- Skew / kurt (distribution features) ---
     feats["skew_20"] = feats["log_return_1"].rolling(20).skew()
     feats["kurt_20"] = feats["log_return_1"].rolling(20).kurt()
+
+    # --- Oracle features (OI / Funding / Orderbook) ---
+    if oracle_df is not None and not oracle_df.empty:
+        common_idx = feats.index.intersection(oracle_df.index)
+        if len(common_idx) > 0:
+            oracle_cols = [c for c in oracle_df.columns
+                          if c not in feats.columns
+                          and not c.startswith(("open_interest", "best_bid", "best_ask", "mid_price", "timestamp"))]
+            for col in oracle_cols:
+                feats[col] = oracle_df[col].reindex(feats.index)
+            logger.debug("Merged %d oracle feature columns", len(oracle_cols))
 
     # Drop NaN-only columns, forward fill any remaining NaN
     feats = feats.replace([np.inf, -np.inf], np.nan)
@@ -378,8 +396,18 @@ class MLEnsembleStrategy(BaseStrategy):
         """Compute features and indicators when data is fed."""
         key = (symbol, timeframe)
 
+        # Try to load oracle features for enrichment
+        oracle_df = None
+        try:
+            from ml_alpha.oracle_features import merge_oracle_features
+            bin_sym = symbol.replace("/", "")  # BTC/USDT -> BTCUSDT
+            enriched = merge_oracle_features(df, bin_sym)
+            oracle_df = enriched[[c for c in enriched.columns if c not in df.columns]]
+        except Exception:
+            pass  # Oracle features are optional
+
         # Compute features
-        X = compute_features(df)
+        X = compute_features(df, oracle_df=oracle_df)
         if self._feature_cols is None:
             self._feature_cols = list(X.columns)
 

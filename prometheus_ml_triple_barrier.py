@@ -21,6 +21,7 @@ from data.storage import MarketStorage
 from config.settings import get_config
 from ml_alpha.features import FeatureEngineer
 from ml_alpha.trainer import AlphaModel
+from ml_alpha.oracle_features import merge_oracle_features, get_oracle_feature_names
 
 cfg = get_config()
 storage = MarketStorage(cfg.db_path)
@@ -41,6 +42,17 @@ print(f"Data: {len(df)} bars, {(df.index[-1]-df.index[0]).days}d")
 close = df['close'].astype(float)
 high = df['high'].astype(float)
 low = df['low'].astype(float)
+
+# Load oracle features once for all models
+oracle_df = None
+try:
+    enriched = merge_oracle_features(df, 'BTCUSDT')
+    oracle_cols = [c for c in enriched.columns if c not in df.columns]
+    if oracle_cols:
+        oracle_df = enriched[oracle_cols]
+        print(f"Oracle features: {len(oracle_cols)} columns loaded")
+except Exception as e:
+    print(f"Oracle features unavailable: {e}")
 
 # ── 1. Triple-Barrier Labeling ──
 print("\n" + "-" * 60)
@@ -109,7 +121,7 @@ for name, tp, sl, max_bars in configs:
     
     # Feature-train split
     engineer = FeatureEngineer()
-    X, _ = engineer.build_features(df)
+    X, _ = engineer.build_features(df, oracle_df=oracle_df)
     
     common = X.index.intersection(y_clean.index)
     X_use = X.loc[common]
@@ -172,7 +184,7 @@ print("=" * 80)
 
 # Next-bar model
 engineer = FeatureEngineer()
-X_nb, y_nb = engineer.build_features(df)
+X_nb, y_nb = engineer.build_features(df, oracle_df=oracle_df)
 common_nb = X_nb.index.intersection(y_nb.index)
 X_nb = X_nb.loc[common_nb]
 y_nb = y_nb.loc[common_nb]

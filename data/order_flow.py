@@ -77,6 +77,7 @@ class OrderFlowCollector:
         """Get a SQLite connection with Row factory for dict-like access."""
         import sqlite3
         conn = sqlite3.connect(self.db_path)
+        conn.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access
         conn.row_factory = sqlite3.Row
         return conn
 

@@ -1696,3 +1696,133 @@ Full results: .aether/athena.json
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | RegimeSwitch_BTC | ⚪ no metrics | — | — | — |
 | RegimeSwitch_ETH | ⚪ no metrics | — | — | — |
+
+---
+### 06-21 19:19 — Engine ♡ | 风控 normal | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.60% | SR=-1.65 | WR=37.3% | 67t |
+| DynamicGrid_ETH | 🔴 -12.39% | SR=-1.06 | WR=42.9% | 56t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🟢 +10.48% | SR=+1.18 | WR=33.3% | 3t |
+| MA_Cross_ETH | 🟢 +25.12% | SR=+1.24 | WR=40.0% | 5t |
+| TrendFollow_BTC | 🟢 +3.23% | SR=+0.29 | WR=36.4% | 11t |
+| TrendFollow_ETH | 🔴 -7.26% | SR=-2.06 | WR=0.0% | 2t |
+| TrendFollow_BTC_1h | 🔴 -3.43% | SR=-1.97 | WR=0.0% | 3t |
+| RSI_MR_BTC | 🟢 +6.14% | SR=+2.05 | WR=100.0% | 2t |
+| RSI_MR_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_BTC | ⚪ no metrics | — | — | — |
+| MLEnsemble_ETH | ⚪ no metrics | — | — | — |
+| RegimeSwitch_BTC | ⚪ no metrics | — | — | — |
+| RegimeSwitch_ETH | ⚪ no metrics | — | — | — |
+
+---
+### 06-21 19:26 — Engine ♡ | 风控 ? | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| — | — | — | — | — |
+
+---
+### 06-21 19:27 — Engine ♡ | 风控 normal | short BTC/USDT:USDT 0.0011 @ 63676.3 | uPNL 🔴 -0.58
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -15.40% | SR=-1.31 | WR=30.6% | 62t |
+| DynamicGrid_ETH | 🔴 -10.93% | SR=-0.85 | WR=48.4% | 62t |
+| MLAlpha_BTC | 🔴 -1.88% | SR=-1.28 | WR=50.0% | 2t |
+| MA_Cross_BTC | 🟢 +9.56% | SR=+1.08 | WR=33.3% | 3t |
+| MA_Cross_ETH | 🟢 +25.10% | SR=+1.24 | WR=40.0% | 5t |
+| TrendFollow_BTC | 🟢 +1.52% | SR=+0.15 | WR=36.4% | 11t |
+| TrendFollow_ETH | 🔴 -7.26% | SR=-2.06 | WR=0.0% | 2t |
+| TrendFollow_BTC_1h | 🔴 -3.43% | SR=-1.97 | WR=0.0% | 3t |
+| RSI_MR_BTC | 🟢 +6.14% | SR=+2.05 | WR=100.0% | 2t |
+| RSI_MR_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_BTC | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| RegimeSwitch_BTC | 🔴 -1.09% | SR=-1.47 | WR=0.0% | 1t |
+| RegimeSwitch_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+
+---
+### 06-21 19:30 — Mercury: 监控中 | 持仓0 | 无信号
+
+---
+### 06-21 19:31 — Engine ♡ | 风控 normal | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -15.40% | SR=-1.31 | WR=30.6% | 62t |
+| DynamicGrid_ETH | 🔴 -10.93% | SR=-0.85 | WR=48.4% | 62t |
+| MLAlpha_BTC | 🔴 -1.88% | SR=-1.28 | WR=50.0% | 2t |
+| MA_Cross_BTC | 🟢 +9.56% | SR=+1.08 | WR=33.3% | 3t |
+| MA_Cross_ETH | 🟢 +25.10% | SR=+1.24 | WR=40.0% | 5t |
+| TrendFollow_BTC | 🟢 +1.52% | SR=+0.15 | WR=36.4% | 11t |
+| TrendFollow_ETH | 🔴 -7.26% | SR=-2.06 | WR=0.0% | 2t |
+| TrendFollow_BTC_1h | 🔴 -3.43% | SR=-1.97 | WR=0.0% | 3t |
+| RSI_MR_BTC | 🟢 +6.14% | SR=+2.05 | WR=100.0% | 2t |
+| RSI_MR_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_BTC | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| RegimeSwitch_BTC | 🔴 -1.09% | SR=-1.47 | WR=0.0% | 1t |
+| RegimeSwitch_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+
+---
+### 06-21 19:36 — Engine ♡ | 风控 normal | short BTC/USDT:USDT 0.0011 @ 63676.3 | uPNL 🔴 -0.55
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -14.73% | SR=-1.12 | WR=34.4% | 64t |
+| DynamicGrid_ETH | 🔴 -6.69% | SR=-0.52 | WR=49.1% | 53t |
+| MLAlpha_BTC | 🔴 -1.75% | SR=-1.18 | WR=50.0% | 2t |
+| MA_Cross_BTC | 🟢 +8.84% | SR=+1.00 | WR=33.3% | 3t |
+| MA_Cross_ETH | 🟢 +25.73% | SR=+1.26 | WR=40.0% | 5t |
+| TrendFollow_BTC | 🟢 +2.51% | SR=+0.23 | WR=36.4% | 11t |
+| TrendFollow_ETH | 🔴 -7.26% | SR=-2.06 | WR=0.0% | 2t |
+| TrendFollow_BTC_1h | 🔴 -3.43% | SR=-1.97 | WR=0.0% | 3t |
+| RSI_MR_BTC | 🟢 +6.14% | SR=+2.05 | WR=100.0% | 2t |
+| RSI_MR_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_BTC | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| RegimeSwitch_BTC | 🔴 -1.09% | SR=-1.47 | WR=0.0% | 1t |
+| RegimeSwitch_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+
+---
+### 06-21 19:41 — Engine ♡ | 风控 normal | short BTC/USDT:USDT 0.0011 @ 63676.3 | uPNL 🔴 -0.56
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -14.73% | SR=-1.12 | WR=34.4% | 64t |
+| DynamicGrid_ETH | 🔴 -6.69% | SR=-0.52 | WR=49.1% | 53t |
+| MLAlpha_BTC | 🔴 -1.75% | SR=-1.18 | WR=50.0% | 2t |
+| MA_Cross_BTC | 🟢 +8.84% | SR=+1.00 | WR=33.3% | 3t |
+| MA_Cross_ETH | 🟢 +25.73% | SR=+1.26 | WR=40.0% | 5t |
+| TrendFollow_BTC | 🟢 +2.51% | SR=+0.23 | WR=36.4% | 11t |
+| TrendFollow_ETH | 🔴 -7.26% | SR=-2.06 | WR=0.0% | 2t |
+| TrendFollow_BTC_1h | 🔴 -3.43% | SR=-1.97 | WR=0.0% | 3t |
+| RSI_MR_BTC | 🟢 +6.14% | SR=+2.05 | WR=100.0% | 2t |
+| RSI_MR_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_BTC | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| RegimeSwitch_BTC | 🔴 -1.09% | SR=-1.47 | WR=0.0% | 1t |
+| RegimeSwitch_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+
+---
+### 06-21 19:46 — Engine ♡ | 风控 normal | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -14.73% | SR=-1.12 | WR=34.4% | 64t |
+| DynamicGrid_ETH | 🔴 -6.69% | SR=-0.52 | WR=49.1% | 53t |
+| MLAlpha_BTC | 🔴 -1.36% | SR=-0.87 | WR=50.0% | 2t |
+| MA_Cross_BTC | 🟢 +6.58% | SR=+0.75 | WR=33.3% | 3t |
+| MA_Cross_ETH | 🟢 +25.73% | SR=+1.26 | WR=40.0% | 5t |
+| TrendFollow_BTC | 🟢 +2.51% | SR=+0.23 | WR=36.4% | 11t |
+| TrendFollow_ETH | 🔴 -7.26% | SR=-2.06 | WR=0.0% | 2t |
+| TrendFollow_BTC_1h | 🔴 -3.43% | SR=-1.97 | WR=0.0% | 3t |
+| RSI_MR_BTC | 🟢 +6.14% | SR=+2.05 | WR=100.0% | 2t |
+| RSI_MR_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_BTC | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| RegimeSwitch_BTC | 🔴 -1.09% | SR=-1.47 | WR=0.0% | 1t |
+| RegimeSwitch_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |

@@ -1,78 +1,86 @@
 {
-  "timestamp": "2026-06-21T16:55:00Z",
+  "timestamp": "2026-06-22T03:40:00Z",
   "heartbeat": {
     "name": "Oracle",
     "role": "Aether 数据脉搏 + 策略审计",
     "frequency": "cron"
   },
   "prices": {
-    "BTC/USDT": 64200.0,
-    "ETH/USDT": 1716.95
+    "BTC/USDT": 63866.6,
+    "ETH/USDT": 1733.69
   },
   "kline_counts": {
-    "BTC/USDT (15m)": 2907,
-    "BTC/USDT (1h)": 2166,
-    "ETH/USDT (15m)": 2907,
-    "ETH/USDT (1h)": 2166
+    "BTC/USDT (15m)": 35040,
+    "BTC/USDT (1h)": 8760,
+    "BTC/USDT (4h)": 2190,
+    "BTC/USDT (1d)": 365,
+    "ETH/USDT (15m)": 35040,
+    "ETH/USDT (1h)": 8760,
+    "ETH/USDT (4h)": 2190,
+    "ETH/USDT (1d)": 365
   },
   "db_stats": {
-    "db_size_bytes": 1126400,
-    "db_size_mb": 1.07,
+    "db_size_mb": 9.17,
     "tables": {
-      "klines": 10146,
-      "trades": 2,
+      "klines": 92710,
       "trades_log": 4,
-      "order_flow": 11
+      "order_flow": 11,
+      "orderbook_snapshots": 18,
+      "funding_rates": 220,
+      "open_interest": 18,
+      "long_short_ratio": 0,
+      "taker_volume": 0
     }
   },
   "data_quality": {
     "nulls": "none",
     "duplicates": "none",
-    "freshness": "current (200 bars fetched 16:51 UTC)",
-    "verdict": "GREEN"
+    "freshness": "STALE: orderbook/OI last updated 2026-06-21 19:34 UTC (~8h ago). data_ext.py restart needed.",
+    "testnet_limitations": "long_short_ratio and taker_volume APIs NOT supported on Binance testnet. These features require mainnet or alternative data source.",
+    "verdict": "YELLOW"
   },
-  "errors": null,
+  "errors": [
+    "DB sync error in engine.py: CHECK constraint failed: side IN ('LONG', 'SHORT') — likely symbol/side column confusion with BTC/USDT format (row #9).",
+    "long_short_ratio table: 0 rows (fetchLongShortRatio not supported on testnet)",
+    "taker_volume table: 0 rows (fapiDataGetTakerlongshortRatio invalid path on testnet)",
+    "data_ext.py DB locked by engine.py — need concurrent DB access fix (WAL mode + busy_timeout)"
+  ],
   "last_audit": {
-    "athena_30d": "2026-06-21 16:45 UTC",
+    "athena_30d": "2026-06-21 19:36 UTC",
     "walk_forward": "2026-06-21 16:14 UTC (prometheus_wf.json)",
-    "oracle_crossref": "2026-06-21 16:55 UTC"
+    "oracle_crossref": "2026-06-22 03:40 UTC"
   },
   "strategy_audit": {
-    "summary": "8 strategies audited. 1 enabled (TrendFollow_BTC 15m). 7 disabled. All consistent across YAML/WF/Athena.",
-    "enabled": [
-      {
-        "name": "TrendFollow_BTC",
-        "tf": "15m",
-        "athena_30d_net": "+79.47%",
-        "athena_rec": "KEEP",
-        "wf_verdict": "BROKEN (1 window, unreliable)",
-        "wf_rec": "KEEP_ENABLED_MONITOR",
-        "risk": "Monitor closely for OOS degradation"
-      }
-    ],
+    "summary": "14 strategies audited. 0 enabled. ALL disabled per Hermes audit resolution (AUDIT-008/012/013/014/016/017). Engine loads 0 active strategies.",
+    "enabled": [],
     "disabled_correctly": [
-      {"name": "TrendFollow_BTC_1h", "reason": "WF DEGRADING (OOS negative despite full 90d +12.66%)"},
-      {"name": "TrendFollow_ETH", "reason": "Full 90d net=-11%, OOS barely positive (+2.27% in 1 window)"},
-      {"name": "MA_Cross_BTC", "reason": "30d net=-33.05%, Sharpe=-1.23, win_rate=7%"},
-      {"name": "MA_Cross_ETH", "reason": "30d net=-23.25%, Sharpe=-0.31, win_rate=26%"},
-      {"name": "RSI_MR_BTC", "reason": "WF BROKEN (IS positive, OOS negative)"},
-      {"name": "RSI_MR_ETH", "reason": "WF CONSISTENT_LOSER, 30d net=-8.54%, AUDIT-002 resolved"},
-      {"name": "DynamicGrid_BTC", "reason": "30d net=-36.8%, Sharpe=-0.85"},
-      {"name": "DynamicGrid_ETH", "reason": "30d net=-57.09%, Sharpe=-0.95"}
+      {"name": "TrendFollow_BTC", "tf": "15m", "reason": "AUDIT-012: 7d WR 29% < 30%, Sharpe -0.36. Athena PAUSE confirmed."},
+      {"name": "TrendFollow_BTC_1h", "tf": "1h", "reason": "AUDIT-013: CONSISTENT_LOSER — 7d -3.43% Sharpe -1.97 WR 0%"},
+      {"name": "TrendFollow_ETH", "tf": "1h", "reason": "Full 90d net=-11%, OOS barely positive"},
+      {"name": "MA_Cross_BTC", "tf": "1h", "reason": "30d net=-33.05%, Sharpe=-1.23, win_rate=7%"},
+      {"name": "MA_Cross_ETH", "tf": "1h", "reason": "30d net=-23.25%, Sharpe=-0.31, win_rate=26%"},
+      {"name": "RSI_MR_BTC", "tf": "1h", "reason": "WF BROKEN (IS positive, OOS negative)"},
+      {"name": "RSI_MR_ETH", "tf": "1h", "reason": "WF CONSISTENT_LOSER, 30d net=-8.54%, 0 signals 7d"},
+      {"name": "DynamicGrid_BTC", "tf": "15m", "reason": "30d net=-36.8%, Sharpe=-0.85"},
+      {"name": "DynamicGrid_ETH", "tf": "15m", "reason": "30d net=-57.09%, Sharpe=-0.95"},
+      {"name": "MLAlpha_BTC", "tf": "1h", "reason": "WF验证FAIL: -27% OOS. Superseded by MLEnsemble."},
+      {"name": "MLEnsemble_BTC", "tf": "1h", "reason": "AUDIT-008/017: 零预测力(corr~0.04), WF pass_rate=0.4"},
+      {"name": "MLEnsemble_ETH", "tf": "1h", "reason": "Athena 90d: -12.32% Sharpe -0.175"},
+      {"name": "RegimeSwitch_BTC", "tf": "1h", "reason": "AUDIT-008/017: backtest error, WF CONSISTENT_LOSER (-16%)"},
+      {"name": "RegimeSwitch_ETH", "tf": "1h", "reason": "Athena 90d: -37.63% Sharpe -1.029"}
     ]
   },
   "resolved_issues": [
     {
-      "id": "AUDIT-002",
-      "request_id": 4,
-      "issue": "RSI_MR_ETH contradiction (7d +26% vs 3m -14.19%)",
-      "resolution": "Disabled in strategies.yaml. Prometheus WF confirms CONSISTENT_LOSER. Athena 30d confirms -8.54%."
+      "id": "AUDIT-019",
+      "request_id": 75,
+      "issue": "oracle.json strategies_enabled lists 1 enabled but all 14 are disabled in strategies.yaml",
+      "resolution": "oracle.json updated to reflect current state: 14 strategies, 0 enabled. This matches strategies.yaml (all enabled:false per Hermes audit resolution)."
     }
   ],
   "critical_finding": {
-    "source": "Prometheus",
-    "title": "30d vs 90d window discrepancy — extreme recency bias",
-    "detail": "Athena 30-day window massively overstates performance. TrendFollow_BTC_1h: 30d=+83% vs 90d=+13%. TrendFollow_ETH: 30d=+100% vs 90d=-11%. Recent market was exceptionally favorable for trends.",
-    "recommendation": "Athena should use >=60 day windows. 30d is insufficient."
+    "title": "Zero active strategies — system in monitoring-only mode",
+    "detail": "All 14 strategies disabled after Hermes audit escalations (AUDIT-008/012/013/014/016/017). Engine producing 0 signals. System is effectively dormant — only data collection and monitoring active. No trading can occur until at least one strategy is rehabilitated and re-enabled.",
+    "recommendation": "Priority: (1) Prometheus must re-validate TrendFollow_BTC with corrected parameters, (2) MLEnsemble needs feature engineering fix (add oracle features from oracle_features.py), (3) Consider enabling conservative TrendFollow_BTC_1h with reduced position size as baseline."
   }
 }
