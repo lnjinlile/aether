@@ -58,6 +58,7 @@ print("=" * 80)
 tf_sweep_btc_1h = []
 df = data.get(('BTC/USDT', '1h'))
 if df is not None and len(df) > 100:
+    n_trials = sum(1 for ema in [20,30,50,75,100,150,200] for sl in [0.01,0.015,0.02,0.025,0.03,0.04,0.05] for tp in [0.02,0.03,0.04,0.05,0.06,0.08,0.10] for cd in [5,8,10,15] if tp > sl)
     for ema in [20, 30, 50, 75, 100, 150, 200]:
         for sl in [0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05]:
             for tp in [0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10]:
@@ -65,7 +66,7 @@ if df is not None and len(df) > 100:
                     continue
                 for cd in [5, 8, 10, 15]:
                     sig = trendfollow_signals(df, ema, sl, tp, cd)
-                    res = engine.run(df, sig)
+                    res = engine.run(df, sig, n_trials=n_trials)
                     m = res['metrics']
                     tf_sweep_btc_1h.append({
                         'ema': ema, 'sl': sl, 'tp': tp, 'cd': cd,
@@ -115,6 +116,7 @@ print("=" * 80)
 tf_sweep_btc_15m = []
 df = data.get(('BTC/USDT', '15m'))
 if df is not None and len(df) > 100:
+    n_trials15 = sum(1 for ema in [30,50,75,100,150,200,250] for sl in [0.005,0.01,0.015,0.02,0.025] for tp in [0.01,0.015,0.02,0.025,0.03,0.04,0.05] for cd in [5,8,10,15,20] if tp > sl)
     for ema in [30, 50, 75, 100, 150, 200, 250]:
         for sl in [0.005, 0.01, 0.015, 0.02, 0.025]:
             for tp in [0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05]:
@@ -122,7 +124,7 @@ if df is not None and len(df) > 100:
                     continue
                 for cd in [5, 8, 10, 15, 20]:
                     sig = trendfollow_signals(df, ema, sl, tp, cd)
-                    res = engine.run(df, sig)
+                    res = engine.run(df, sig, n_trials=n_trials15)
                     m = res['metrics']
                     tf_sweep_btc_15m.append({
                         'ema': ema, 'sl': sl, 'tp': tp, 'cd': cd,
@@ -169,6 +171,7 @@ print("=" * 80)
 tf_sweep_eth_1h = []
 df = data.get(('ETH/USDT', '1h'))
 if df is not None and len(df) > 100:
+    n_trials_eth = sum(1 for ema in [20,30,50,75,100,150,200] for sl in [0.01,0.015,0.02,0.025,0.03,0.04] for tp in [0.02,0.03,0.04,0.05,0.06,0.08] for cd in [5,8,10,15] if tp > sl)
     for ema in [20, 30, 50, 75, 100, 150, 200]:
         for sl in [0.01, 0.015, 0.02, 0.025, 0.03, 0.04]:
             for tp in [0.02, 0.03, 0.04, 0.05, 0.06, 0.08]:
@@ -176,7 +179,7 @@ if df is not None and len(df) > 100:
                     continue
                 for cd in [5, 8, 10, 15]:
                     sig = trendfollow_signals(df, ema, sl, tp, cd)
-                    res = engine.run(df, sig)
+                    res = engine.run(df, sig, n_trials=n_trials_eth)
                     m = res['metrics']
                     tf_sweep_eth_1h.append({
                         'ema': ema, 'sl': sl, 'tp': tp, 'cd': cd,
@@ -217,6 +220,7 @@ print("=" * 80)
 rsi_sweep_btc = []
 df = data.get(('BTC/USDT', '1h'))
 if df is not None and len(df) > 100:
+    n_rsi_btc = sum(1 for rsi_p in [7,14,21] for os_level, ob_level in [(30,70),(25,75),(35,65),(20,80)] for sl in [0.02,0.03,0.04,0.05] for tp in [0.04,0.06,0.08,0.10] if tp > sl)
     for rsi_p in [7, 14, 21]:
         for os_level, ob_level in [(30, 70), (25, 75), (35, 65), (20, 80)]:
             for sl in [0.02, 0.03, 0.04, 0.05]:
@@ -224,7 +228,7 @@ if df is not None and len(df) > 100:
                     if tp <= sl:
                         continue
                     sig = rsi_mr_signals(df, rsi_p, os_level, ob_level, 50, sl, tp, 5)
-                    res = engine.run(df, sig)
+                    res = engine.run(df, sig, n_trials=n_rsi_btc)
                     m = res['metrics']
                     rsi_sweep_btc.append({
                         'rsi_p': rsi_p, 'os': os_level, 'ob': ob_level, 'sl': sl, 'tp': tp,
@@ -264,6 +268,7 @@ print("=" * 80)
 rsi_sweep_eth = []
 df = data.get(('ETH/USDT', '1h'))
 if df is not None and len(df) > 100:
+    n_rsi_eth = sum(1 for rsi_p in [7,14,21] for os_level, ob_level in [(30,70),(25,75),(35,65),(20,80)] for sl in [0.02,0.03,0.04,0.05] for tp in [0.04,0.06,0.08,0.10] if tp > sl)
     for rsi_p in [7, 14, 21]:
         for os_level, ob_level in [(30, 70), (25, 75), (35, 65), (20, 80)]:
             for sl in [0.02, 0.03, 0.04, 0.05]:
@@ -271,7 +276,7 @@ if df is not None and len(df) > 100:
                     if tp <= sl:
                         continue
                     sig = rsi_mr_signals(df, rsi_p, os_level, ob_level, 50, sl, tp, 5)
-                    res = engine.run(df, sig)
+                    res = engine.run(df, sig, n_trials=n_rsi_eth)
                     m = res['metrics']
                     rsi_sweep_eth.append({
                         'rsi_p': rsi_p, 'os': os_level, 'ob': ob_level, 'sl': sl, 'tp': tp,

@@ -8,13 +8,110 @@ Provides:
 """
 
 import logging
+from math import sqrt, log
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+from scipy.stats import norm
 
 logger = logging.getLogger(__name__)
+
+
+# ------------------------------------------------------------------
+# Deflated Sharpe Ratio (Bailey & López de Prado, 2014)
+# ------------------------------------------------------------------
+
+def expected_max_sharpe(n_trials: int, T: int, skew: float = 0.0, kurt: float = 3.0) -> float:
+    """Expected maximum Sharpe ratio from N independent trials.
+
+    Uses extreme value theory approximation for large N:
+        E[max SR] ≈ sqrt(2 * log(N)) * sqrt(Var[SR])
+
+    Adjusted by the distributional correction:
+        Var[SR] = (1 - γ₃×SR + (γ₄-1)/4 × SR²) / (T - 1)
+
+    Args:
+        n_trials: Number of independent trials (parameter combinations tested)
+        T: Number of return observations
+        skew: Skewness of returns (default 0)
+        kurt: Excess kurtosis of returns (default 3 for normal)
+
+    Returns:
+        Expected maximum annualized Sharpe ratio under the null (SR=0)
+    """
+    if n_trials <= 1:
+        return 0.0
+    # Var[SR] under the null (SR=0) simplifies to 1/(T-1)
+    # E[max] = sqrt(2*log(N)) * sqrt(Var[SR])
+    var_sr = 1.0 / max(1, T - 1)
+    em = sqrt(2.0 * log(max(n_trials, 2))) * sqrt(var_sr)
+    return em
+
+
+def probabilistic_sharpe_ratio(
+    sr: float,
+    T: int,
+    sr_benchmark: float = 0.0,
+    skew: float = 0.0,
+    kurt: float = 3.0,
+) -> float:
+    """Probabilistic Sharpe Ratio — probability SR exceeds benchmark.
+
+    PSR = Φ[ (ŜR - SR*) × sqrt(T-1) / sqrt(1 - γ₃×ŜR + (γ₄-1)/4 × ŜR²) ]
+
+    Args:
+        sr: Estimated annualized Sharpe ratio
+        T: Number of return observations
+        sr_benchmark: Benchmark Sharpe (default 0)
+        skew: Skewness of returns
+        kurt: Excess kurtosis (3 = normal)
+
+    Returns:
+        Probability (0-1) that true SR exceeds benchmark
+    """
+    if T < 2:
+        return 0.0
+    numerator = (sr - sr_benchmark) * sqrt(T - 1)
+    # Variance of SR estimator under non-normality
+    denom_factor = 1.0 - skew * sr + (kurt - 1.0) / 4.0 * sr * sr
+    if denom_factor <= 0:
+        denom_factor = 1.0
+    denominator = sqrt(denom_factor)
+    z_score = numerator / denominator
+    return float(norm.cdf(z_score))
+
+
+def deflated_sharpe_ratio(
+    sr: float,
+    T: int,
+    n_trials: int,
+    skew: float = 0.0,
+    kurt: float = 3.0,
+) -> float:
+    """Deflated Sharpe Ratio — PSR with benchmark = E[max SR] over N trials.
+
+    Corrects for multiple hypothesis testing: when you test N strategy
+    variants, the best observed Sharpe is biased upward. DSR gives the
+    probability that the observed SR exceeds the expected maximum purely
+    from randomness.
+
+    DSR > 0.95 ⇒ strategy is likely genuine (not a data-snooping artifact)
+    DSR < 0.80 ⇒ strategy is likely overfit
+
+    Args:
+        sr: Estimated annualized Sharpe ratio
+        T: Number of return observations
+        n_trials: Number of independent trials tested
+        skew: Skewness of returns
+        kurt: Excess kurtosis (3 = normal)
+
+    Returns:
+        Deflated Sharpe Ratio (probability 0-1)
+    """
+    em = expected_max_sharpe(n_trials, T, skew, kurt)
+    return probabilistic_sharpe_ratio(sr, T, sr_benchmark=em, skew=skew, kurt=kurt)
 
 
 class BacktestEngine:
@@ -48,6 +145,7 @@ class BacktestEngine:
         df: pd.DataFrame,
         signals: pd.Series,
         leverage: int = 1,
+        n_trials: int = 1,
     ) -> dict:
         """Run a backtest over OHLCV data with a signal series.
 
@@ -57,12 +155,15 @@ class BacktestEngine:
             signals: Series aligned with df.index, values: 1 (LONG), -1 (SHORT), 0 (FLAT).
                 NaN values are treated as 0 (FLAT).
             leverage: Leverage multiplier (default 1, no leverage)
+            n_trials: Number of independent parameter combinations tested.
+                Used for Deflated Sharpe Ratio computation (default 1 = no deflation).
 
         Returns:
             dict with keys:
                 equity_curve: pd.Series of equity at each timestamp
                 total_return_pct: Total return as percentage
                 sharpe_ratio: Annualized Sharpe ratio
+                deflated_sharpe_ratio: Deflated Sharpe Ratio (PSR vs E[max SR])
                 max_drawdown_pct: Maximum drawdown as percentage
                 win_rate: Fraction of winning trades
                 profit_factor: Gross profit / gross loss
@@ -88,12 +189,13 @@ class BacktestEngine:
         equity, trade_log = self._simulate(df, sig, leverage)
 
         # Compute metrics
-        metrics = self._compute_metrics(equity, trade_log)
+        metrics = self._compute_metrics(equity, trade_log, n_trials)
 
         return {
             "equity_curve": equity,
             "total_return_pct": metrics["total_return_pct"],
             "sharpe_ratio": metrics["sharpe_ratio"],
+            "deflated_sharpe_ratio": metrics["deflated_sharpe_ratio"],
             "max_drawdown_pct": metrics["max_drawdown_pct"],
             "win_rate": metrics["win_rate"],
             "profit_factor": metrics["profit_factor"],
@@ -187,7 +289,8 @@ class BacktestEngine:
     # Metrics
     # ------------------------------------------------------------------
 
-    def _compute_metrics(self, equity: pd.Series, trade_log: pd.DataFrame) -> dict:
+    def _compute_metrics(self, equity: pd.Series, trade_log: pd.DataFrame,
+                         n_trials: int = 1) -> dict:
         """Compute all backtest metrics from equity curve and trade log."""
         if len(equity) < 2:
             return self._empty_metrics()
@@ -201,10 +304,29 @@ class BacktestEngine:
         total_return = (equity.iloc[-1] / self.initial_capital - 1.0) * 100
 
         # Sharpe ratio (annualized, assuming 365 days)
-        if daily_returns.std() > 1e-12:
-            sharpe = (daily_returns.mean() / daily_returns.std()) * np.sqrt(365)
+        ret_mean = daily_returns.mean()
+        ret_std = daily_returns.std()
+        if ret_std > 1e-12:
+            sharpe = (ret_mean / ret_std) * np.sqrt(365)
         else:
             sharpe = 0.0
+
+        # Skewness and kurtosis for PSR/DSR
+        ret_vals = daily_returns.values
+        ret_skew = float(pd.Series(ret_vals).skew()) if len(ret_vals) > 2 else 0.0
+        ret_kurt = float(pd.Series(ret_vals).kurtosis()) if len(ret_vals) > 3 else 3.0
+        # Fix NaN from degenerate distributions
+        if np.isnan(ret_skew): ret_skew = 0.0
+        if np.isnan(ret_kurt): ret_kurt = 3.0
+
+        # Deflated Sharpe Ratio
+        if n_trials > 1 and sharpe > 0 and len(ret_vals) > 5:
+            dsr = deflated_sharpe_ratio(
+                sharpe, len(ret_vals), n_trials,
+                skew=ret_skew, kurt=ret_kurt + 3.0,  # scipy uses excess kurtosis
+            )
+        else:
+            dsr = 1.0 if sharpe > 0 else 0.0  # no deflation if single trial
 
         # Max drawdown
         peak = equity.expanding().max()
@@ -237,6 +359,7 @@ class BacktestEngine:
         return {
             "total_return_pct": round(total_return, 2),
             "sharpe_ratio": round(sharpe, 4),
+            "deflated_sharpe_ratio": round(dsr, 4),
             "max_drawdown_pct": round(max_dd, 2),
             "win_rate": round(win_rate, 2),
             "profit_factor": round(profit_factor, 4),
@@ -246,12 +369,16 @@ class BacktestEngine:
             "best_trade_pct": round(best_trade, 4),
             "worst_trade_pct": round(worst_trade, 4),
             "final_equity": round(equity.iloc[-1], 2),
+            "return_skewness": round(ret_skew, 4),
+            "return_kurtosis": round(ret_kurt, 4),
+            "n_trials": n_trials,
         }
 
     def _empty_metrics(self) -> dict:
         return {
             "total_return_pct": 0.0,
             "sharpe_ratio": 0.0,
+            "deflated_sharpe_ratio": 0.0,
             "max_drawdown_pct": 0.0,
             "win_rate": 0.0,
             "profit_factor": 0.0,
@@ -261,6 +388,9 @@ class BacktestEngine:
             "best_trade_pct": 0.0,
             "worst_trade_pct": 0.0,
             "final_equity": self.initial_capital,
+            "return_skewness": 0.0,
+            "return_kurtosis": 3.0,
+            "n_trials": 1,
         }
 
     def _empty_result(self) -> dict:
@@ -360,6 +490,7 @@ class BacktestEngine:
             f"  Final Equity:       ${m.get('final_equity', 0):,.2f}",
             f"  Total Return:       {m.get('total_return_pct', 0):+.2f}%",
             f"  Sharpe Ratio:       {m.get('sharpe_ratio', 0):.4f}",
+            f"  Deflated Sharpe:    {m.get('deflated_sharpe_ratio', 0):.4f}  (N={m.get('n_trials', 1)})",
             f"  Max Drawdown:       {m.get('max_drawdown_pct', 0):.2f}%",
             "",
             f"  Total Trades:       {m.get('total_trades', 0)}",

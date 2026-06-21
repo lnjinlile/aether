@@ -118,22 +118,24 @@ price = float(df.iloc[-1]['close'])
 print(f"  Data: {len(df)} bars, {(df.index[-1]-df.index[0]).days}d, last price={price:.1f}")
 
 results_1h = []
+# Pre-count valid combos for DSR
+n_combos_1h = sum(1 for ema in [20,30,50,75,100] for sl in [0.01,0.015,0.02,0.03] for tp in [0.02,0.03,0.04,0.05] if tp > sl)
 for ema in [20, 30, 50, 75, 100]:
     for sl in [0.01, 0.015, 0.02, 0.03]:
         for tp in [0.02, 0.03, 0.04, 0.05]:
             if tp <= sl: continue
             sig = trendfollow_signals(df, ema, sl, tp, cooldown_bars=8)
-            res = engine.run(df, sig)
+            res = engine.run(df, sig, n_trials=n_combos_1h)
             m = res['metrics']
             results_1h.append({'ema':ema,'sl':sl,'tp':tp,
-                'net':m['total_return_pct'],'sharpe':m['sharpe_ratio'],
+                'net':m['total_return_pct'],'sharpe':m['sharpe_ratio'],'dsr':m['deflated_sharpe_ratio'],
                 'dd':m['max_drawdown_pct'],'wr':m['win_rate'],'trades':m['total_trades']})
 
 results_1h.sort(key=lambda x: (x['sharpe'] if x['trades']>=4 else -999, x['net']), reverse=True)
 print(f"\n  Top 15 (≥4 trades prioritized):")
 for r in results_1h[:15]:
     print(f"  EMA{r['ema']:4d} SL={r['sl']*100:4.1f}% TP={r['tp']*100:4.1f}% "
-          f"net={r['net']:+7.2f}% shp={r['sharpe']:+6.2f} dd={r['dd']:5.1f}% "
+          f"net={r['net']:+7.2f}% shp={r['sharpe']:+6.2f} dsr={r['dsr']:.4f} dd={r['dd']:5.1f}% "
           f"wr={r['wr']:4.0f}% #T={r['trades']}")
 best_1h = results_1h[0]
 
@@ -146,22 +148,23 @@ print("━" * 70)
 
 df15 = data[('BTC/USDT', '15m')]
 results_15m = []
+n_combos_15m = sum(1 for ema in [30,50,75,100,150,200] for sl in [0.005,0.01,0.015,0.02] for tp in [0.01,0.015,0.02,0.025,0.03] if tp > sl)
 for ema in [30, 50, 75, 100, 150, 200]:
     for sl in [0.005, 0.01, 0.015, 0.02]:
         for tp in [0.01, 0.015, 0.02, 0.025, 0.03]:
             if tp <= sl: continue
             sig = trendfollow_signals(df15, ema, sl, tp, cooldown_bars=10)
-            res = engine.run(df15, sig)
+            res = engine.run(df15, sig, n_trials=n_combos_15m)
             m = res['metrics']
             results_15m.append({'ema':ema,'sl':sl,'tp':tp,
-                'net':m['total_return_pct'],'sharpe':m['sharpe_ratio'],
+                'net':m['total_return_pct'],'sharpe':m['sharpe_ratio'],'dsr':m['deflated_sharpe_ratio'],
                 'dd':m['max_drawdown_pct'],'wr':m['win_rate'],'trades':m['total_trades']})
 
 results_15m.sort(key=lambda x: (x['sharpe'] if x['trades']>=6 else -999, x['net']), reverse=True)
 print(f"\n  Top 15 (≥6 trades prioritized):")
 for r in results_15m[:15]:
     print(f"  EMA{r['ema']:4d} SL={r['sl']*100:4.1f}% TP={r['tp']*100:4.1f}% "
-          f"net={r['net']:+7.2f}% shp={r['sharpe']:+6.2f} dd={r['dd']:5.1f}% "
+          f"net={r['net']:+7.2f}% shp={r['sharpe']:+6.2f} dsr={r['dsr']:.4f} dd={r['dd']:5.1f}% "
           f"wr={r['wr']:4.0f}% #T={r['trades']}")
 best_15m = results_15m[0]
 
@@ -173,21 +176,22 @@ print("PRIORITY 3: RSI_MR BTC 1h — full-range validation")
 print("━" * 70)
 
 rsi_r = []
+n_rsi_combos = 2 * 3 * 4  # 2 rsi_p × 3 os/ob pairs × 4 sl/tp pairs = 24
 for rsi_p in [7, 14]:
     for os_l, ob_l in [(30,70),(25,75),(35,65)]:
         for sl, tp in [(0.02,0.04),(0.02,0.06),(0.03,0.06),(0.03,0.08)]:
             sig = rsi_mr_signals(df, rsi_p, os_l, ob_l, 50, sl, tp, 5)
-            res = engine.run(df, sig)
+            res = engine.run(df, sig, n_trials=n_rsi_combos)
             m = res['metrics']
             rsi_r.append({'rsi_p':rsi_p,'os':os_l,'ob':ob_l,'sl':sl,'tp':tp,
-                'net':m['total_return_pct'],'sharpe':m['sharpe_ratio'],
+                'net':m['total_return_pct'],'sharpe':m['sharpe_ratio'],'dsr':m['deflated_sharpe_ratio'],
                 'dd':m['max_drawdown_pct'],'wr':m['win_rate'],'trades':m['total_trades']})
 
 rsi_r.sort(key=lambda x: (x['sharpe'] if x['trades']>=3 else -999, x['net']), reverse=True)
 print(f"\n  Top 10 (≥3 trades prioritized):")
 for r in rsi_r[:10]:
     print(f"  RSI{r['rsi_p']} OS{r['os']} OB{r['ob']} SL={r['sl']*100:.1f}% TP={r['tp']*100:.1f}% "
-          f"net={r['net']:+7.2f}% shp={r['sharpe']:+6.2f} dd={r['dd']:5.1f}% "
+          f"net={r['net']:+7.2f}% shp={r['sharpe']:+6.2f} dsr={r['dsr']:.4f} dd={r['dd']:5.1f}% "
           f"wr={r['wr']:4.0f}% #T={r['trades']}")
 best_rsi = rsi_r[0] if rsi_r else None
 
@@ -201,21 +205,22 @@ print("━" * 70)
 df_eth = data.get(('ETH/USDT', '1h'))
 if df_eth is not None:
     eth_r = []
+    n_eth_combos = sum(1 for ema in [20,30,50,75] for sl in [0.015,0.02,0.025,0.03] for tp in [0.03,0.04,0.05,0.06] if tp > sl)
     for ema in [20, 30, 50, 75]:
         for sl in [0.015, 0.02, 0.025, 0.03]:
             for tp in [0.03, 0.04, 0.05, 0.06]:
                 if tp <= sl: continue
                 sig = trendfollow_signals(df_eth, ema, sl, tp, cooldown_bars=8)
-                res = engine.run(df_eth, sig)
+                res = engine.run(df_eth, sig, n_trials=n_eth_combos)
                 m = res['metrics']
                 eth_r.append({'ema':ema,'sl':sl,'tp':tp,
-                    'net':m['total_return_pct'],'sharpe':m['sharpe_ratio'],
+                    'net':m['total_return_pct'],'sharpe':m['sharpe_ratio'],'dsr':m['deflated_sharpe_ratio'],
                     'dd':m['max_drawdown_pct'],'wr':m['win_rate'],'trades':m['total_trades']})
     eth_r.sort(key=lambda x: (x['sharpe'] if x['trades']>=3 else -999, x['net']), reverse=True)
     print(f"\n  Top 10:")
     for r in eth_r[:10]:
         print(f"  EMA{r['ema']} SL={r['sl']*100:.1f}% TP={r['tp']*100:.1f}% "
-              f"net={r['net']:+7.2f}% shp={r['sharpe']:+6.2f} dd={r['dd']:5.1f}% "
+              f"net={r['net']:+7.2f}% shp={r['sharpe']:+6.2f} dsr={r['dsr']:.4f} dd={r['dd']:5.1f}% "
               f"wr={r['wr']:4.0f}% #T={r['trades']}")
     best_eth = eth_r[0] if eth_r else None
 
@@ -231,7 +236,7 @@ actions = []
 print(f"\n📊 TrendFollow_BTC_1h:")
 print(f"   CURRENT: EMA=150 SL=3.0% TP=5.0% → 0 TRADES")
 print(f"   BEST:    EMA={best_1h['ema']} SL={best_1h['sl']*100:.1f}% TP={best_1h['tp']*100:.1f}%")
-print(f"            net={best_1h['net']:+.2f}% shp={best_1h['sharpe']:+.2f} dd={best_1h['dd']:.1f}% wr={best_1h['wr']:.0f}% #T={best_1h['trades']}")
+print(f"            net={best_1h['net']:+.2f}% shp={best_1h['sharpe']:+.2f} dsr={best_1h['dsr']:.4f} dd={best_1h['dd']:.1f}% wr={best_1h['wr']:.0f}% #T={best_1h['trades']}")
 if best_1h['sharpe'] > 0 and best_1h['trades'] >= 3:
     print(f"   ✅ UPDATE: EMA={best_1h['ema']} SL={best_1h['sl']*100:.1f}% TP={best_1h['tp']*100:.1f}%")
     actions.append(('TrendFollow_BTC_1h', best_1h['ema'], best_1h['sl'], best_1h['tp'], 8))
@@ -239,7 +244,7 @@ if best_1h['sharpe'] > 0 and best_1h['trades'] >= 3:
 print(f"\n📊 TrendFollow_BTC (15m):")
 print(f"   CURRENT: EMA=150 SL=1.5% TP=2.0% → -1.40%")
 print(f"   BEST:    EMA={best_15m['ema']} SL={best_15m['sl']*100:.1f}% TP={best_15m['tp']*100:.1f}%")
-print(f"            net={best_15m['net']:+.2f}% shp={best_15m['sharpe']:+.2f} dd={best_15m['dd']:.1f}% wr={best_15m['wr']:.0f}% #T={best_15m['trades']}")
+print(f"            net={best_15m['net']:+.2f}% shp={best_15m['sharpe']:+.2f} dsr={best_15m['dsr']:.4f} dd={best_15m['dd']:.1f}% wr={best_15m['wr']:.0f}% #T={best_15m['trades']}")
 if best_15m['sharpe'] > 0.2 and best_15m['trades'] >= 4:
     print(f"   ✅ UPDATE: EMA={best_15m['ema']} SL={best_15m['sl']*100:.1f}% TP={best_15m['tp']*100:.1f}%")
     actions.append(('TrendFollow_BTC', best_15m['ema'], best_15m['sl'], best_15m['tp'], 10))
@@ -250,7 +255,7 @@ if best_rsi:
     print(f"\n📊 RSI_MR (BTC 1h):")
     print(f"   CURRENT: DISABLED")
     print(f"   BEST: RSI={best_rsi['rsi_p']} OS={best_rsi['os']} OB={best_rsi['ob']} SL={best_rsi['sl']*100:.1f}% TP={best_rsi['tp']*100:.1f}%")
-    print(f"         net={best_rsi['net']:+.2f}% shp={best_rsi['sharpe']:+.2f} #T={best_rsi['trades']}")
+    print(f"         net={best_rsi['net']:+.2f}% shp={best_rsi['sharpe']:+.2f} dsr={best_rsi['dsr']:.4f} #T={best_rsi['trades']}")
     if best_rsi['sharpe'] > 0.8 and best_rsi['trades'] >= 3:
         print(f"   ✅ ENABLE with optimized params")
 
