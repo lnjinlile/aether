@@ -59,13 +59,13 @@ def sync_trades_db():
         # Build exchange key set
         ex_keys = set()
         for ep in positions:
-            sym = ep["symbol"].replace(":USDT", "")
+            sym = ep["symbol"].replace(":USDT", "").replace("/", "")
             ex_keys.add(f'{sym}:{ep["side"].upper()}')
 
         changes = 0
         # 1. Close stale DB records
         for dt in open_trades:
-            db_sym = dt["symbol"].replace(":USDT", "")
+            db_sym = dt["symbol"].replace(":USDT", "").replace("/", "")
             db_key = f'{db_sym}:{dt["side"].upper()}'
             if db_key not in ex_keys:
                 db.execute(
@@ -75,16 +75,16 @@ def sync_trades_db():
                 changes += 1
 
         # 2. Insert missing exchange positions
-        db_keys = {f'{dt["symbol"].replace(":USDT", "")}:{dt["side"].upper()}' for dt in open_trades}
+        db_keys = {f'{dt["symbol"].replace(":USDT", "").replace("/", "")}:{dt["side"].upper()}' for dt in open_trades}
         for ep in positions:
-            sym = ep["symbol"].replace(":USDT", "")
+            sym = ep["symbol"].replace(":USDT", "").replace("/", "")
             ex_key = f'{sym}:{ep["side"].upper()}'
             if ex_key not in db_keys:
                 db.execute("""
                     INSERT INTO trades_log (symbol, side, entry_time, entry_price, quantity, pnl, pnl_pct, fee, strategy_name, reason, status)
                     VALUES (?, ?, ?, ?, ?, 0.0, 0.0, 0.0, 'SYNC', '[SYNC: from exchange via engine]', 'OPEN')
-                """, (sym, ep["side"], now, ep["entry_price"], ep["contracts"]))
-                logger.info("DB sync: inserted %s %s x%s @ %s", sym, ep["side"], ep["contracts"], ep["entry_price"])
+                """, (sym, ep["side"].upper(), now, ep["entry_price"], ep["contracts"]))
+                logger.info("DB sync: inserted %s %s x%s @ %s", sym, ep["side"].upper(), ep["contracts"], ep["entry_price"])
                 changes += 1
 
         db.commit()

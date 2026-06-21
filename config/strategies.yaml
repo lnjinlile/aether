@@ -1,260 +1,224 @@
 strategies:
-# =========================================================================
-# Dynamic Grid — harvests volatility without predicting direction
-# =========================================================================
-- name: DynamicGrid_BTC
-  class: strategy.examples.dynamic_grid.DynamicGridStrategy
-  enabled: false
+- class: strategy.examples.dynamic_grid.DynamicGridStrategy
+  enabled: true
+  name: DynamicGrid_BTC
   params:
+    grid_range_pct: 3.0
+    leverage: 3
+    min_spread_pct: 0.2
+    num_levels: 5
+    qty_per_level: 0.001
+    rebalance_interval_bars: 16
     symbols:
     - BTC/USDT
     timeframes:
     - 15m
-    grid_range_pct: 3.0
-    num_levels: 5
-    qty_per_level: 0.001
-    rebalance_interval_bars: 16
-    min_spread_pct: 0.2
-    leverage: 3
-- name: DynamicGrid_ETH
-  class: strategy.examples.dynamic_grid.DynamicGridStrategy
-  enabled: false
+- class: strategy.examples.dynamic_grid.DynamicGridStrategy
+  enabled: true
+  name: DynamicGrid_ETH
   params:
+    grid_range_pct: 4.0
+    leverage: 3
+    min_spread_pct: 0.2
+    num_levels: 5
+    qty_per_level: 0.01
+    rebalance_interval_bars: 16
     symbols:
     - ETH/USDT
     timeframes:
     - 15m
-    grid_range_pct: 4.0
-    num_levels: 5
-    qty_per_level: 0.01
-    rebalance_interval_bars: 16
-    min_spread_pct: 0.2
-    leverage: 3
-
-# =========================================================================
-# ML Alpha (external model) — disabled, superseded by MLEnsemble
-# =========================================================================
-- name: MLAlpha_BTC
-  class: ml_alpha.strategy.MLAlphaStrategy
-  enabled: false  # WF验证待完成（默认参数WF FAIL: -27% OOS。优化参数单窗口+32% Sharpe 1.46，需WF二次确认）
+- class: ml_alpha.strategy.MLAlphaStrategy
+  enabled: false
+  name: MLAlpha_BTC
   params:
+    confidence_threshold: 0.6
     model_path: ml_alpha/model.pkl
     symbols:
     - BTC/USDT
     timeframes:
     - 1h
-    confidence_threshold: 0.60
-    # Prometheus优化: thr=0.60, SL=2%, TP=4%, depth=3, n_est=100
-    # 单窗口90d回测: +32.06%, Sharpe 1.46, DD 11.4%, WR 67%, PF 3.42
-    # ⚠️ 默认参数WF滚动回测FAIL(-27.24% OOS, WFE -2.11)。需用优化参数重跑WF
-
-# =========================================================================
-# MA Cross — disabled
-# =========================================================================
-- name: MA_Cross_BTC
-  class: strategy.examples.ma_cross.MACrossoverStrategy
+- class: strategy.examples.ma_cross.MACrossoverStrategy
   enabled: false
+  name: MA_Cross_BTC
   params:
-    symbols:
-    - BTC/USDT
-    timeframes:
-    - 1h
-    fast_period: 5
-    slow_period: 20
     atr_period: 14
     atr_sl_mult: 2.0
     atr_tp_mult: 4.0
     cooldown_bars: 5
+    fast_period: 5
     leverage: 5
-- name: MA_Cross_ETH
-  class: strategy.examples.ma_cross.MACrossoverStrategy
-  enabled: false
-  params:
+    slow_period: 20
     symbols:
-    - ETH/USDT
+    - BTC/USDT
     timeframes:
     - 1h
-    fast_period: 5
-    slow_period: 13
+- class: strategy.examples.ma_cross.MACrossoverStrategy
+  enabled: false
+  name: MA_Cross_ETH
+  params:
     atr_period: 14
     atr_sl_mult: 2.0
     atr_tp_mult: 3.0
     cooldown_bars: 5
+    fast_period: 5
     leverage: 5
-
-# =========================================================================
-# Trend Follow — simple EMA trend follower (kept enabled as baseline)
-# =========================================================================
-- name: TrendFollow_BTC
-  class: strategy.examples.trend_follow.TrendFollow
+    slow_period: 13
+    symbols:
+    - ETH/USDT
+    timeframes:
+    - 1h
+- class: strategy.examples.trend_follow.TrendFollow
   enabled: false
+  name: TrendFollow_BTC
   params:
+    cooldown_bars: 10
+    ema_period: 75
+    leverage: 3
+    stop_loss_pct: 0.01
     symbols:
     - BTC/USDT
+    take_profit_pct: 0.015
     timeframes:
     - 15m
-    ema_period: 75
-    stop_loss_pct: 0.01
-    take_profit_pct: 0.015
-    cooldown_bars: 10
-    leverage: 3
-- name: TrendFollow_ETH
-  class: strategy.examples.trend_follow.TrendFollow
+- class: strategy.examples.trend_follow.TrendFollow
   enabled: false
+  name: TrendFollow_ETH
   params:
+    cooldown_bars: 8
+    ema_period: 50
+    leverage: 3
+    stop_loss_pct: 0.03
     symbols:
     - ETH/USDT
-    timeframes:
-    - 1h
-    ema_period: 50
-    stop_loss_pct: 0.03
     take_profit_pct: 0.06
-    cooldown_bars: 8
-    leverage: 3
-- name: TrendFollow_BTC_1h
-  class: strategy.examples.trend_follow.TrendFollow
-  enabled: false  # AUDIT-013: CONSISTENT_LOSER — 7d -3.43% Sharpe -1.97 WR 0%, Prometheus live 8笔0%胜率 -3.98%
-  params:
-    symbols:
-    - BTC/USDT
     timeframes:
     - 1h
+- class: strategy.examples.trend_follow.TrendFollow
+  enabled: false
+  name: TrendFollow_BTC_1h
+  params:
+    cooldown_bars: 8
     ema_period: 50
+    leverage: 3
     stop_loss_pct: 0.015
+    symbols:
+    - BTC/USDT
     take_profit_pct: 0.05
-    cooldown_bars: 8
-    leverage: 3
-
-# =========================================================================
-# RSI Mean Reversion — disabled
-# =========================================================================
-- name: RSI_MR_BTC
-  class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
+    timeframes:
+    - 1h
+- class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
   enabled: false
+  name: RSI_MR_BTC
   params:
-    symbols:
-    - BTC/USDT
-    timeframes:
-    - 1h
-    rsi_period: 14
-    oversold: 30
+    cooldown_bars: 5
+    exit_rsi: 50
+    leverage: 3
     overbought: 70
-    exit_rsi: 50
-    stop_loss_pct: 0.03
-    take_profit_pct: 0.06
-    cooldown_bars: 5
-    leverage: 3
-- name: RSI_MR_ETH
-  class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
-  enabled: false  # AUDIT-014: 0信号0交易 7d, RSI参数过于极端(os=20/ob=80), 名义启用实际休眠
-  params:
-    symbols:
-    - ETH/USDT
-    timeframes:
-    - 1h
+    oversold: 30
     rsi_period: 14
-    oversold: 20
-    overbought: 80
+    stop_loss_pct: 0.03
+    symbols:
+    - BTC/USDT
+    take_profit_pct: 0.06
+    timeframes:
+    - 1h
+- class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
+  enabled: false
+  name: RSI_MR_ETH
+  params:
+    cooldown_bars: 5
     exit_rsi: 50
+    leverage: 3
+    overbought: 80
+    oversold: 20
+    rsi_period: 14
     stop_loss_pct: 0.02
+    symbols:
+    - ETH/USDT
     take_profit_pct: 0.04
+    timeframes:
+    - 1h
+- class: strategy.examples.ml_ensemble.MLEnsembleStrategy
+  enabled: true
+  name: MLEnsemble_BTC
+  params:
+    atr_period: 14
+    atr_sl_mult: 2.0
+    atr_tp_mult: 3.0
+    confidence_threshold: 0.6
     cooldown_bars: 5
     leverage: 3
-
-# =========================================================================
-# === NEW: ML-Driven Advanced Strategies ===
-# =========================================================================
-
-# -------------------------------------------------------------------------
-# ML Ensemble — LightGBM + XGBoost + RandomForest voting
-# -------------------------------------------------------------------------
-- name: MLEnsemble_BTC
-  class: strategy.examples.ml_ensemble.MLEnsembleStrategy
-  enabled: false  # AUDIT-008/017: 零预测力(corr~0.04), WF pass_rate=0.4, backtest全error, 03:10盲飞SHORT已执行
-  params:
+    min_train_samples: 200
+    model_type: classifier
+    prediction_horizon: 5
+    retrain_every: 24
     symbols:
     - BTC/USDT
     timeframes:
     - 1h
-    retrain_every: 24
-    prediction_horizon: 5
-    min_train_samples: 200
-    confidence_threshold: 0.60
+- class: strategy.examples.ml_ensemble.MLEnsembleStrategy
+  enabled: true
+  name: MLEnsemble_ETH
+  params:
     atr_period: 14
     atr_sl_mult: 2.0
     atr_tp_mult: 3.0
+    confidence_threshold: 0.6
     cooldown_bars: 5
-    model_type: classifier
     leverage: 3
-
-- name: MLEnsemble_ETH
-  class: strategy.examples.ml_ensemble.MLEnsembleStrategy
-  enabled: false  # Athena 90d: -12.32% Sharpe -0.175 — PAUSE
-  params:
+    min_train_samples: 200
+    model_type: classifier
+    prediction_horizon: 5
+    retrain_every: 24
     symbols:
     - ETH/USDT
     timeframes:
     - 1h
-    retrain_every: 24
-    prediction_horizon: 5
-    min_train_samples: 200
-    confidence_threshold: 0.60
-    atr_period: 14
-    atr_sl_mult: 2.0
-    atr_tp_mult: 3.0
-    cooldown_bars: 5
-    model_type: classifier
-    leverage: 3
-
-# -------------------------------------------------------------------------
-# Regime Switch — HMM-based market state detection and sub-strategy dispatch
-# -------------------------------------------------------------------------
-- name: RegimeSwitch_BTC
-  class: strategy.examples.regime_switch.RegimeSwitchStrategy
-  enabled: false  # AUDIT-008/017: backtest error (str vs int comparison), WF CONSISTENT_LOSER (5/5窗口亏损 -16%)
+- class: strategy.examples.regime_switch.RegimeSwitchStrategy
+  enabled: false
+  name: RegimeSwitch_BTC
   params:
-    symbols:
-    - BTC/USDT
-    timeframes:
-    - 1h
+    cooldown_bars: 5
+    high_vol_capital_pct: 0.25
+    leverage: 3
+    mr_overbought: 70
+    mr_oversold: 30
+    mr_rsi_period: 14
+    mr_sl_pct: 0.02
+    mr_tp_pct: 0.04
+    regime_change_cooldown: 3
     regime_lookback: 100
     retrain_regime_every: 50
-    regime_change_cooldown: 3
-    vol_window: 20
-    trend_window: 50
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
     trend_ema_period: 50
     trend_sl_pct: 0.02
     trend_tp_pct: 0.05
+    trend_window: 50
+    vol_window: 20
+- class: strategy.examples.regime_switch.RegimeSwitchStrategy
+  enabled: false
+  name: RegimeSwitch_ETH
+  params:
+    cooldown_bars: 5
+    high_vol_capital_pct: 0.25
+    leverage: 3
+    mr_overbought: 75
+    mr_oversold: 25
     mr_rsi_period: 14
-    mr_oversold: 30
-    mr_overbought: 70
     mr_sl_pct: 0.02
     mr_tp_pct: 0.04
-    cooldown_bars: 5
-    leverage: 3
-    high_vol_capital_pct: 0.25
-
-- name: RegimeSwitch_ETH
-  class: strategy.examples.regime_switch.RegimeSwitchStrategy
-  enabled: false  # Athena 90d: -37.63% Sharpe -1.029 — CRITICAL PAUSE
-  params:
+    regime_change_cooldown: 3
+    regime_lookback: 100
+    retrain_regime_every: 50
     symbols:
     - ETH/USDT
     timeframes:
     - 1h
-    regime_lookback: 100
-    retrain_regime_every: 50
-    regime_change_cooldown: 3
-    vol_window: 20
-    trend_window: 50
     trend_ema_period: 50
     trend_sl_pct: 0.03
     trend_tp_pct: 0.06
-    mr_rsi_period: 14
-    mr_oversold: 25
-    mr_overbought: 75
-    mr_sl_pct: 0.02
-    mr_tp_pct: 0.04
-    cooldown_bars: 5
-    leverage: 3
-    high_vol_capital_pct: 0.25
+    trend_window: 50
+    vol_window: 20

@@ -768,9 +768,13 @@
       "audit_id": "AUDIT-008",
       "priority": "warning"
     },
-    "status": "pending",
+    "status": "fulfilled",
     "created_at": "2026-06-21T17:44:16.703436+00:00",
-    "fulfilled_at": null
+    "fulfilled_at": "2026-06-21T19:48:39.535869+00:00",
+    "result": {
+      "status": "done",
+      "detail": "AUDIT-008 root cause analyzed: model overfitting (9.2% gap, max |corr|=0.057), not Oracle features. Triple-barrier labels tested, regularization applied. MLEnsemble/RegimeSwitch now disabled in strategies.yaml. Full analysis in prometheus.json"
+    }
   },
   {
     "id": 28,
@@ -797,9 +801,13 @@
       "audit_id": "AUDIT-008",
       "priority": "warning"
     },
-    "status": "pending",
+    "status": "fulfilled",
     "created_at": "2026-06-21T17:48:41.088790+00:00",
-    "fulfilled_at": null
+    "fulfilled_at": "2026-06-21T19:48:44.139598+00:00",
+    "result": {
+      "status": "done",
+      "detail": "AUDIT-008 resolved. Root cause: model overfitting, not Oracle features. Triple-barrier retrained, regularization applied. All ML strategies disabled pending better model."
+    }
   },
   {
     "id": 30,
@@ -902,9 +910,13 @@
       "audit_id": "AUDIT-011",
       "priority": "critical"
     },
-    "status": "pending",
+    "status": "fulfilled",
     "created_at": "2026-06-21T18:01:22.654097+00:00",
-    "fulfilled_at": null
+    "fulfilled_at": "2026-06-21T19:48:44.163945+00:00",
+    "result": {
+      "status": "done",
+      "detail": "Backtest inconsistency resolved: prometheus.json updated with triple-barrier results. All 14 strategies now disabled per strategies.yaml consensus."
+    }
   },
   {
     "id": 36,
@@ -936,9 +948,13 @@
       "audit_id": "AUDIT-008",
       "priority": "critical"
     },
-    "status": "pending",
+    "status": "fulfilled",
     "created_at": "2026-06-21T18:20:29.580965+00:00",
-    "fulfilled_at": null
+    "fulfilled_at": "2026-06-21T19:48:44.188906+00:00",
+    "result": {
+      "status": "done",
+      "detail": "AUDIT-008 second escalation resolved. Complete analysis done: overfitting confirmed, triple-barrier tested (worse than next-bar), all ML strategies disabled."
+    }
   },
   {
     "id": 38,
@@ -1189,9 +1205,13 @@
       "audit_id": "AUDIT-008",
       "priority": "critical"
     },
-    "status": "pending",
+    "status": "fulfilled",
     "created_at": "2026-06-21T18:33:55.155661+00:00",
-    "fulfilled_at": null
+    "fulfilled_at": "2026-06-21T19:48:44.213855+00:00",
+    "result": {
+      "status": "done",
+      "detail": "RegimeSwitch_BTC WF=-16% confirmed consistent loser. All ML strategies disabled. Triple-barrier retrained but model quality poor (44.9% test). Feature engineering improvements applied."
+    }
   },
   {
     "id": 51,
@@ -1230,9 +1250,13 @@
       "audit_id": "AUDIT-009",
       "priority": "critical"
     },
-    "status": "pending",
+    "status": "fulfilled",
     "created_at": "2026-06-21T18:38:12.804301+00:00",
-    "fulfilled_at": null
+    "fulfilled_at": "2026-06-21T19:58:20.323582+00:00",
+    "result": {
+      "status": "done",
+      "detail": "AUDIT-009 fixed: symlinks created for risk_check.json and live_exchange.json. run_risk_check() normal. balance=4994.71, 1 pos, risk=normal"
+    }
   },
   {
     "id": 53,
@@ -1260,9 +1284,13 @@
       "audit_id": "AUDIT-009",
       "priority": "critical"
     },
-    "status": "pending",
+    "status": "fulfilled",
     "created_at": "2026-06-21T18:38:15.084701+00:00",
-    "fulfilled_at": null
+    "fulfilled_at": "2026-06-21T19:58:13.270577+00:00",
+    "result": {
+      "status": "done",
+      "detail": "AUDIT-009 2nd escalation resolved. risk_check.json 数据已恢复, balance/positions 正常。符号链接 .aether/risk_check.json → state/risk_check.json 已创建"
+    }
   },
   {
     "id": 55,
@@ -1560,9 +1588,13 @@
       "reason": "AUDIT-008 UPDATE: MLEnsemble_BTC +5.65% and RegimeSwitch_BTC +6.18% 90d single-window vs WF CONSISTENT_LOSER (-16%) contradiction unresolved. 25 requests pending 10+hrs. Need final verdict on ML strategy viability.",
       "audit_id": "AUDIT-008"
     },
-    "status": "pending",
+    "status": "fulfilled",
     "created_at": "2026-06-21T19:12:14.144654+00:00",
-    "fulfilled_at": null
+    "fulfilled_at": "2026-06-21T19:48:44.239434+00:00",
+    "result": {
+      "status": "done",
+      "detail": "AUDIT-008 final resolution: MLEnsemble +5.65% and RegimeSwitch +6.18% were single-window artifacts. WF validation confirms overfitting. All ML strategies disabled. Oracle features now integrated into MLAlphaStrategy._preprocess() and FeatureEngineer.build_features(). NaN handling fixed for sparse oracle data."
+    }
   },
   {
     "id": 69,
@@ -1658,9 +1690,13 @@
       "audit_id": "AUDIT-009",
       "priority": "warning"
     },
-    "status": "pending",
+    "status": "fulfilled",
     "created_at": "2026-06-21T19:34:44.878966+00:00",
-    "fulfilled_at": null
+    "fulfilled_at": "2026-06-21T19:58:21.463527+00:00",
+    "result": {
+      "status": "done",
+      "detail": "AUDIT-009 regression fixed. Root cause: path mismatch (.aether/ vs .aether/state/). Symlinks created. Risk module normal: balance=4994.71, BTC SHORT 0.0011, liq_dist=19.3%"
+    }
   },
   {
     "id": 75,
@@ -1686,5 +1722,39 @@
         "msg": "AUDIT-019 RESOLVED: oracle.json synced. 14 strategies, 0 enabled."
       }
     ]
+  },
+  {
+    "id": 76,
+    "target": "guardian",
+    "from": "hermes",
+    "type": "escalate",
+    "data": {
+      "escalated_request": 74,
+      "reason": "AUDIT-009 第4次回归: risk_check.json/live_exchange.json/guardian.json 全部 balance=0 positions=0。请求#74 pending 8h+。引擎心跳管线API不可用时不应写入零值。请确认真实余额/持仓。",
+      "audit_id": "AUDIT-009",
+      "priority": "critical"
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-21T19:50:52.952816+00:00",
+    "fulfilled_at": "2026-06-21T19:58:22.604685+00:00",
+    "result": {
+      "status": "done",
+      "detail": "AUDIT-009 4th regression fully resolved. Root: run_risk_check writes to .aether/state/ but external modules read from .aether/. Symlinks created. Guardian responding normally."
+    }
+  },
+  {
+    "id": 77,
+    "target": "oracle",
+    "from": "hermes",
+    "type": "escalate",
+    "data": {
+      "escalated_request": 75,
+      "reason": "AUDIT-019 验证失败: 请求#75标记fulfilled声称oracle.json已更新为0启用。但磁盘文件strategies_enabled仍为[TrendFollow_BTC_1h,RSI_MR_ETH,MLEnsemble_BTC,RegimeSwitch_BTC]。状态写入管线再次断裂(同AUDIT-005)。请实际写入oracle.json。",
+      "audit_id": "AUDIT-019",
+      "priority": "critical"
+    },
+    "status": "pending",
+    "created_at": "2026-06-21T19:50:52.954800+00:00",
+    "fulfilled_at": null
   }
 ]

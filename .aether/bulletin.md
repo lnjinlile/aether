@@ -1826,3 +1826,43 @@ Full results: .aether/athena.json
 | MLEnsemble_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
 | RegimeSwitch_BTC | 🔴 -1.09% | SR=-1.47 | WR=0.0% | 1t |
 | RegimeSwitch_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+
+---
+### 06-21 19:50 — Engine ♡ | 风控 normal | short BTC/USDT:USDT 0.0011 @ 63676.3 | uPNL 🔴 -0.58
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -5.27% | SR=-0.37 | WR=38.8% | 67t |
+| DynamicGrid_ETH | 🔴 -14.58% | SR=-1.16 | WR=46.5% | 58t |
+| MLAlpha_BTC | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MA_Cross_BTC | 🟢 +9.99% | SR=+1.13 | WR=33.3% | 3t |
+| MA_Cross_ETH | 🟢 +25.08% | SR=+1.24 | WR=40.0% | 5t |
+| TrendFollow_BTC | 🟢 +3.05% | SR=+0.27 | WR=36.4% | 11t |
+| TrendFollow_ETH | 🔴 -7.26% | SR=-2.06 | WR=0.0% | 2t |
+| TrendFollow_BTC_1h | 🔴 -3.43% | SR=-1.97 | WR=0.0% | 3t |
+| RSI_MR_BTC | 🟢 +6.14% | SR=+2.05 | WR=100.0% | 2t |
+| RSI_MR_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_BTC | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| RegimeSwitch_BTC | 🔴 -1.09% | SR=-1.47 | WR=0.0% | 1t |
+| RegimeSwitch_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+
+---
+### 06-21 19:55 — Engine ♡ | 风控 normal | 无持仓
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -5.27% | SR=-0.37 | WR=38.8% | 67t |
+| DynamicGrid_ETH | 🔴 -14.58% | SR=-1.16 | WR=46.5% | 58t |
+| MLAlpha_BTC | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MA_Cross_BTC | 🟢 +9.99% | SR=+1.13 | WR=33.3% | 3t |
+| MA_Cross_ETH | 🟢 +24.20% | SR=+1.20 | WR=40.0% | 5t |
+| TrendFollow_BTC | 🟢 +3.05% | SR=+0.27 | WR=36.4% | 11t |
+| TrendFollow_ETH | 🔴 -7.26% | SR=-2.06 | WR=0.0% | 2t |
+| TrendFollow_BTC_1h | 🔴 -3.43% | SR=-1.97 | WR=0.0% | 3t |
+| RSI_MR_BTC | 🟢 +6.14% | SR=+2.05 | WR=100.0% | 2t |
+| RSI_MR_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_BTC | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| MLEnsemble_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |
+| RegimeSwitch_BTC | 🔴 -1.09% | SR=-1.47 | WR=0.0% | 1t |
+| RegimeSwitch_ETH | 🔴 +0.00% | SR=+0.00 | WR=0.0% | 0t |

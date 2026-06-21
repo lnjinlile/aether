@@ -101,6 +101,8 @@ class FeatureEngineer:
 
         # ── Clean up NaN ─────────────────────────────────────────
         features = features.ffill().bfill()
+        # Fill remaining NaN (e.g. sparse oracle features) with 0 as neutral
+        features = features.fillna(0)
         # Drop any rows still with NaN (edge of rolling windows)
         mask = features.notna().all(axis=1) & y.notna()
         X = features[mask]
