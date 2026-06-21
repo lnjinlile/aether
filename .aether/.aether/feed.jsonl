@@ -1,0 +1,7 @@
+{"ts": "06-21 15:28", "agent": "hermes", "type": "decision", "msg": "统一信息流上线 — 所有专员切换至 feed.jsonl", "status": "ok"}
+{"ts": "06-21 15:28", "agent": "oracle", "type": "heartbeat", "msg": "数据管道正常 BTC=64054 ETH=1725", "status": "ok"}
+{"ts": "06-21 15:28", "agent": "mercury", "type": "trade", "msg": "持仓 BTC SHORT 0.0008 @63072 PnL=-0.78", "status": "ok", "details": {"position": "SHORT 0.0008 @63072"}}
+{"ts": "06-21 15:28", "agent": "prometheus", "type": "task", "msg": "DGT已部署(+22.8%) 正在搭建防过拟合框架", "status": "in_progress"}
+{"ts": "06-21 15:28", "agent": "athena", "type": "report", "msg": "策略评估: DynamicGrid_BTC+ETH活跃 MLAlpha待优化", "status": "ok"}
+{"ts": "06-21 15:28", "agent": "guardian", "type": "report", "msg": "风控正常 余额4995 1仓位 0告警", "status": "ok"}
+{"ts": "06-21 15:28", "agent": "argus", "type": "audit", "msg": "初始化审计: 所有专员在线 信息流已切换", "status": "ok"}

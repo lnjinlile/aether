@@ -1,69 +1,48 @@
 {
   "status": "ok",
-  "timestamp": "2026-06-21T12:23:00Z",
+  "timestamp": "2026-06-21T15:23:51Z",
   "overall": "GREEN",
   "account": {
-    "total_wallet_balance": 4995.56,
-    "total_margin_balance": 4994.82,
-    "available_balance": 4971.73,
-    "unrealized_pnl": -0.74,
-    "margin_used": 23.09,
-    "margin_utilization_pct": 0.46,
-    "position_exposure_pct": 2.31,
-    "effective_leverage": 0.023,
-    "btc_holding": 0.01,
-    "usdc_holding": 5000.00
+    "total_wallet_balance": 4995.57,
+    "total_margin_balance": 4995.57,
+    "available_balance": 4983.95,
+    "unrealized_pnl": 0.06,
+    "margin_used": 11.62,
+    "margin_utilization_pct": 0.23,
+    "position_exposure_pct": 1.2,
+    "effective_leverage": 0.012
   },
   "positions": [
     {
       "symbol": "BTCUSDT",
-      "side": "SHORT",
-      "contracts": 0.0018,
-      "entry_price": 63738.31,
-      "mark_price": 64150.41,
-      "unrealized_pnl": -0.74,
-      "unrealized_pnl_pct": -3.21,
-      "liquidation_price": 2827741.05,
-      "liq_distance_pct": 4307.0,
+      "side": "LONG",
+      "contracts": 0.0009,
+      "entry_price": 64099.9,
+      "mark_price": 64166.82,
+      "unrealized_pnl": 0.06,
+      "unrealized_pnl_pct": 0.1,
+      "liquidation_price": 51462.31,
+      "liq_distance_pct": 19.8,
       "leverage": 1,
-      "margin_type": "cross",
-      "notional": 115.47,
-      "initial_margin": 23.09,
-      "maint_margin": 0.46,
-      "sl_on_exchange": false,
-      "tp_on_exchange": false
+      "margin_type": "isolated",
+      "notional": 57.75,
+      "initial_margin": 11.62
     }
   ],
   "risk_metrics": {
-    "liquidation_distance_pct": 4307.0,
+    "liquidation_distance_pct": 19.8,
     "liquidation_threshold": 5.0,
     "liquidation_status": "OK",
-    "margin_utilization_pct": 0.46,
+    "margin_utilization_pct": 0.23,
     "margin_utilization_limit": 80.0,
     "margin_utilization_status": "OK",
-    "position_exposure_pct": 2.31,
+    "position_exposure_pct": 1.2,
     "position_exposure_limit": 80.0,
     "position_exposure_status": "OK",
-    "effective_leverage": 0.023,
+    "effective_leverage": 0.012,
     "open_orders": 0,
     "overall_status": "GREEN"
   },
-  "alerts": [
-    {
-      "severity": "YELLOW",
-      "type": "NO_SLTP_ORDERS",
-      "detail": "BTCUSDT SHORT 0.0018 has no exchange-level SL/TP orders. Mercury does not place them on Binance."
-    },
-    {
-      "severity": "RESOLVED",
-      "type": "ATHENA_PAUSE_APPLIED",
-      "detail": "TrendFollow_BTC now enabled:false in strategies.yaml. Previous P0 PAUSE directive has been applied."
-    },
-    {
-      "severity": "INFO",
-      "type": "TESTNET_SIMULATION",
-      "detail": "Testnet running. No real risk exposure. All positions on Binance testnet."
-    }
-  ],
-  "notes": "Mercury holding BTC SHORT 0.0018 @ 63738. uPNL -0.74 (-3.21%). Position very light (2.31%), liq price 2.8M effectively infinite. No exchange SL/TP orders. TrendFollow_BTC now disabled per Athena directive."
+  "alerts": [],
+  "notes": ""
 }

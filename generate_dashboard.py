@@ -180,6 +180,22 @@ if live_positions:
 else:
     live_html += '<div style="color:#6b7280;font-size:12px;margin-top:8px">无持仓</div>'
 
+# Feed
+feed_path = os.path.join(BASE, ".aether", "feed.jsonl")
+feed_entries = []
+if os.path.exists(feed_path):
+    with open(feed_path) as f:
+        for line in f.readlines()[-20:]:
+            try: feed_entries.append(json.loads(line.strip()))
+            except: pass
+feed_html = ""
+if feed_entries:
+    for e in feed_entries[-15:]:
+        feed_html += '<div style="padding:4px 8px;border-bottom:1px solid #141829">[{}] <b>{}</b>: {}</div>'.format(
+            e.get("ts","?"), e.get("agent","?"), e.get("msg","")[:120])
+else:
+    feed_html = '<div class="empty">信息流为空</div>'
+
 # ====== HTML ======
 html = f'''<!DOCTYPE html>
 <html lang="zh">
@@ -232,7 +248,12 @@ h1{{font-size:24px;margin-bottom:4px;color:#f8fafc}}h1 span{{color:#f59e0b}}
 <div class="section-title">💹 币安测试网 · 实时持仓</div>
 <div class="card" style="border-top:3px solid #22c55e"><h3>📡 交易所实时数据</h3>{live_html}</div>
 
-<div class="footer">Aether Dashboard v4 · 60秒刷新 · 数据源: engine.py</div>
+<div class="section-title">📡 实时信息流</div>
+<div class="card"><div style="max-height:300px;overflow-y:auto;font-size:11px">
+{feed_html}
+</div></div>
+
+<div class="footer">Aether Dashboard v4 · 60秒刷新 · feed.jsonl</div>
 </body>
 </html>'''
 

@@ -680,3 +680,22 @@ Full results: .aether/athena.json
 
 ---
 ### 06-21 15:12 — 🧪 测试: Mercury 执行一笔 LONG BTC/USDT @ 64000 止损62560 止盈66560
+
+---
+### 06-21 15:25 — Mercury: 监控中 | 持仓1 | 无新交易
+
+---
+### 06-21 15:28 — Engine ♡ | 风控 normal | long BTC/USDT:USDT 0.0009 @ 64099.9 | uPNL 🟢 +0.11
+
+| 策略 | 收益 | 夏普 | 胜率 | 笔数 |
+|------|------|------|------|------|
+| DynamicGrid_BTC | 🔴 -20.90% | SR=-1.28 | WR=3482% | 247t |
+| DynamicGrid_ETH | 🔴 -28.69% | SR=-1.26 | WR=3734% | 241t |
+| MLAlpha_BTC | ⚪ no metrics | — | — | — |
+| MA_Cross_BTC | 🔴 -3.30% | SR=-0.13 | WR=2833% | 60t |
+| MA_Cross_ETH | 🔴 -4.44% | SR=-0.11 | WR=3108% | 74t |
+| TrendFollow_BTC | 🔴 -14.27% | SR=-0.49 | WR=2553% | 94t |
+| TrendFollow_ETH | 🔴 -11.00% | SR=-0.22 | WR=2679% | 56t |
+| RSI_MR_BTC | 🔴 -0.02% | SR=+0.02 | WR=6562% | 32t |
+| RSI_MR_ETH | 🔴 -14.18% | SR=-0.34 | WR=6961% | 102t |
+| TrendFollow_BTC_1h | 🟢 +10.67% | SR=+0.31 | WR=3469% | 49t |
