@@ -27,52 +27,148 @@ def write_json(filename, data):
 
 
 def run_backtests():
-    """Run backtests on all enabled strategies, write results."""
+    """Run backtests on all enabled strategies using BacktestEngine, write results."""
     try:
         from strategy.manager import StrategyManager
         from data.storage import MarketStorage
+        from backtest.engine import BacktestEngine
+        from backtest.signal_gen import (
+            trendfollow_signals, rsi_mr_signals,
+            dynamic_grid_signals, ma_cross_signals,
+        )
         import numpy as np
+        import yaml
 
-        mgr = StrategyManager.load_from_yaml("config/strategies.yaml")
+        # Load ALL strategies from YAML (enabled+disabled) to know params for disabled ones
+        yaml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "strategies.yaml")
+        with open(yaml_path, "r") as f:
+            strat_cfg = yaml.safe_load(f)
+        all_strategies = strat_cfg.get("strategies", [])
+
         storage = MarketStorage()
+        engine = BacktestEngine(initial_capital=10000.0, commission=0.0004, slippage=0.0001)
 
         results = {}
-        for name in mgr.get_active_strategies():
-            strat = mgr.get_strategy(name)
-            if not strat: continue
-            sym = strat.symbols[0]
-            tf = strat.timeframes[0]
+        for s in all_strategies:
+            name = s["name"]
+            enabled = s.get("enabled", True)
+            p = s.get("params", {})
+            sym = p.get("symbols", [None])[0]
+            tf = p.get("timeframes", [None])[0]
+            strategy_type = s["class"].split(".")[-1]
+
+            if not sym or not tf:
+                results[name] = {"status": "no_config", "error": "Missing symbols/timeframes"}
+                continue
 
             try:
                 df = storage.load_klines(sym, tf)
-                if df.empty:
-                    results[name] = {"status": "no_data", "error": f"No data for {sym} {tf}"}
+                if df.empty or len(df) < 50:
+                    results[name] = {
+                        "status": "no_data",
+                        "symbol": sym, "timeframe": tf,
+                        "data_rows": len(df),
+                        "error": f"Insufficient data ({len(df)} bars) for {sym} {tf}",
+                    }
                     continue
 
-                # Simple backtest
-                mgr.feed_data_only(sym, tf, df)
-                signals = []
-                for i in range(100, len(df)):
-                    window = df.iloc[:i+1]
-                    strat.feed_data(sym, tf, window)
-                    sig = strat.generate_signal(sym)
-                    if sig.type.name != "HOLD":
-                        signals.append({"time": str(df.index[i]), "signal": sig.type.value, "price": float(df.iloc[i]["close"])})
+                # Generate signals based on strategy type
+                try:
+                    if strategy_type == "TrendFollow":
+                        signals = trendfollow_signals(
+                            df, p["ema_period"], p["stop_loss_pct"],
+                            p["take_profit_pct"], p["cooldown_bars"],
+                        )
+                    elif strategy_type == "RSIMeanReversionStrategy":
+                        signals = rsi_mr_signals(
+                            df, p["rsi_period"], p["oversold"], p["overbought"],
+                            p["exit_rsi"], p["stop_loss_pct"], p["take_profit_pct"],
+                            p["cooldown_bars"],
+                        )
+                    elif strategy_type == "MACrossoverStrategy":
+                        signals = ma_cross_signals(
+                            df, p["fast_period"], p["slow_period"],
+                            p["atr_period"], p["atr_sl_mult"], p["atr_tp_mult"],
+                            p["cooldown_bars"],
+                        )
+                    elif strategy_type == "DynamicGridStrategy":
+                        signals = dynamic_grid_signals(
+                            df, p["grid_range_pct"], p["num_levels"],
+                            p["qty_per_level"], p["rebalance_interval_bars"],
+                            p["min_spread_pct"], p.get("leverage", 3),
+                        )
+                    else:
+                        results[name] = {
+                            "status": "skipped",
+                            "symbol": sym, "timeframe": tf,
+                            "data_rows": len(df),
+                            "error": f"Unknown strategy type: {strategy_type}",
+                        }
+                        continue
+                except KeyError as ke:
+                    results[name] = {
+                        "status": "error",
+                        "symbol": sym, "timeframe": tf,
+                        "data_rows": len(df),
+                        "error": f"Missing param {ke} for {strategy_type}",
+                    }
+                    continue
+
+                # Run BacktestEngine
+                bt_result = engine.run(df, signals)
+                m = bt_result["metrics"]
+
+                # Count signals for backward compatibility
+                signal_count = int((signals != 0).sum())
+
+                # Build signal list
+                signal_times = df.index[signals != 0]
+                signal_values = signals[signals != 0]
+                sig_list = []
+                for i in range(len(signal_times)):
+                    sig_list.append({
+                        "time": str(signal_times[i]),
+                        "signal": "LONG" if signal_values.iloc[i] == 1 else (
+                            "SHORT" if signal_values.iloc[i] == -1 else "EXIT"
+                        ),
+                        "price": float(df.loc[signal_times[i], "close"]),
+                    })
 
                 results[name] = {
                     "status": "ok",
-                    "symbol": sym, "timeframe": tf,
+                    "enabled": enabled,
+                    "symbol": sym,
+                    "timeframe": tf,
                     "data_rows": len(df),
-                    "signals_count": len(signals),
-                    "latest_signal": signals[-1] if signals else None,
-                    "last_5_signals": signals[-5:] if signals else [],
+                    "signals_count": signal_count,
+                    "latest_signal": sig_list[-1] if sig_list else None,
+                    "last_5_signals": sig_list[-5:] if sig_list else [],
+                    # Real backtest metrics (NEW)
+                    "metrics": {
+                        "total_return_pct": m["total_return_pct"],
+                        "sharpe_ratio": m["sharpe_ratio"],
+                        "deflated_sharpe_ratio": m["deflated_sharpe_ratio"],
+                        "max_drawdown_pct": m["max_drawdown_pct"],
+                        "win_rate": m["win_rate"],
+                        "profit_factor": m["profit_factor"],
+                        "total_trades": m["total_trades"],
+                        "avg_win_pct": m["avg_win_pct"],
+                        "avg_loss_pct": m["avg_loss_pct"],
+                        "final_equity": m["final_equity"],
+                    },
                 }
             except Exception as e:
                 logger.error("Backtest error for '%s': %s", name, e)
-                results[name] = {"status": "error", "error": str(e)}
+                results[name] = {
+                    "status": "error",
+                    "symbol": sym, "timeframe": tf,
+                    "error": str(e),
+                }
 
         write_json("backtest_results.json", {"strategies": results})
-        logger.info("Backtests: %d strategies evaluated", len(results))
+        # Summary log
+        ok_count = sum(1 for r in results.values() if r.get("status") == "ok")
+        logger.info("Backtests: %d/%d strategies evaluated with real metrics", ok_count, len(results))
     except Exception as e:
         logger.error("Backtest error: %s", e)
         write_json("backtest_results.json", {"error": str(e), "status": "error"})
@@ -224,7 +320,15 @@ def sync_agent_states():
         bt = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
         strat_summary = {}
         for name, s in bt.get("strategies", {}).items():
-            strat_summary[name] = {"signals": s.get("signals_count",0), "status": s.get("status","?")}
+            entry = {"signals": s.get("signals_count", 0), "status": s.get("status", "?")}
+            if "metrics" in s:
+                m = s["metrics"]
+                entry["return_pct"] = m.get("total_return_pct", 0)
+                entry["sharpe"] = m.get("sharpe_ratio", 0)
+                entry["win_rate"] = m.get("win_rate", 0)
+                entry["trades"] = m.get("total_trades", 0)
+                entry["max_dd"] = m.get("max_drawdown_pct", 0)
+            strat_summary[name] = entry
         merge_state("athena", {"status": "ok", "strategies": strat_summary})
 
         risk = load_json(os.path.join(STATE_DIR, "risk_check.json"))
