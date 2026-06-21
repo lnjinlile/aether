@@ -10,10 +10,64 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [DATA] %(message)s")
 logger = logging.getLogger("pipeline")
 
 SYMBOLS = ["BTC/USDT", "ETH/USDT"]
-TIMEFRAMES = ["15m", "1h"]
+TIMEFRAMES = ["15m", "1h", "4h", "1d"]
 INTERVAL = 300  # 5 minutes
+HISTORICAL_DAYS = 365
 
 STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state", "pipeline.json")
+
+
+def _min_expected_bars(timeframe: str, days: int = HISTORICAL_DAYS) -> int:
+    """Minimum expected bar count for a given timeframe and lookback period."""
+    from data.collector import BinanceDataCollector
+    ms = BinanceDataCollector._timeframe_to_ms(timeframe)
+    total_ms = days * 24 * 60 * 60 * 1000
+    return int(total_ms // ms * 0.80)  # 80% threshold to account for schedule gaps
+
+
+def _needs_backfill(storage, symbol: str, timeframe: str) -> bool:
+    """Check if a symbol/timeframe combo has enough data."""
+    import sqlite3
+    conn = storage._get_conn()
+    try:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM klines WHERE symbol=? AND timeframe=?",
+            (symbol, timeframe)
+        ).fetchone()
+        count = row[0] if row else 0
+    finally:
+        conn.close()
+
+    min_expected = _min_expected_bars(timeframe)
+    needed = count < min_expected
+    if needed:
+        logger.info(
+            "  %s %s: %d bars in DB (need >=%d) → backfill required",
+            symbol, timeframe, count, min_expected
+        )
+    else:
+        logger.info(
+            "  %s %s: %d bars in DB (>=%d) → OK",
+            symbol, timeframe, count, min_expected
+        )
+    return needed
+
+
+def _backfill_all(collector, storage):
+    """Fetch 365 days of historical data for all symbol/timeframe combos that need it."""
+    logger.info("=== Historical backfill check ===")
+    for sym in SYMBOLS:
+        for tf in TIMEFRAMES:
+            if _needs_backfill(storage, sym, tf):
+                logger.info("Backfilling %s %s (%d days)...", sym, tf, HISTORICAL_DAYS)
+                try:
+                    df = collector.fetch_historical(sym, tf, days=HISTORICAL_DAYS)
+                    storage.save_klines(df, sym, tf)
+                    logger.info("Backfill complete: %s %s — %d bars saved", sym, tf, len(df))
+                except Exception as e:
+                    logger.error("Backfill failed %s %s: %s", sym, tf, e)
+    logger.info("=== Historical backfill done ===")
+
 
 def run():
     from data.collector import BinanceDataCollector
@@ -25,6 +79,9 @@ def run():
     storage = MarketStorage()
 
     logger.info("Data pipeline started — %s %s every %ds", SYMBOLS, TIMEFRAMES, INTERVAL)
+
+    # ── First boot: backfill 365 days of historical data ──
+    _backfill_all(collector, storage)
 
     while True:
         try:
