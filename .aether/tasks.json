@@ -68,5 +68,19 @@
       "title": "参数网格扫描优化DGT",
       "status": "queued"
     }
+  ],
+  "argus": [
+    {
+      "title": "审计看板数据准确性和时效性",
+      "status": "in_progress"
+    },
+    {
+      "title": "审计各专员报告质量和活跃度",
+      "status": "in_progress"
+    },
+    {
+      "title": "检查持仓/盈亏/策略状态一致性",
+      "status": "queued"
+    }
   ]
 }
