@@ -1,0 +1,482 @@
+{
+  "run_time": "2026-06-21T17:07:16.445838+00:00",
+  "timestamp": "2026-06-21 17:07 UTC",
+  "data_days": 364,
+  "data_bars": 8760,
+  "market_states": {
+    "RANGE": 6104,
+    "TREND": 1916,
+    "VOLATILE": 740
+  },
+  "walk_forward": {
+    "config": {
+      "train_days": 60,
+      "test_days": 15,
+      "step_days": 15,
+      "threshold": 0.55
+    },
+    "n_windows": 20,
+    "n_passed": 8,
+    "pass_rate": 40.0,
+    "total_oos_return_pct": -27.24,
+    "avg_sharpe": -0.22,
+    "wfe": -2.11,
+    "verdict": "FAIL (OOS \u51c0\u4e8f\u635f)",
+    "windows": [
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2025-08-20 17:00:00",
+        "test_start": "2025-08-20 18:00:00",
+        "test_end": "2025-09-04 17:00:00",
+        "train_bars": 1440,
+        "test_bars": 360,
+        "train_acc": 0.7278,
+        "test_acc": 0.5194,
+        "net_return_pct": -5.17,
+        "sharpe": -1.22,
+        "max_dd_pct": 6.72,
+        "win_rate": 25.0,
+        "total_trades": 4,
+        "profit_factor": 0.24,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 323,
+          "VOLATILE": 26,
+          "TREND": 11
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2025-09-04 17:00:00",
+        "test_start": "2025-09-04 18:00:00",
+        "test_end": "2025-09-19 17:00:00",
+        "train_bars": 1800,
+        "test_bars": 360,
+        "train_acc": 0.7,
+        "test_acc": 0.55,
+        "net_return_pct": 2.87,
+        "sharpe": 0.63,
+        "max_dd_pct": 2.11,
+        "win_rate": 66.7,
+        "total_trades": 3,
+        "profit_factor": 2.39,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 331,
+          "VOLATILE": 23,
+          "TREND": 6
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2025-09-19 17:00:00",
+        "test_start": "2025-09-19 18:00:00",
+        "test_end": "2025-10-04 17:00:00",
+        "train_bars": 2160,
+        "test_bars": 360,
+        "train_acc": 0.7005,
+        "test_acc": 0.5083,
+        "net_return_pct": -7.5,
+        "sharpe": -1.09,
+        "max_dd_pct": 11.68,
+        "win_rate": 28.6,
+        "total_trades": 7,
+        "profit_factor": 0.38,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 213,
+          "TREND": 116,
+          "VOLATILE": 31
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2025-10-04 17:00:00",
+        "test_start": "2025-10-04 18:00:00",
+        "test_end": "2025-10-19 17:00:00",
+        "train_bars": 2520,
+        "test_bars": 360,
+        "train_acc": 0.6806,
+        "test_acc": 0.4806,
+        "net_return_pct": 0.91,
+        "sharpe": 0.15,
+        "max_dd_pct": 8.27,
+        "win_rate": 42.9,
+        "total_trades": 7,
+        "profit_factor": 1.12,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 242,
+          "TREND": 91,
+          "VOLATILE": 27
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2025-10-19 17:00:00",
+        "test_start": "2025-10-19 18:00:00",
+        "test_end": "2025-11-03 17:00:00",
+        "train_bars": 2880,
+        "test_bars": 360,
+        "train_acc": 0.6618,
+        "test_acc": 0.5083,
+        "net_return_pct": 3.9,
+        "sharpe": 0.6,
+        "max_dd_pct": 4.31,
+        "win_rate": 40.0,
+        "total_trades": 5,
+        "profit_factor": 1.91,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 249,
+          "TREND": 85,
+          "VOLATILE": 26
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2025-11-03 17:00:00",
+        "test_start": "2025-11-03 18:00:00",
+        "test_end": "2025-11-18 17:00:00",
+        "train_bars": 3240,
+        "test_bars": 360,
+        "train_acc": 0.662,
+        "test_acc": 0.5083,
+        "net_return_pct": 15.45,
+        "sharpe": 1.53,
+        "max_dd_pct": 5.05,
+        "win_rate": 71.4,
+        "total_trades": 7,
+        "profit_factor": 3.9,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 290,
+          "TREND": 56,
+          "VOLATILE": 14
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2025-11-18 17:00:00",
+        "test_start": "2025-11-18 18:00:00",
+        "test_end": "2025-12-03 17:00:00",
+        "train_bars": 3600,
+        "test_bars": 360,
+        "train_acc": 0.6506,
+        "test_acc": 0.5722,
+        "net_return_pct": -12.3,
+        "sharpe": -1.29,
+        "max_dd_pct": 12.8,
+        "win_rate": 27.3,
+        "total_trades": 11,
+        "profit_factor": 0.42,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 290,
+          "TREND": 44,
+          "VOLATILE": 26
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2025-12-03 17:00:00",
+        "test_start": "2025-12-03 18:00:00",
+        "test_end": "2025-12-18 17:00:00",
+        "train_bars": 3960,
+        "test_bars": 360,
+        "train_acc": 0.6548,
+        "test_acc": 0.4972,
+        "net_return_pct": -8.37,
+        "sharpe": -1.1,
+        "max_dd_pct": 12.73,
+        "win_rate": 28.6,
+        "total_trades": 7,
+        "profit_factor": 0.37,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 292,
+          "VOLATILE": 34,
+          "TREND": 34
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2025-12-18 17:00:00",
+        "test_start": "2025-12-18 18:00:00",
+        "test_end": "2026-01-02 17:00:00",
+        "train_bars": 4320,
+        "test_bars": 360,
+        "train_acc": 0.6442,
+        "test_acc": 0.5056,
+        "net_return_pct": -4.89,
+        "sharpe": -1.58,
+        "max_dd_pct": 4.89,
+        "win_rate": 0.0,
+        "total_trades": 3,
+        "profit_factor": 0.0,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 327,
+          "VOLATILE": 27,
+          "TREND": 6
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2026-01-02 17:00:00",
+        "test_start": "2026-01-02 18:00:00",
+        "test_end": "2026-01-17 17:00:00",
+        "train_bars": 4680,
+        "test_bars": 360,
+        "train_acc": 0.6457,
+        "test_acc": 0.5528,
+        "net_return_pct": -14.16,
+        "sharpe": -1.71,
+        "max_dd_pct": 15.98,
+        "win_rate": 16.7,
+        "total_trades": 6,
+        "profit_factor": 0.13,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 294,
+          "TREND": 37,
+          "VOLATILE": 29
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2026-01-17 17:00:00",
+        "test_start": "2026-01-17 18:00:00",
+        "test_end": "2026-02-01 17:00:00",
+        "train_bars": 5040,
+        "test_bars": 360,
+        "train_acc": 0.6409,
+        "test_acc": 0.5167,
+        "net_return_pct": -5.37,
+        "sharpe": -0.59,
+        "max_dd_pct": 9.54,
+        "win_rate": 37.5,
+        "total_trades": 8,
+        "profit_factor": 0.63,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 244,
+          "TREND": 89,
+          "VOLATILE": 27
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2026-02-01 17:00:00",
+        "test_start": "2026-02-01 18:00:00",
+        "test_end": "2026-02-16 17:00:00",
+        "train_bars": 5400,
+        "test_bars": 360,
+        "train_acc": 0.6356,
+        "test_acc": 0.5278,
+        "net_return_pct": -18.38,
+        "sharpe": -1.44,
+        "max_dd_pct": 18.38,
+        "win_rate": 21.0,
+        "total_trades": 19,
+        "profit_factor": 0.49,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 292,
+          "TREND": 58,
+          "VOLATILE": 10
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2026-02-16 17:00:00",
+        "test_start": "2026-02-16 18:00:00",
+        "test_end": "2026-03-03 17:00:00",
+        "train_bars": 5760,
+        "test_bars": 360,
+        "train_acc": 0.6238,
+        "test_acc": 0.525,
+        "net_return_pct": 29.16,
+        "sharpe": 2.17,
+        "max_dd_pct": 3.35,
+        "win_rate": 80.0,
+        "total_trades": 10,
+        "profit_factor": 5.7,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 270,
+          "TREND": 64,
+          "VOLATILE": 26
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2026-03-03 17:00:00",
+        "test_start": "2026-03-03 18:00:00",
+        "test_end": "2026-03-18 17:00:00",
+        "train_bars": 6120,
+        "test_bars": 360,
+        "train_acc": 0.6245,
+        "test_acc": 0.4917,
+        "net_return_pct": -7.53,
+        "sharpe": -0.71,
+        "max_dd_pct": 12.25,
+        "win_rate": 25.0,
+        "total_trades": 12,
+        "profit_factor": 0.64,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 232,
+          "TREND": 96,
+          "VOLATILE": 32
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2026-03-18 17:00:00",
+        "test_start": "2026-03-18 18:00:00",
+        "test_end": "2026-04-02 17:00:00",
+        "train_bars": 6480,
+        "test_bars": 360,
+        "train_acc": 0.6227,
+        "test_acc": 0.4667,
+        "net_return_pct": -0.28,
+        "sharpe": -0.0,
+        "max_dd_pct": 5.04,
+        "win_rate": 50.0,
+        "total_trades": 6,
+        "profit_factor": 1.0,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 214,
+          "TREND": 119,
+          "VOLATILE": 27
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2026-04-02 17:00:00",
+        "test_start": "2026-04-02 18:00:00",
+        "test_end": "2026-04-17 17:00:00",
+        "train_bars": 6840,
+        "test_bars": 360,
+        "train_acc": 0.6137,
+        "test_acc": 0.5,
+        "net_return_pct": -7.63,
+        "sharpe": -1.14,
+        "max_dd_pct": 11.6,
+        "win_rate": 28.6,
+        "total_trades": 7,
+        "profit_factor": 0.37,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 200,
+          "TREND": 132,
+          "VOLATILE": 28
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2026-04-17 17:00:00",
+        "test_start": "2026-04-17 18:00:00",
+        "test_end": "2026-05-02 17:00:00",
+        "train_bars": 7200,
+        "test_bars": 360,
+        "train_acc": 0.6131,
+        "test_acc": 0.5056,
+        "net_return_pct": 8.11,
+        "sharpe": 1.31,
+        "max_dd_pct": 0.66,
+        "win_rate": 66.7,
+        "total_trades": 3,
+        "profit_factor": 13.04,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 227,
+          "TREND": 105,
+          "VOLATILE": 28
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2026-05-02 17:00:00",
+        "test_start": "2026-05-02 18:00:00",
+        "test_end": "2026-05-17 17:00:00",
+        "train_bars": 7560,
+        "test_bars": 360,
+        "train_acc": 0.6098,
+        "test_acc": 0.5083,
+        "net_return_pct": 5.71,
+        "sharpe": 0.94,
+        "max_dd_pct": 2.39,
+        "win_rate": 50.0,
+        "total_trades": 4,
+        "profit_factor": 3.4,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 204,
+          "TREND": 141,
+          "VOLATILE": 15
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2026-05-17 17:00:00",
+        "test_start": "2026-05-17 18:00:00",
+        "test_end": "2026-06-01 17:00:00",
+        "train_bars": 7920,
+        "test_bars": 360,
+        "train_acc": 0.6051,
+        "test_acc": 0.4806,
+        "net_return_pct": 4.26,
+        "sharpe": 0.65,
+        "max_dd_pct": 2.39,
+        "win_rate": 60.0,
+        "total_trades": 5,
+        "profit_factor": 1.95,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 210,
+          "TREND": 126,
+          "VOLATILE": 24
+        }
+      },
+      {
+        "train_start": "2025-06-21 18:00:00",
+        "train_end": "2026-06-01 17:00:00",
+        "test_start": "2026-06-01 18:00:00",
+        "test_end": "2026-06-16 17:00:00",
+        "train_bars": 8280,
+        "test_bars": 360,
+        "train_acc": 0.6098,
+        "test_acc": 0.5,
+        "net_return_pct": -6.03,
+        "sharpe": -0.55,
+        "max_dd_pct": 14.11,
+        "win_rate": 33.3,
+        "total_trades": 12,
+        "profit_factor": 0.71,
+        "status": "OK",
+        "state_distribution": {
+          "RANGE": 227,
+          "TREND": 114,
+          "VOLATILE": 19
+        }
+      }
+    ]
+  },
+  "state_performance": {
+    "TREND": {
+      "avg_return": 0,
+      "count": 0
+    },
+    "RANGE": {
+      "avg_return": -1.36,
+      "count": 20
+    },
+    "VOLATILE": {
+      "avg_return": 0,
+      "count": 0
+    }
+  }
+}

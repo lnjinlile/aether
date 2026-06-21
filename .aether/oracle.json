@@ -1,32 +1,78 @@
 {
-  "timestamp": "2026-06-21T16:29:34Z",
+  "timestamp": "2026-06-21T16:55:00Z",
   "heartbeat": {
     "name": "Oracle",
     "role": "Aether 数据脉搏 + 策略审计",
     "frequency": "cron"
   },
   "prices": {
-    "BTC/USDT": 64197.8,
-    "ETH/USDT": 1717.39
+    "BTC/USDT": 64200.0,
+    "ETH/USDT": 1716.95
   },
   "kline_counts": {
-    "BTC/USDT (15m)": 2905,
+    "BTC/USDT (15m)": 2907,
     "BTC/USDT (1h)": 2166,
-    "ETH/USDT (15m)": 2905,
+    "ETH/USDT (15m)": 2907,
     "ETH/USDT (1h)": 2166
   },
   "db_stats": {
-    "db_size_bytes": 1122304,
+    "db_size_bytes": 1126400,
     "db_size_mb": 1.07,
     "tables": {
-      "klines": 10142,
+      "klines": 10146,
       "trades": 2,
-      "trades_log": 4
+      "trades_log": 4,
+      "order_flow": 11
     }
+  },
+  "data_quality": {
+    "nulls": "none",
+    "duplicates": "none",
+    "freshness": "current (200 bars fetched 16:51 UTC)",
+    "verdict": "GREEN"
   },
   "errors": null,
   "last_audit": {
-    "athena_7d": "2026-06-21 16:29 UTC",
-    "walk_forward": "2026-06-21 16:29 UTC"
+    "athena_30d": "2026-06-21 16:45 UTC",
+    "walk_forward": "2026-06-21 16:14 UTC (prometheus_wf.json)",
+    "oracle_crossref": "2026-06-21 16:55 UTC"
+  },
+  "strategy_audit": {
+    "summary": "8 strategies audited. 1 enabled (TrendFollow_BTC 15m). 7 disabled. All consistent across YAML/WF/Athena.",
+    "enabled": [
+      {
+        "name": "TrendFollow_BTC",
+        "tf": "15m",
+        "athena_30d_net": "+79.47%",
+        "athena_rec": "KEEP",
+        "wf_verdict": "BROKEN (1 window, unreliable)",
+        "wf_rec": "KEEP_ENABLED_MONITOR",
+        "risk": "Monitor closely for OOS degradation"
+      }
+    ],
+    "disabled_correctly": [
+      {"name": "TrendFollow_BTC_1h", "reason": "WF DEGRADING (OOS negative despite full 90d +12.66%)"},
+      {"name": "TrendFollow_ETH", "reason": "Full 90d net=-11%, OOS barely positive (+2.27% in 1 window)"},
+      {"name": "MA_Cross_BTC", "reason": "30d net=-33.05%, Sharpe=-1.23, win_rate=7%"},
+      {"name": "MA_Cross_ETH", "reason": "30d net=-23.25%, Sharpe=-0.31, win_rate=26%"},
+      {"name": "RSI_MR_BTC", "reason": "WF BROKEN (IS positive, OOS negative)"},
+      {"name": "RSI_MR_ETH", "reason": "WF CONSISTENT_LOSER, 30d net=-8.54%, AUDIT-002 resolved"},
+      {"name": "DynamicGrid_BTC", "reason": "30d net=-36.8%, Sharpe=-0.85"},
+      {"name": "DynamicGrid_ETH", "reason": "30d net=-57.09%, Sharpe=-0.95"}
+    ]
+  },
+  "resolved_issues": [
+    {
+      "id": "AUDIT-002",
+      "request_id": 4,
+      "issue": "RSI_MR_ETH contradiction (7d +26% vs 3m -14.19%)",
+      "resolution": "Disabled in strategies.yaml. Prometheus WF confirms CONSISTENT_LOSER. Athena 30d confirms -8.54%."
+    }
+  ],
+  "critical_finding": {
+    "source": "Prometheus",
+    "title": "30d vs 90d window discrepancy — extreme recency bias",
+    "detail": "Athena 30-day window massively overstates performance. TrendFollow_BTC_1h: 30d=+83% vs 90d=+13%. TrendFollow_ETH: 30d=+100% vs 90d=-11%. Recent market was exceptionally favorable for trends.",
+    "recommendation": "Athena should use >=60 day windows. 30d is insufficient."
   }
 }
