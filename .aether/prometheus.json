@@ -1,27 +1,76 @@
 {
-  "run_time": "2026-06-21T17:08:29.359190+00:00",
-  "timestamp": "2026-06-21 17:08 UTC",
-  "_updated_at": "2026-06-21 17:08:29 UTC",
-  "audit_requests_fulfilled": [
-    3,
-    8,
-    11,
-    14,
-    21
-  ],
-  "ml_status": {
-    "framework": "prometheus_ml_rollback.py + prometheus_ml_sweep.py",
-    "status": "sweep_running",
-    "baseline_wf": "FAIL (OOS -27.24%, WFE -2.11, 8/20 windows positive)",
-    "note": "Baseline parameters (default LightGBM) underperform. Hyperparameter sweep in progress."
-  },
-  "current_enabled_strategies": [
-    "TrendFollow_BTC (15m, EMA=75, SL=1%, TP=1.5%)"
-  ],
-  "task_progress": {
-    "ML\u96c6\u6210\u7b56\u7565": "done (ml_alpha/ module)",
-    "\u5e02\u573a\u72b6\u6001\u5207\u6362": "done (prometheus_ml_rollback.py classify_market_state)",
-    "\u6eda\u52a8\u56de\u6d4b\u6846\u67b6": "done (prometheus_ml_rollback.py ml_walk_forward + prometheus_ml_sweep.py hyperparameter sweep)",
-    "ML\u8d85\u53c2\u4f18\u5316": "in_progress (sweep running)"
-  }
+  "run_time": "2026-06-21T18:50:35.189796+00:00",
+  "timestamp": "2026-06-21 18:50 UTC",
+  "model_type": "triple_barrier",
+  "test_accuracy": 0.448512585812357,
+  "train_accuracy": 0.6876767676767677,
+  "gap": 0.23916418186441069,
+  "n_samples": 8736,
+  "class_balance": 0.5138507326007326,
+  "triple_barrier_results": [
+    {
+      "name": "Conservative",
+      "tp": 0.015,
+      "sl": 0.015,
+      "max_bars": 24,
+      "n": 8736,
+      "bal": 0.5263278388278388,
+      "n_up": 4598,
+      "n_total": 8736,
+      "train_acc": 0.6282910874897792,
+      "val_acc": 0.4946564885496183,
+      "test_acc": 0.4851258581235698,
+      "gap": 0.14316522936620946,
+      "max_corr": 0.039406337686198355,
+      "top_feat": "price_position"
+    },
+    {
+      "name": "Moderate",
+      "tp": 0.02,
+      "sl": 0.02,
+      "max_bars": 24,
+      "n": 8736,
+      "bal": 0.5138507326007326,
+      "n_up": 4489,
+      "n_total": 8736,
+      "train_acc": 0.6330335241210139,
+      "val_acc": 0.48854961832061067,
+      "test_acc": 0.45385202135774216,
+      "gap": 0.17918150276327172,
+      "max_corr": 0.03947609631101281,
+      "top_feat": "price_position"
+    },
+    {
+      "name": "Aggressive",
+      "tp": 0.03,
+      "sl": 0.02,
+      "max_bars": 48,
+      "n": 8712,
+      "bal": 0.4569559228650138,
+      "n_up": 3981,
+      "n_total": 8712,
+      "train_acc": 0.6487372909150542,
+      "val_acc": 0.4889058913542464,
+      "test_acc": 0.47589900535577656,
+      "gap": 0.1728382855592776,
+      "max_corr": 0.029493439036434983,
+      "top_feat": "dist_sma_50"
+    },
+    {
+      "name": "Wide",
+      "tp": 0.04,
+      "sl": 0.02,
+      "max_bars": 72,
+      "n": 8688,
+      "bal": 0.39525782688766115,
+      "n_up": 3434,
+      "n_total": 8688,
+      "train_acc": 0.6602532478210821,
+      "val_acc": 0.5165003837298542,
+      "test_acc": 0.5529141104294478,
+      "gap": 0.10733913739163425,
+      "max_corr": 0.02837748334456872,
+      "top_feat": "ret_1"
+    }
+  ]
 }

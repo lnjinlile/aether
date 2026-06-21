@@ -184,6 +184,40 @@ def run_backtests():
                             p["qty_per_level"], p["rebalance_interval_bars"],
                             p["min_spread_pct"], p.get("leverage", 3),
                         )
+                    elif strategy_type == "MLAlphaStrategy":
+                        from athena_backtest import mlalpha_signals
+                        signals = mlalpha_signals(
+                            df, p.get("model_path", "ml_alpha/model.pkl"),
+                            p.get("confidence_threshold", 0.55),
+                            p.get("prediction_horizon", 5),
+                            p.get("atr_period", 14),
+                            p.get("atr_sl_mult", 2.0),
+                            p.get("atr_tp_mult", 3.0),
+                            p.get("cooldown_bars", 5),
+                        )
+                    elif strategy_type == "MLEnsembleStrategy":
+                        from athena_backtest import mlensemble_signals
+                        signals = mlensemble_signals(
+                            df, p.get("prediction_horizon", 5),
+                            p.get("confidence_threshold", 0.60),
+                            p.get("min_train_samples", 200),
+                            p.get("retrain_every", 24),
+                            p.get("atr_period", 14),
+                            p.get("atr_sl_mult", 2.0),
+                            p.get("atr_tp_mult", 3.0),
+                            p.get("cooldown_bars", 5),
+                            p.get("model_type", "classifier"),
+                        )
+                    elif strategy_type == "RegimeSwitchStrategy":
+                        from athena_backtest import regimeswitch_signals
+                        signals = regimeswitch_signals(
+                            df, p.get("regime_model_path", "ml_alpha/regime_model.pkl"),
+                            p.get("confidence_threshold", 0.55),
+                            p.get("atr_period", 14),
+                            p.get("atr_sl_mult", 2.0),
+                            p.get("atr_tp_mult", 3.0),
+                            p.get("cooldown_bars", 5),
+                        )
                     else:
                         results[name] = {
                             "status": "skipped",

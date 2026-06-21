@@ -1,0 +1,69 @@
+{
+  "run_time": "2026-06-21T18:50:51.164195+00:00",
+  "timestamp": "2026-06-21 18:50 UTC",
+  "analysis": "regime_classifier",
+  "triple_barrier_result": "FAILED \u2014 no improvement over next-bar (max corr=0.04, test acc~45-55%)",
+  "regime_results": [
+    {
+      "symbol": "BTC",
+      "label": "6h/1.0%",
+      "horizon": 6,
+      "threshold": 0.01,
+      "n": 8754,
+      "bal": 0.24914324880054833,
+      "train": 0.6959360208911376,
+      "val": 0.48895658796648894,
+      "test": 0.5989345509893456,
+      "gap": 0.09700146990179204,
+      "top_feat": "vol_50",
+      "top_imp": "146"
+    },
+    {
+      "symbol": "BTC",
+      "label": "72h/4.0%",
+      "horizon": 72,
+      "threshold": 0.04,
+      "n": 8688,
+      "bal": 0.23998618784530387,
+      "train": 0.7934550238447624,
+      "val": 0.45817344589409054,
+      "test": 0.6487730061349694,
+      "gap": 0.14468201770979305,
+      "top_feat": "vol_50",
+      "top_imp": "160"
+    },
+    {
+      "symbol": "ETH",
+      "label": "6h/1.0%",
+      "horizon": 6,
+      "threshold": 0.01,
+      "n": 8754,
+      "bal": 0.40210189627598814,
+      "train": 0.677819487514281,
+      "val": 0.5681645087585682,
+      "test": 0.6636225266362252,
+      "gap": 0.014196960878055775,
+      "top_feat": "vol_50",
+      "top_imp": "130"
+    },
+    {
+      "symbol": "ETH",
+      "label": "12h/1.5%",
+      "horizon": 12,
+      "threshold": 0.015,
+      "n": 8748,
+      "bal": 0.40626428898033834,
+      "train": 0.7148456638902498,
+      "val": 0.59375,
+      "test": 0.6283320639756284,
+      "gap": 0.08651359991462149,
+      "top_feat": "vol_50",
+      "top_imp": "137"
+    }
+  ],
+  "total_configs_tested": 10,
+  "has_viable_regime": true,
+  "cross_asset_corr": {
+    "btc_to_eth_lag0": 0.35615139793438594
+  }
+}
