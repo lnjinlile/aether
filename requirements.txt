@@ -1,0 +1,6 @@
+ccxt
+pandas
+numpy
+websockets
+apscheduler
+python-dotenv

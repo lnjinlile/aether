@@ -1,0 +1,12 @@
+strategy,MA_Cross
+total_return_pct,-67.47
+sharpe_ratio,-0.2681
+max_drawdown_pct,75.39
+win_rate,41.6
+profit_factor,0.7329
+total_trades,262
+avg_win_pct,2.47
+avg_loss_pct,2.4
+best_trade_pct,10.6565
+worst_trade_pct,-11.6647
+final_equity,3253.15
