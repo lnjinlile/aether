@@ -148,6 +148,13 @@ prom_html = stat_row([
     ("下一步", "防过拟合框架"),
 ]) + agent_tasks("prometheus")
 
+# Argus
+argus_html = stat_row([
+    ("审计看板", "● 运行中"),
+    ("审计专员", "每30分钟"),
+    ("首次报告", "23:35"),
+]) + agent_tasks("argus")
+
 # Live Exchange
 live_bal = live_exchange.get("balance", {})
 live_positions = live_exchange.get("positions", [])
@@ -219,6 +226,8 @@ h1{{font-size:24px;margin-bottom:4px;color:#f8fafc}}h1 span{{color:#f59e0b}}
 <div class="card" style="border-top:3px solid #22c55e"><h3>💹 Mercury 交易</h3>{mercury_html}</div>
 <div class="card" style="border-top:3px solid #f59e0b"><h3>🔥 Prometheus 优化</h3>{prom_html}</div>
 </div>
+
+<div class="card" style="border-top:3px solid #06b6d4;margin-bottom:16px"><h3>👁️ Argus 审计</h3>{argus_html}</div>
 
 <div class="section-title">💹 币安测试网 · 实时持仓</div>
 <div class="card" style="border-top:3px solid #22c55e"><h3>📡 交易所实时数据</h3>{live_html}</div>
