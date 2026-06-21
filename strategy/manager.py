@@ -164,10 +164,15 @@ class StrategyManager:
                 raise ImportError(f"Cannot import {class_path}: {e}") from e
 
             # Instantiate with params from YAML (name is passed explicitly)
-            params_with_name = {"name": name, **params}
-            strategy = strategy_cls(**params_with_name)
-            mgr.register(strategy)
-            logger.info("Loaded strategy '%s' from %s (params: %s)", name, class_path, params)
+            try:
+                params_with_name = {"name": name, **params}
+                strategy = strategy_cls(**params_with_name)
+                mgr.register(strategy)
+                logger.info("Loaded strategy '%s' from %s (params: %s)", name, class_path, params)
+            except TypeError as e:
+                # Bad config params — log and skip this strategy, don't crash the whole load
+                logger.error("Failed to instantiate strategy '%s': %s — skipping (check params)", name, e)
+                continue
 
         logger.info("Loaded %d strategies from %s", len(mgr), yaml_path)
         return mgr

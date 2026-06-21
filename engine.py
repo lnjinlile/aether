@@ -43,29 +43,33 @@ def run_backtests():
             sym = strat.symbols[0]
             tf = strat.timeframes[0]
 
-            df = storage.load_klines(sym, tf)
-            if df.empty:
-                results[name] = {"status": "no_data", "error": f"No data for {sym} {tf}"}
-                continue
+            try:
+                df = storage.load_klines(sym, tf)
+                if df.empty:
+                    results[name] = {"status": "no_data", "error": f"No data for {sym} {tf}"}
+                    continue
 
-            # Simple backtest
-            mgr.feed_data_only(sym, tf, df)
-            signals = []
-            for i in range(100, len(df)):
-                window = df.iloc[:i+1]
-                strat.feed_data(sym, tf, window)
-                sig = strat.generate_signal(sym)
-                if sig.type.name != "HOLD":
-                    signals.append({"time": str(df.index[i]), "signal": sig.type.value, "price": float(df.iloc[i]["close"])})
+                # Simple backtest
+                mgr.feed_data_only(sym, tf, df)
+                signals = []
+                for i in range(100, len(df)):
+                    window = df.iloc[:i+1]
+                    strat.feed_data(sym, tf, window)
+                    sig = strat.generate_signal(sym)
+                    if sig.type.name != "HOLD":
+                        signals.append({"time": str(df.index[i]), "signal": sig.type.value, "price": float(df.iloc[i]["close"])})
 
-            results[name] = {
-                "status": "ok",
-                "symbol": sym, "timeframe": tf,
-                "data_rows": len(df),
-                "signals_count": len(signals),
-                "latest_signal": signals[-1] if signals else None,
-                "last_5_signals": signals[-5:] if signals else [],
-            }
+                results[name] = {
+                    "status": "ok",
+                    "symbol": sym, "timeframe": tf,
+                    "data_rows": len(df),
+                    "signals_count": len(signals),
+                    "latest_signal": signals[-1] if signals else None,
+                    "last_5_signals": signals[-5:] if signals else [],
+                }
+            except Exception as e:
+                logger.error("Backtest error for '%s': %s", name, e)
+                results[name] = {"status": "error", "error": str(e)}
 
         write_json("backtest_results.json", {"strategies": results})
         logger.info("Backtests: %d strategies evaluated", len(results))
@@ -141,9 +145,13 @@ def run_signal_check():
             sym = strat.symbols[0]
             tf = strat.timeframes[0]
 
-            df = collector.fetch_current_klines(sym, tf, 300)
-            mgr.feed_data_only(sym, tf, df)
-            sig = strat.generate_signal(sym)
+            try:
+                df = collector.fetch_current_klines(sym, tf, 300)
+                mgr.feed_data_only(sym, tf, df)
+                sig = strat.generate_signal(sym)
+            except Exception as e:
+                logger.error("Signal error for strategy '%s' (%s %s): %s", name, sym, tf, e)
+                continue
 
             if sig.type.name != "HOLD":
                 signals[name] = {
