@@ -1,0 +1,13 @@
+{
+  "status": "active",
+  "dgt_deployed": true,
+  "dgt_btc_pnl": "+22.8%",
+  "dgt_eth_pnl": "+5.4%",
+  "dsr_implemented": true,
+  "walk_forward_implemented": true,
+  "validated_strategies": [
+    "MA_Cross_BTC",
+    "MA_Cross_ETH"
+  ],
+  "next": "order_flow_strategy"
+}

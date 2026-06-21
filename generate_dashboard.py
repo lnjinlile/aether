@@ -124,11 +124,13 @@ guardian_html += agent_tasks("guardian")
 
 # Mercury
 sig_count = len(signals_data.get("signals",{}))
+net_pnl = total_pnl - len(closed_trades) * 0.08  # after fees
+pnl_color = "#22c55e" if net_pnl > 0 else ("#ef4444" if net_pnl < 0 else "#6b7280")
 mercury_html = stat_row([
     ("信号引擎", f'● 运行中 ({sig_count})'),
     ("总交易", str(len(trades))+"笔"),
     ("胜率", f'{len(wins)/len(closed_trades)*100:.0f}%' if closed_trades else "N/A"),
-    ("累计盈亏", f'{total_pnl:+.4f}'),
+    ("累计净收益", f'<span style="color:{pnl_color}">{net_pnl:+.4f} USDT</span>'),
 ])
 sigs = signals_data.get("signals",{})
 if sigs:
@@ -151,6 +153,7 @@ live_bal = live_exchange.get("balance", {})
 live_positions = live_exchange.get("positions", [])
 live_tickers = live_exchange.get("tickers", {})
 live_html = stat_row([
+    ("💰 累计净收益", f'<span style="color:{pnl_color};font-size:18px">{net_pnl:+.4f} USDT</span>'),
     ("账户余额", f'{live_bal.get("balance",0):.2f} USDT'),
     ("可用", f'{live_bal.get("available",0):.2f}'),
     ("未实现盈亏", f'{live_bal.get("unrealized_pnl",0):+.2f}'),
