@@ -337,7 +337,25 @@ def sync_agent_states():
         sig = load_json(os.path.join(STATE_DIR, "signals.json"))
         merge_state("mercury", {"status": "ok", "signals_active": len(sig.get("signals",{})), "signals": sig.get("signals",{})})
 
-        merge_state("prometheus", {"status": "active", "dgt_deployed": True, "dgt_btc_pnl": "+22.8%", "dgt_eth_pnl": "+5.4%", "next": "anti_overfitting"})
+        # Prometheus: pull real backtest metrics, never hardcode PnL
+        prom_state = {"status": "active", "strategies": {}}
+        for name, s in bt.get("strategies", {}).items():
+            if "metrics" not in s:
+                continue
+            m = s["metrics"]
+            prom_state["strategies"][name] = {
+                "return_pct": m.get("total_return_pct", 0),
+                "sharpe": m.get("sharpe_ratio", 0),
+                "win_rate": m.get("win_rate", 0),
+                "trades": m.get("total_trades", 0),
+                "max_dd": m.get("max_drawdown_pct", 0),
+            }
+        # Also preserve any Prometheus-specific fields from existing state
+        existing_prom = load_json(os.path.join(STATE_DIR, "prometheus.json"))
+        for key in ("dsr_implemented", "walk_forward_implemented", "anti_overfitting_run", "wf_findings", "next"):
+            if key in existing_prom:
+                prom_state[key] = existing_prom[key]
+        merge_state("prometheus", prom_state)
     except Exception as e:
         logger.error("State sync error: %s", e)
 
