@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""扩展数据采集: 订单簿 + 资金费率 + 持仓量 + 多空比"""
+"""扩展数据采集: 订单簿 + 资金费率 + 持仓量 + 多空比 + 主动买卖量"""
 import os, sys, json, sqlite3, time, logging
 from datetime import datetime, timezone
 
@@ -40,9 +40,28 @@ def init_db():
             open_interest REAL NOT NULL,
             UNIQUE(symbol, timestamp)
         );
+        CREATE TABLE IF NOT EXISTS long_short_ratio (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            timestamp REAL NOT NULL,
+            long_ratio REAL NOT NULL,
+            short_ratio REAL NOT NULL,
+            UNIQUE(symbol, timestamp)
+        );
+        CREATE TABLE IF NOT EXISTS taker_volume (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL,
+            timestamp REAL NOT NULL,
+            taker_buy_ratio REAL NOT NULL,
+            taker_buy_vol REAL,
+            taker_sell_vol REAL,
+            UNIQUE(symbol, timestamp)
+        );
         CREATE INDEX IF NOT EXISTS idx_ob_symbol_time ON orderbook_snapshots(symbol, timestamp);
         CREATE INDEX IF NOT EXISTS idx_fr_symbol_time ON funding_rates(symbol, funding_time);
         CREATE INDEX IF NOT EXISTS idx_oi_symbol_time ON open_interest(symbol, timestamp);
+        CREATE INDEX IF NOT EXISTS idx_lsr_symbol_time ON long_short_ratio(symbol, timestamp);
+        CREATE INDEX IF NOT EXISTS idx_tv_symbol_time ON taker_volume(symbol, timestamp);
     """)
     conn.commit()
     conn.close()
@@ -106,6 +125,50 @@ def fetch_and_store():
                 (bin_sym, now_ts, oi.get("openInterestAmount", 0))
             )
             logger.info("%s OI: %.0f", sym, oi.get("openInterestAmount", 0))
+
+            # === 4. Long/Short Ratio ===
+            try:
+                lsr = exchange.fetch_long_short_ratio(sym, params={"period": "5m"})
+                lsr_log = 0.5
+                if isinstance(lsr, list):
+                    for entry in lsr[-3:]:  # store last 3 periods
+                        lsr_ts = entry.get("timestamp", now_ts * 1000) / 1000.0
+                        conn.execute(
+                            "INSERT OR IGNORE INTO long_short_ratio(symbol,timestamp,long_ratio,short_ratio) VALUES(?,?,?,?)",
+                            (bin_sym, lsr_ts, entry.get("longShortRatio", 0.5), 1.0 - entry.get("longShortRatio", 0.5))
+                        )
+                    lsr_log = lsr[-1].get("longShortRatio", 0.5) if lsr else 0.5
+                elif isinstance(lsr, dict):
+                    lsr_val = lsr.get("longShortRatio") or lsr.get("longAccount") or 0.5
+                    if isinstance(lsr_val, (int, float)):
+                        conn.execute(
+                            "INSERT OR IGNORE INTO long_short_ratio(symbol,timestamp,long_ratio,short_ratio) VALUES(?,?,?,?)",
+                            (bin_sym, now_ts, lsr_val, 1.0 - lsr_val)
+                        )
+                    lsr_log = lsr_val if isinstance(lsr_val, (int, float)) else 0.5
+                logger.info("%s L/S: %.3f/%.3f", sym, lsr_log, 1.0 - lsr_log)
+            except Exception as e:
+                logger.warning("%s L/S ratio fetch failed: %s", sym, str(e)[:80])
+
+            # === 5. Taker Buy/Sell Volume ===
+            try:
+                ratio = 0.5
+                taker = exchange.fetch_taker_volume(sym) if hasattr(exchange, "fetch_taker_volume") else None
+                if taker is None:
+                    # Fallback: use Binance fapiDataGetTakerlongshortRatio
+                    raw = exchange.fapiDataGetTakerlongshortRatio({"symbol": bin_sym, "period": "5m", "limit": 3})
+                    for entry in (raw if isinstance(raw, list) else [raw]):
+                        tv_ts = entry.get("timestamp", now_ts * 1000) / 1000.0
+                        buy_vol = float(entry.get("buyVol", 0))
+                        sell_vol = float(entry.get("sellVol", 0))
+                        ratio = buy_vol / (buy_vol + sell_vol) if (buy_vol + sell_vol) > 0 else 0.5
+                        conn.execute(
+                            "INSERT OR IGNORE INTO taker_volume(symbol,timestamp,taker_buy_ratio,taker_buy_vol,taker_sell_vol) VALUES(?,?,?,?,?)",
+                            (bin_sym, tv_ts, ratio, buy_vol, sell_vol)
+                        )
+                logger.info("%s Taker: buy_ratio=%.3f", sym, ratio)
+            except Exception as e:
+                logger.warning("%s Taker volume fetch failed: %s", sym, str(e)[:80])
 
         except Exception as e:
             logger.error("%s: %s", sym, str(e)[:80])
