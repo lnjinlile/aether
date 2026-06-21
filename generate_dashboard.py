@@ -150,9 +150,9 @@ prom_html = stat_row([
 
 # Argus
 argus_html = stat_row([
-    ("审计看板", "● 运行中"),
-    ("审计专员", "每30分钟"),
-    ("首次报告", "23:35"),
+    ("审计看板", "● 实时"),
+    ("检查频率", "每3分钟"),
+    ("模式", "沉默即正常"),
 ]) + agent_tasks("argus")
 
 # Live Exchange
