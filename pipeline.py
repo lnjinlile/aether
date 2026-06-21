@@ -29,6 +29,7 @@ def run():
     while True:
         try:
             stats = {}
+            errors = []
             for sym in SYMBOLS:
                 for tf in TIMEFRAMES:
                     for attempt in range(3):  # retry transient API failures
@@ -42,7 +43,8 @@ def run():
                                 logger.warning("%s %s attempt %d failed, retrying: %s", sym, tf, attempt+1, e)
                                 time.sleep(5)
                             else:
-                                stats[f"{sym}_{tf}"] = f"ERR:{e}"
+                                stats[f"{sym}_{tf}"] = 0
+                                errors.append({"feed": f"{sym}_{tf}", "error": str(e)[:200]})
                                 logger.error("%s %s: %s", sym, tf, e)
 
             # Write health status
@@ -55,9 +57,13 @@ def run():
                     "timeframes": TIMEFRAMES,
                     "interval_sec": INTERVAL,
                     "latest": stats,
+                    "errors": errors,
                 }, f, indent=2)
 
-            logger.info("Tick: %s", stats)
+            if errors:
+                logger.warning("Tick: %s — %d feed(s) failed", stats, len(errors))
+            else:
+                logger.info("Tick: %s", stats)
         except Exception as e:
             logger.error("Pipeline error: %s", e)
 
