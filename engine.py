@@ -14,6 +14,7 @@ warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dotenv import load_dotenv; load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+from data.db import get_market_db
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [ENGINE] %(message)s")
 logger = logging.getLogger("engine")
@@ -53,9 +54,7 @@ def sync_trades_db():
         if not positions:
             return
 
-        db = sqlite3.connect(db_path)
-        db.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access (data_ext.py)
-        db.row_factory = sqlite3.Row
+        db = get_market_db(db_path)
         now = time.time()
 
         open_trades = db.execute("SELECT * FROM trades_log WHERE status='OPEN'").fetchall()
@@ -902,10 +901,9 @@ def sync_agent_states():
         with open(pid_path, "w") as pf:
             pf.write(str(os.getpid()))
 
-        # Count klines
+        # Count klines (use shared db helper for WAL + busy_timeout)
         try:
-            import sqlite3
-            db = sqlite3.connect(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "market.db"))
+            db = get_market_db()
             oracle_updates["klines_total"] = db.execute("SELECT COUNT(*) FROM klines").fetchone()[0]
             db.close()
         except Exception:
