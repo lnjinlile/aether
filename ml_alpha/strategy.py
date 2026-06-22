@@ -63,14 +63,16 @@ class MLAlphaStrategy(BaseStrategy):
     def _preprocess(self, symbol: str, timeframe: str, df: pd.DataFrame):
         """Build and cache features when data is fed.
 
-        Loads oracle features (orderbook, funding rates, open interest)
-        and passes them to the feature engineer for richer ML features.
+        Uses only base OHLCV features (18 cols) to match the current
+        model's training scheme. Oracle features (OI/funding/orderbook)
+        are skipped because they are unreliable on testnet and the model
+        was not trained with them — loading them would cause a shape
+        mismatch (33 vs 18 features).
         """
         key = (symbol, timeframe)
         try:
-            # Load oracle features
-            oracle_df = self._load_oracle_features(symbol, df)
-            X, _ = self._engineer.build_features(df, oracle_df=oracle_df)
+            # Build base features only — no oracle (model expects 18 cols)
+            X, _ = self._engineer.build_features(df, oracle_df=None)
             self._feature_cache[key] = X
         except Exception:
             # Not enough data yet or feature build failed; will be retried

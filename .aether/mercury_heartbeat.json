@@ -1,8 +1,9 @@
 {
-  "timestamp": "2026-06-21T13:04:45.913801+00:00",
+  "timestamp": "2026-06-22T05:14:07.343778+00:00",
   "actions": [
     {
       "type": "SKIP_SLTP",
+      "symbol": "BTCUSDT",
       "reason": "existing orders present"
     }
   ],

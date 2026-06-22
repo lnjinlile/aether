@@ -44,81 +44,103 @@ if os.path.exists(sig_path):
 signals = signals_data.get("signals", {})
 print(f"\n🎯 Engine signals: {len(signals)} active")
 for name, sig in signals.items():
-    print(f"  {name}: {sig['signal']} {sig['symbol']} @ {sig['price']:.2f} "
+    sig_type_display = sig.get('type', sig.get('signal', 'UNKNOWN'))
+    print(f"  {name}: {sig_type_display} {sig['symbol']} @ {sig['price']:.2f} "
           f"SL={sig.get('stop_loss','N/A')} TP={sig.get('take_profit','N/A')} "
           f"conf={sig.get('confidence',0):.1%}")
 
-# ── 3. Place SL/TP for BTC SHORT ──────────────────────────
-btc_short = [p for p in positions if "BTC" in p.get("symbol","").upper() and p.get("side") == "short"]
-if btc_short:
-    pos = btc_short[0]
+# ── 3. Place SL/TP for all open positions ─────────────────
+def place_sltp_for_position(pos, client, results):
+    """Place SL/TP orders for a single position. Handles both LONG and SHORT.
+    Uses client.place_sl_order() which routes through ccxt algo endpoint
+    (required for testnet; direct REST STOP_MARKET fails with -4120)."""
+    symbol_raw = pos.get("symbol", "")
     entry = pos["entry_price"]
     contracts = pos["contracts"]
+    side = pos.get("side", "").lower()
     
-    # Check if SL/TP orders already exist for this symbol
-    btc_bin = client.to_binance_symbol("BTCUSDT")
-    existing_btc_orders = [o for o in open_orders if btc_bin in str(o.get("symbol","")).upper()]
-    
-    if not existing_btc_orders:
-        # For SHORT: SL above entry (price rises), TP below entry (price falls)
-        sl_price = round(entry * 1.015, 1)   # 1.5% above entry
-        tp_price = round(entry * 0.97, 1)     # 3% below entry
-        
-        print(f"\n🛡️ Placing SL/TP for BTC SHORT:")
-        print(f"  Entry: {entry:.2f} | SL: {sl_price:.2f} (+1.5%) | TP: {tp_price:.2f} (-3.0%)")
-        
-        # Place TP (limit order, reduce-only)
-        try:
-            tp_order = client.place_order(
-                symbol="BTCUSDT",
-                side="buy",          # buy to close short
-                order_type="limit",
-                quantity=contracts,
-                price=tp_price,
-                reduce_only=True,
-            )
-            tp_id = tp_order.get("orderId", tp_order.get("id", "?"))
-            print(f"  ✅ TP placed: orderId={tp_id}")
-            results["actions"].append({
-                "type": "PLACE_TP", "symbol": "BTCUSDT", "price": tp_price, 
-                "order_id": str(tp_id), "status": "OK"
-            })
-        except Exception as e:
-            print(f"  ❌ TP failed: {e}")
-            results["actions"].append({"type": "PLACE_TP", "symbol": "BTCUSDT", "error": str(e)})
-        
-        # Place SL (stop-market order, reduce-only)
-        try:
-            sl_order = client._rest_post("/fapi/v1/order", {
-                "symbol": "BTCUSDT",
-                "side": "BUY",
-                "type": "STOP_MARKET",
-                "quantity": contracts,
-                "stopPrice": sl_price,
-                "reduceOnly": "true",
-                "workingType": "MARK_PRICE",
-            })
-            sl_id = sl_order.get("orderId", "?")
-            print(f"  ✅ SL placed: orderId={sl_id}")
-            results["actions"].append({
-                "type": "PLACE_SL", "symbol": "BTCUSDT", "price": sl_price,
-                "order_id": str(sl_id), "status": "OK"
-            })
-        except Exception as e:
-            print(f"  ❌ SL failed: {e}")
-            results["actions"].append({"type": "PLACE_SL", "symbol": "BTCUSDT", "error": str(e)})
+    # Determine exchange symbol and order sides
+    if "BTC" in symbol_raw.upper():
+        bin_sym = "BTCUSDT"
+    elif "ETH" in symbol_raw.upper():
+        bin_sym = "ETHUSDT"
     else:
-        print(f"\n🛡️ BTC SHORT already has {len(existing_btc_orders)} open order(s), skipping SL/TP")
-        results["actions"].append({"type": "SKIP_SLTP", "reason": "existing orders present"})
-else:
-    print("\n⚠️ No BTC SHORT position found")
+        bin_sym = symbol_raw
+    
+    # Check existing orders
+    existing = [o for o in open_orders if bin_sym.upper() in str(o.get("symbol","")).upper()]
+    if existing:
+        print(f"\n🛡️ {bin_sym} {side.upper()} already has {len(existing)} open order(s), skipping SL/TP")
+        results["actions"].append({"type": "SKIP_SLTP", "symbol": bin_sym, "reason": "existing orders present"})
+        return
+    
+    # Calculate SL/TP based on position direction
+    sl_pct = 0.02   # 2% stop loss
+    tp_pct = 0.03   # 3% take profit (for LONG) / 0.04 for mean-reversion
+    
+    if side == "long":
+        sl_price = round(entry * (1 - sl_pct), 1)
+        tp_price = round(entry * (1 + tp_pct), 1)
+        close_side = "sell"
+    else:  # short
+        sl_price = round(entry * (1 + sl_pct), 1)
+        tp_price = round(entry * (1 - tp_pct), 1)
+        close_side = "buy"
+    
+    print(f"\n🛡️ Placing SL/TP for {bin_sym} {side.upper()}:")
+    print(f"  Entry: {entry:.2f} | SL: {sl_price:.2f} | TP: {tp_price:.2f}")
+    
+    # Place TP (limit order, reduce-only)
+    try:
+        tp_order = client.place_order(
+            symbol=bin_sym,
+            side=close_side,
+            order_type="limit",
+            quantity=contracts,
+            price=tp_price,
+            reduce_only=True,
+        )
+        tp_id = tp_order.get("orderId", tp_order.get("id", "?"))
+        print(f"  ✅ TP placed: orderId={tp_id} @ {tp_price}")
+        results["actions"].append({
+            "type": "PLACE_TP", "symbol": bin_sym, "price": tp_price,
+            "order_id": str(tp_id), "status": "OK"
+        })
+    except Exception as e:
+        print(f"  ❌ TP failed: {e}")
+        results["actions"].append({"type": "PLACE_TP", "symbol": bin_sym, "error": str(e)})
+    
+    # Place SL via place_sl_order (testnet-safe, uses ccxt algo endpoint)
+    try:
+        sl_order = client.place_sl_order(
+            symbol=bin_sym,
+            side=close_side.upper(),
+            quantity=contracts,
+            stop_price=sl_price,
+        )
+        sl_id = sl_order.get("id", sl_order.get("orderId", "?"))
+        print(f"  ✅ SL placed: orderId={sl_id} trigger={sl_price}")
+        results["actions"].append({
+            "type": "PLACE_SL", "symbol": bin_sym, "price": sl_price,
+            "order_id": str(sl_id), "status": "OK"
+        })
+    except Exception as e:
+        print(f"  ❌ SL failed: {e}")
+        results["actions"].append({"type": "PLACE_SL", "symbol": bin_sym, "error": str(e)})
+
+# Apply to all non-zero positions
+for pos in positions:
+    contracts = float(pos.get("contracts", 0))
+    if abs(contracts) < 1e-8:
+        continue
+    place_sltp_for_position(pos, client, results)
 
 # ── 4. Signal review ──────────────────────────────────────
 print(f"\n📋 Signal review:")
 
 for name, sig in signals.items():
     sym = sig["symbol"]
-    sig_type = sig["signal"]
+    sig_type = sig.get("type", sig.get("signal", "UNKNOWN"))
     bin_sym = client.to_binance_symbol(sym)
     
     # Check for existing position in same symbol
@@ -149,15 +171,23 @@ for name, sig in signals.items():
     # No existing position — execute!
     print(f"  📡 {name} {sig_type} {sym} → executing...")
     
+    leverage = int(sig.get("leverage", 3))
     signal_dict = {
         "type": sig_type,
         "symbol": sym,
         "quantity": 0.001 if "BTC" in sym.upper() else 0.01,
         "price": sig.get("price"),
-        "leverage": 3,
+        "leverage": leverage,
         "stop_loss": sig.get("stop_loss"),
         "take_profit": sig.get("take_profit"),
     }
+    
+    # Set leverage BEFORE opening position (Binance: leverage only applies to new positions)
+    try:
+        client.set_leverage(bin_sym, leverage)
+        print(f"    Leverage set to {leverage}x for {bin_sym}")
+    except Exception as e:
+        print(f"    [WARN] set_leverage failed: {e}")
     
     try:
         result = engine.execute_signal(signal_dict)

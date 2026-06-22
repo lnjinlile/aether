@@ -166,14 +166,13 @@ class MarketStorage:
             )
             conn.commit()
 
-            # Auto-prune old klines
+            # Auto-prune old klines (skip when keep_days >= actual data age to avoid
+            # pointless index scan — e.g. pipeline collects 365d and keep_days=365)
             if timeframe == "1m":
                 keep_days = 90
-            elif timeframe == "1h":
-                keep_days = 365
-            else:
-                keep_days = 365  # default for other timeframes
-            self._prune_old_klines_conn(conn, symbol, timeframe, keep_days)
+                self._prune_old_klines_conn(conn, symbol, timeframe, keep_days)
+            # All other timeframes (15m/1h/4h/1d): keep 365d, pipeline only
+            # collects 365d → no pruning needed. Skip to save index scan.
         finally:
             conn.close()
 
@@ -469,21 +468,25 @@ class MarketStorage:
 
         conn = self._get_conn()
         try:
+            # Batch insert with executemany (was per-row loop — ~10x faster)
+            rows = []
             for r in rates_list:
                 try:
-                    conn.execute(
-                        """INSERT OR IGNORE INTO funding_rates
-                           (symbol, funding_time, funding_rate, mark_price)
-                           VALUES (?, ?, ?, ?)""",
-                        (
-                            symbol,
-                            r["fundingTime"],
-                            r["fundingRate"],
-                            r["markPrice"],
-                        ),
-                    )
+                    rows.append((
+                        symbol,
+                        r["fundingTime"],
+                        r["fundingRate"],
+                        r["markPrice"],
+                    ))
                 except Exception:
                     pass  # skip malformed records
+            if rows:
+                conn.executemany(
+                    """INSERT OR IGNORE INTO funding_rates
+                       (symbol, funding_time, funding_rate, mark_price)
+                       VALUES (?, ?, ?, ?)""",
+                    rows,
+                )
             conn.commit()
         finally:
             conn.close()

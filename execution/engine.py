@@ -224,8 +224,10 @@ class OrderExecutionEngine:
 
         # 3. Round quantity & price
         qty = self._round_quantity(symbol, quantity)
-        order_price = self._round_price(symbol, price) if price else None
-        order_type = "limit" if order_price else "market"
+        # Signal execution always uses MARKET orders for immediate fill.
+        # Limit orders risk non-execution when price moves away from signal price.
+        order_price = None
+        order_type = "market"
 
         # 4. Place order with retry
         last_error = None
@@ -316,8 +318,9 @@ class OrderExecutionEngine:
         action = "CLOSE"
 
         qty = self._round_quantity(symbol, quantity)
-        order_price = self._round_price(symbol, price) if price else None
-        order_type = "limit" if order_price else "market"
+        # Close signals always use MARKET orders for immediate execution.
+        order_price = None
+        order_type = "market"
 
         last_error = None
         for attempt in range(self._max_retries):

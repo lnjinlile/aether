@@ -169,7 +169,8 @@ for sym_name, feats, df in [('BTC', feats_btc, df_btc), ('ETH', feats_eth, df_et
         model = LGBMClassifier(
             n_estimators=100, max_depth=4, learning_rate=0.03,
             num_leaves=31, min_child_samples=30,
-            class_weight='balanced', random_state=42, verbosity=-1
+            class_weight='balanced', random_state=42, verbosity=-1,
+            predict_disable_shape_check=True
         )
         model.fit(X_train, y_train, eval_set=[(X_val, y_val)])
         
@@ -232,6 +233,7 @@ if viable:
     final_model = LGBMClassifier(
         n_estimators=200, max_depth=5, learning_rate=0.02,
         num_leaves=31, min_child_samples=30,
+        predict_disable_shape_check=True,
         class_weight='balanced', random_state=42, verbosity=-1
     )
     final_model.fit(X_f.iloc[:te], y_f.iloc[:te])

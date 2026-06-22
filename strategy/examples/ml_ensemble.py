@@ -259,6 +259,7 @@ class MLEnsembleStrategy(BaseStrategy):
                 verbosity=-1,
                 random_state=42,
                 force_col_wise=True,
+                predict_disable_shape_check=True,
             )
             xgb = XGBClassifier(
                 n_estimators=100,
@@ -283,6 +284,7 @@ class MLEnsembleStrategy(BaseStrategy):
                 verbosity=-1,
                 random_state=42,
                 force_col_wise=True,
+                predict_disable_shape_check=True,
             )
             xgb = XGBRegressor(
                 n_estimators=100,

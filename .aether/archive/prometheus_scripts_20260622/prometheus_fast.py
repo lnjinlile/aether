@@ -279,8 +279,19 @@ if actions:
         yaml.dump(config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
     print(f"\n  📝 strategies.yaml updated")
 
-# Save prometheus.json
-os.makedirs('.aether', exist_ok=True)
+# Save to state/prometheus.json (merge parameter sweep findings)
+state_dir = '.aether/state'
+os.makedirs(state_dir, exist_ok=True)
+state_path = os.path.join(state_dir, 'prometheus.json')
+existing = {}
+if os.path.exists(state_path):
+    try:
+        with open(state_path) as f:
+            existing = json.load(f)
+    except (json.JSONDecodeError, IOError):
+        pass
+
+# Build prom_data for both state and legacy files
 prom_data = {
     'run_time': t0.isoformat(),
     'findings': {
@@ -297,6 +308,13 @@ if best_rsi:
                                           'sl': best_rsi['sl'], 'tp': best_rsi['tp'],
                                           'net': best_rsi['net'], 'sharpe': best_rsi['sharpe']}
 
+existing['parameter_sweep'] = prom_data
+existing['_updated_at'] = datetime.now(timezone.utc).isoformat()
+with open(state_path, 'w') as f:
+    json.dump(existing, f, indent=2, default=str)
+
+# Also write legacy file
+os.makedirs('.aether', exist_ok=True)
 with open('.aether/prometheus.json', 'w') as f:
     json.dump(prom_data, f, indent=2, default=str)
 print(f"💾 prometheus.json written")

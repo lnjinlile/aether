@@ -34,7 +34,9 @@ def cmd_check_requests(agent):
         return
     for r in pending:
         reason = r["data"].get("reason", "")[:80]
-        print(f"REQUEST|{r['id']}|{r['from']}|{r['type']}|{reason}")
+        from_agent = r.get("from", "unknown")
+        req_type = r.get("type", "unknown")
+        print(f"REQUEST|{r['id']}|{from_agent}|{req_type}|{reason}")
 
 def cmd_fulfill(req_id, result_json):
     reqs = load_json(REQ_FILE)

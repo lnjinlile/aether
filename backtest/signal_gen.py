@@ -301,3 +301,397 @@ def ma_cross_signals(df: pd.DataFrame, fast_period: int, slow_period: int,
                 bars_since_trade = 0
 
     return pd.Series(signals, index=df.index)
+
+
+def bband_rsi_signals(df: pd.DataFrame,
+                      bb_period: int = 20, bb_std: float = 2.5,
+                      rsi_period: int = 14, rsi_oversold: float = 30, rsi_overbought: float = 70,
+                      stop_loss_pct: float = 0.02, take_profit_pct: float = 0.05,
+                      cooldown_bars: int = 3) -> pd.Series:
+    """BBand + RSI mean reversion — signals: 1=LONG, -1=SHORT, 0=FLAT."""
+    close = df['close'].values.astype(float)
+    n = len(close)
+
+    min_bars = max(bb_period, rsi_period) * 2 + 10
+    if n < min_bars:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # Bollinger Bands
+    sma = pd.Series(close).rolling(bb_period).mean().values
+    std = pd.Series(close).rolling(bb_period).std(ddof=0).values
+    upper = sma + bb_std * std
+    lower = sma - bb_std * std
+
+    # RSI
+    delta = pd.Series(close).diff()
+    gain = delta.clip(lower=0)
+    loss = (-delta).clip(lower=0)
+    avg_gain = gain.ewm(alpha=1/rsi_period, adjust=False).mean().values
+    avg_loss = loss.ewm(alpha=1/rsi_period, adjust=False).mean().values
+    rs = np.divide(avg_gain, avg_loss, out=np.full_like(avg_gain, np.inf), where=avg_loss != 0)
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+    rsi[avg_loss == 0] = 100.0
+    rsi[avg_gain == 0] = 0.0
+
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    entry_price = 0.0
+    bars_since_trade = cooldown_bars + 1
+    start_bar = max(bb_period + 5, rsi_period + 5, 50)
+
+    for i in range(start_bar, n):
+        bars_since_trade += 1
+        price = close[i]
+        b_upper = upper[i]
+        b_lower = lower[i]
+        rsi_val = rsi[i]
+
+        has_pos = (pos != 0)
+
+        # Exit: take profit / stop loss only
+        if has_pos:
+            pnl = price / entry_price - 1.0
+            if pos == 1:
+                if pnl >= take_profit_pct:
+                    signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+                elif pnl <= -stop_loss_pct:
+                    signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+            else:  # pos == -1
+                if pnl <= -take_profit_pct:
+                    signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+                elif pnl >= stop_loss_pct:
+                    signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+            signals[i] = pos
+            continue
+
+        # Entry: need cooldown to pass
+        if bars_since_trade <= cooldown_bars:
+            continue
+
+        # LONG: touch lower band + RSI oversold
+        if not np.isnan(b_lower) and price <= b_lower and not np.isnan(rsi_val) and rsi_val < rsi_oversold:
+            pos = 1; entry_price = price; signals[i] = 1; bars_since_trade = 0
+            continue
+
+        # SHORT: touch upper band + RSI overbought
+        if not np.isnan(b_upper) and price >= b_upper and not np.isnan(rsi_val) and rsi_val > rsi_overbought:
+            pos = -1; entry_price = price; signals[i] = -1; bars_since_trade = 0
+            continue
+
+    return pd.Series(signals, index=df.index)
+
+
+def adx_trend_signals(df: pd.DataFrame,
+                      adx_period: int = 14,
+                      adx_threshold: float = 25.0,
+                      adx_exit: float = 20.0,
+                      ema_period: int = 50,
+                      atr_period: int = 14,
+                      atr_sl_mult: float = 2.0,
+                      atr_tp_mult: float = 4.0,
+                      cooldown_bars: int = 3) -> pd.Series:
+    """Vectorized ADX+EMA Trend — signals: 1=LONG, -1=SHORT, 0=FLAT.
+
+    Entry: ADX > adx_threshold + price vs EMA direction + DI confirmation.
+    Exit:  ADX < adx_exit, direction reversal, or trailing ATR stop.
+    """
+    close = df['close'].values.astype(float)
+    high = df['high'].values.astype(float)
+    low = df['low'].values.astype(float)
+    n = len(close)
+
+    min_bars = max(adx_period * 2, ema_period, atr_period) * 2
+    if n < min_bars:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # --- ATR ---
+    tr1 = high - low
+    tr2 = np.abs(high - np.roll(close, 1))
+    tr3 = np.abs(low - np.roll(close, 1))
+    tr2[0] = tr3[0] = 0.0
+    tr = np.maximum(np.maximum(tr1, tr2), tr3)
+    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+
+    # --- ADX ---
+    up_move = np.diff(high, prepend=high[0])
+    down_move = -np.diff(low, prepend=low[0])
+    plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0.0)
+    minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
+
+    atr_smooth = pd.Series(tr).ewm(span=adx_period, adjust=False).mean().values
+    plus_di = 100.0 * pd.Series(plus_dm).ewm(span=adx_period, adjust=False).mean().values
+    minus_di = 100.0 * pd.Series(minus_dm).ewm(span=adx_period, adjust=False).mean().values
+
+    denom = np.where(atr_smooth > 0, atr_smooth, np.nan)
+    plus_di = np.where(~np.isnan(denom), plus_di / denom, 0.0)
+    minus_di = np.where(~np.isnan(denom), minus_di / denom, 0.0)
+
+    di_sum = plus_di + minus_di
+    dx = np.where(di_sum > 0, 100.0 * np.abs(plus_di - minus_di) / di_sum, 0.0)
+    adx = pd.Series(dx).ewm(span=adx_period, adjust=False).mean().values
+
+    # --- EMA ---
+    ema = pd.Series(close).ewm(span=ema_period, adjust=False).mean().values
+
+    # --- Signal generation ---
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    trailing_stop = 0.0
+    bars_since_trade = cooldown_bars + 1
+    start_bar = max(adx_period * 2, ema_period, atr_period) * 2
+
+    for i in range(start_bar, n):
+        bars_since_trade += 1
+        price = close[i]
+        _adx = adx[i]
+        _ema = ema[i]
+        _atr = atr[i]
+        _plus_di = plus_di[i]
+        _minus_di = minus_di[i]
+
+        if np.isnan(_adx) or np.isnan(_ema) or np.isnan(_atr):
+            continue
+
+        # --- Exit logic ---
+        if pos == 1:
+            # ADX exhaustion
+            if _adx < adx_exit:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+            # Direction reversal
+            if price < _ema and _adx > adx_threshold:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+            # Trailing stop
+            new_trail = max(trailing_stop, price - _atr * atr_sl_mult)
+            trailing_stop = new_trail
+            if price < trailing_stop:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+        elif pos == -1:
+            if _adx < adx_exit:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+            if price > _ema and _adx > adx_threshold:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+            new_trail = min(trailing_stop, price + _atr * atr_sl_mult)
+            trailing_stop = new_trail
+            if price > trailing_stop:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+
+        if pos != 0:
+            signals[i] = pos
+            continue
+
+        # --- Entry logic ---
+        if bars_since_trade <= cooldown_bars:
+            continue
+
+        if _adx < adx_threshold:
+            continue
+
+        # LONG: price above EMA + +DI > -DI
+        if price > _ema and _plus_di > _minus_di:
+            pos = 1; trailing_stop = price - _atr * atr_sl_mult
+            signals[i] = 1; bars_since_trade = 0; continue
+
+        # SHORT: price below EMA + -DI > +DI
+        if price < _ema and _minus_di > _plus_di:
+            pos = -1; trailing_stop = price + _atr * atr_sl_mult
+            signals[i] = -1; bars_since_trade = 0; continue
+
+    return pd.Series(signals, index=df.index)
+
+
+def momentum_signals(df: pd.DataFrame,
+                     fast_ema: int = 12, slow_ema: int = 26,
+                     signal_period: int = 9, atr_period: int = 14,
+                     atr_sl_mult: float = 2.0, atr_tp_mult: float = 3.5) -> pd.Series:
+    """Vectorized Momentum (MACD always-in-market) — signals: 1=LONG, -1=SHORT, 0=FLAT.
+
+    Mirrors strategy/examples/momentum.py:
+    - MACD direction determines bias: MACD_hist > 0 → LONG, < 0 → SHORT
+    - Flip in MACD sign → exit current position
+    - ATR-based SL/TP while in position
+    - Always in market after first entry
+    """
+    close = df['close'].values.astype(float)
+    high = df['high'].values.astype(float)
+    low = df['low'].values.astype(float)
+    n = len(close)
+    min_bars = max(slow_ema, atr_period) * 2 + signal_period
+
+    if n < min_bars:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # MACD
+    ema_fast = pd.Series(close).ewm(span=fast_ema, adjust=False).mean().values
+    ema_slow = pd.Series(close).ewm(span=slow_ema, adjust=False).mean().values
+    macd = ema_fast - ema_slow
+    macd_signal = pd.Series(macd).ewm(span=signal_period, adjust=False).mean().values
+    macd_hist = macd - macd_signal
+    macd_direction = macd_hist > 0  # True=LONG bias, False=SHORT bias
+
+    # ATR
+    tr1 = high - low
+    tr2 = np.abs(high - np.roll(close, 1))
+    tr3 = np.abs(low - np.roll(close, 1))
+    tr2[0] = tr3[0] = 0.0
+    tr = np.maximum(np.maximum(tr1, tr2), tr3)
+    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    entry_price = 0.0
+    start_bar = min_bars
+
+    for i in range(start_bar, n):
+        price = close[i]
+        _atr = atr[i]
+        if np.isnan(_atr) or _atr <= 0:
+            continue
+
+        macd_long = macd_direction[i]
+        macd_prev_long = macd_direction[i - 1] if i > 0 else macd_long
+        flipped = macd_long != macd_prev_long
+
+        # --- First entry: always enter ---
+        if pos == 0 and i == start_bar:
+            pos = 1 if macd_long else -1
+            entry_price = price
+            signals[i] = pos
+            continue
+
+        # --- Exit on MACD flip ---
+        if pos != 0 and flipped:
+            signals[i] = 0  # close
+            pos = 1 if macd_long else -1
+            entry_price = price
+            continue
+
+        # --- ATR SL/TP while in position, then reverse ---
+        if pos == 1:
+            if price <= entry_price - _atr * atr_sl_mult:
+                signals[i] = 0
+            elif price >= entry_price + _atr * atr_tp_mult:
+                signals[i] = 0
+            else:
+                signals[i] = pos
+                continue
+            pos = -1 if not macd_long else 1
+            entry_price = price
+            continue
+        elif pos == -1:
+            if price >= entry_price + _atr * atr_sl_mult:
+                signals[i] = 0
+            elif price <= entry_price - _atr * atr_tp_mult:
+                signals[i] = 0
+            else:
+                signals[i] = pos
+                continue
+            pos = 1 if macd_long else -1
+            entry_price = price
+            continue
+
+    return pd.Series(signals, index=df.index)
+
+
+def trend_pullback_signals(df: pd.DataFrame,
+                            ema_period: int = 100, atr_period: int = 14,
+                            atr_sl_mult: float = 1.5, atr_tp_mult: float = 3.0,
+                            cooldown_bars: int = 5) -> pd.Series:
+    """Vectorized TrendPullback — signals: 1=LONG, -1=SHORT, 0=FLAT.
+
+    Mirrors strategy/examples/trend_pullback.py:
+    - EMA100 slope determines trend: slope > 0 → uptrend (LONG), < 0 → downtrend (SHORT)
+    - Entry: always in trend direction after cooldown
+    - Exit: trend reversal (slope sign flip) or ATR SL/TP (capped at 5% of price)
+    """
+    close = df['close'].values.astype(float)
+    high = df['high'].values.astype(float)
+    low = df['low'].values.astype(float)
+    n = len(close)
+    min_bars = ema_period * 2 + atr_period + 10
+
+    if n < min_bars:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # EMA + slope
+    ema = pd.Series(close).ewm(span=ema_period, adjust=False).mean().values
+    ema_slope = np.zeros(n)
+    ema_slope[5:] = ema[5:] - ema[:-5]
+
+    # ATR
+    tr1 = high - low
+    tr2 = np.abs(high - np.roll(close, 1))
+    tr3 = np.abs(low - np.roll(close, 1))
+    tr2[0] = tr3[0] = 0.0
+    tr = np.maximum(np.maximum(tr1, tr2), tr3)
+    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    entry_price = 0.0
+    bars_since_trade = cooldown_bars + 1
+    start_bar = min_bars
+
+    for i in range(start_bar, n):
+        bars_since_trade += 1
+        price = close[i]
+        slope = ema_slope[i]
+        _atr = atr[i]
+        if np.isnan(_atr) or _atr <= 0:
+            continue
+        uptrend = slope > 0
+
+        # --- Exit logic ---
+        if pos == 1:
+            exit_trigger = False
+            if not uptrend:
+                exit_trigger = True
+            else:
+                atr_capped = min(_atr, price * 0.05)
+                if atr_capped > 0:
+                    if price <= entry_price - atr_capped * atr_sl_mult:
+                        exit_trigger = True
+                    elif price >= entry_price + atr_capped * atr_tp_mult:
+                        exit_trigger = True
+            if exit_trigger:
+                signals[i] = 0
+                pos = 0
+                bars_since_trade = 0
+                continue
+        elif pos == -1:
+            exit_trigger = False
+            if uptrend:
+                exit_trigger = True
+            else:
+                atr_capped = min(_atr, price * 0.05)
+                if atr_capped > 0:
+                    if price >= entry_price + atr_capped * atr_sl_mult:
+                        exit_trigger = True
+                    elif price <= entry_price - atr_capped * atr_tp_mult:
+                        exit_trigger = True
+            if exit_trigger:
+                signals[i] = 0
+                pos = 0
+                bars_since_trade = 0
+                continue
+
+        # Hold
+        if pos != 0:
+            signals[i] = pos
+            continue
+
+        # --- Entry: trend direction, after cooldown ---
+        if bars_since_trade <= cooldown_bars:
+            continue
+
+        if uptrend:
+            pos = 1
+            entry_price = price
+            signals[i] = 1
+            bars_since_trade = 0
+        else:
+            pos = -1
+            entry_price = price
+            signals[i] = -1
+            bars_since_trade = 0
+
+    return pd.Series(signals, index=df.index)

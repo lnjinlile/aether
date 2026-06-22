@@ -6,7 +6,6 @@ Fetches data from Binance Futures (testnet or mainnet).
 import time
 from datetime import datetime, timedelta, timezone
 import pandas as pd
-import ccxt
 
 
 class BinanceDataCollector:
@@ -34,8 +33,9 @@ class BinanceDataCollector:
 
         self.exchange = self._create_exchange()
 
-    def _create_exchange(self) -> ccxt.Exchange:
+    def _create_exchange(self) -> "ccxt.Exchange":
         """Create and configure the ccxt Binance Futures exchange."""
+        import ccxt  # lazy import: ~0.5s cost
         exchange = ccxt.binanceusdm({
             "apiKey": self.api_key,
             "secret": self.api_secret,

@@ -83,21 +83,57 @@ def main():
     storage = MarketStorage()
 
     # ── 2. Get account snapshot ───────────────────────────────
+    # ── 2. Get account snapshot ───────────────────────────────
     print("\n📊 账户快照")
     print("-" * 40)
     balance = None
     positions = []
-    for attempt in range(3):
+    for attempt in range(5):
         try:
-            balance = client.get_balance()
+            # On testnet, REST is more reliable than ccxt for balance.
+            try:
+                balance = client._get_balance_via_rest()
+            except Exception:
+                balance = client.get_balance()
             positions = client.get_positions()
             if balance.get("balance", 0) > 0 or balance.get("available", 0) > 0:
                 break
-            print(f"  ⚠️  余额为0,重试 {attempt+1}/3...")
-            time.sleep(1)
+            print(f"  ⚠️  余额为0,重试 {attempt+1}/5...")
+            time.sleep(2)
         except Exception as e:
-            print(f"  ⚠️  获取账户失败(尝试{attempt+1}/3): {e}")
-            time.sleep(1)
+            print(f"  ⚠️  获取账户失败(尝试{attempt+1}/5): {e}")
+            time.sleep(2)
+
+    # Fallback: load balance/positions from engine state when API is rate-limited
+    if balance is None or (balance.get("balance", 0) == 0 and balance.get("available", 0) == 0):
+        print("  🔄 API风控中,从引擎状态恢复...")
+        try:
+            import json as _json
+            with open(".aether/state/live_exchange.json") as f:
+                _state = _json.load(f)
+            _bal = _state.get("balance", {})
+            if isinstance(_bal, dict):
+                balance = {"balance": _bal.get("balance", 0), "available": _bal.get("available", 0), "unrealized_pnl": _bal.get("unrealized_pnl", 0)}
+            _pos = _state.get("positions", [])
+            # Convert position format to match client output
+            positions = []
+            for p in _pos:
+                positions.append({
+                    "symbol": p.get("symbol", ""),
+                    "side": p.get("side", ""),
+                    "contracts": p.get("contracts", 0),
+                    "entry_price": p.get("entry_price", 0),
+                    "mark_price": p.get("mark_price", 0),
+                    "unrealized_pnl": p.get("unrealized_pnl", 0),
+                    "liquidation_price": p.get("liquidation_price", 0),
+                    "leverage": p.get("leverage", 1),
+                    "margin_mode": p.get("margin_mode", "isolated"),
+                    "notional": p.get("notional", 0),
+                })
+            print(f"  ✅ 状态恢复: 余额={balance['balance']:.2f}, 持仓={len(positions)}")
+        except Exception as e:
+            print(f"  ⚠️  状态恢复失败: {e}")
+
     if balance is None:
         balance = {"balance": 0, "available": 0, "unrealized_pnl": 0}
 
@@ -281,7 +317,6 @@ def main():
                         print(f"  ⚔️  策略冲突 [{sym}]: {sname}({loser_side}) "
                               f"被 {winner[0]} 压制 (优先级: "
                               f"{get_strategy_priority(sname):.2f} < {get_strategy_priority(winner[0]):.2f})")
-                        trades_skipped += 1
                         execution_results.append({
                             "symbol": sym, "strategy": sname,
                             "signal": sig.type.value, "status": "SUPPRESSED",

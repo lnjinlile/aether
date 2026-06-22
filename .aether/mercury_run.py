@@ -58,14 +58,22 @@ print()
 
 # ---- Step 2: Fetch data and generate signals ----
 print('=== Signal Generation ===')
+# Collect unique (symbol, timeframe) pairs needed by active strategies
 all_signals = {}
-for sym in ['BTC/USDT', 'ETH/USDT']:
+active_tf_pairs: set = set()
+for name, strategy in mgr._strategies.items():
+    for sym in strategy.symbols:
+        for tf in strategy.timeframes:
+            active_tf_pairs.add((sym, tf))
+print(f'Active TF pairs: {active_tf_pairs}')
+
+for sym, tf in sorted(active_tf_pairs):
     try:
-        df = collector.fetch_current_klines(sym, '15m', 500)
-        print(f'{sym}: {len(df)} 15m candles, close={df.iloc[-1]["close"]:.1f}')
-        mgr.feed_data_only(sym, '15m', df)
+        df = collector.fetch_current_klines(sym, tf, 500)
+        print(f'{sym} {tf}: {len(df)} candles, close={df.iloc[-1]["close"]:.1f}')
+        mgr.feed_data_only(sym, tf, df)
     except Exception as e:
-        print(f'{sym}: data fetch failed - {e}')
+        print(f'{sym} {tf}: data fetch failed - {e}')
         continue
 
 for sym in ['BTC/USDT', 'ETH/USDT']:

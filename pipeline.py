@@ -118,6 +118,19 @@ def run():
                 except Exception:
                     pass
 
+            # ── Periodic data quality check (every hour) ──
+            if int(time.time()) % 3600 < INTERVAL:
+                try:
+                    from data.quality import DataQualityCheck
+                    qc = DataQualityCheck()
+                    results = qc.run_all(SYMBOLS, TIMEFRAMES)
+                    if results["health"] != "ok":
+                        logger.warning("Quality check DEGRADED: %d issues", len(results["issues"]))
+                        for iss in results["issues"][:3]:
+                            logger.warning("  [%s] %s", iss["type"], iss["msg"])
+                except Exception as e:
+                    logger.warning("Quality check failed: %s", e)
+
             # Write health status
             os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
             with open(STATE_FILE, "w") as f:
@@ -130,6 +143,30 @@ def run():
                     "latest": stats,
                     "errors": errors,
                 }, f, indent=2)
+
+            # ── Touch oracle.json freshness (prevents AUDIT-005 stale state regressions) ──
+            try:
+                _now_iso = datetime.now(timezone.utc).isoformat()
+                # Compute latest kline timestamp from DB
+                _last_klines_ts = storage.db.execute("SELECT MAX(open_time) FROM klines").fetchone()[0]
+                # Update both state/oracle.json AND main oracle.json
+                for oracle_path in [
+                    os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state", "oracle.json"),
+                    os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "oracle.json"),
+                ]:
+                    if os.path.exists(oracle_path):
+                        with open(oracle_path, "r") as f:
+                            oracle = json.load(f)
+                    else:
+                        oracle = {}
+                    oracle["last_pipeline"] = _now_iso
+                    oracle["data_fresh"] = True
+                    oracle["last_klines_ts"] = _last_klines_ts
+                    oracle["_updated_at"] = _now_iso
+                    with open(oracle_path, "w") as f:
+                        json.dump(oracle, f, indent=2, ensure_ascii=False)
+            except Exception:
+                pass  # best-effort, don't block pipeline tick
 
             if errors:
                 logger.warning("Tick: %s — %d feed(s) failed", stats, len(errors))
