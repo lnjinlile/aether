@@ -1,5 +1,5 @@
 {
-  "_updated_at": "2026-06-22T16:07:30.427276+00:00",
+  "_updated_at": "2026-06-22T16:39:36.478879+00:00",
   "status": "healthy",
   "strategies_enabled": [
     "RSI_MR_ETH",
@@ -17,9 +17,9 @@
   },
   "data_stats": {
     "BTC/USDT_15m": {
-      "count": 35089,
-      "latest_ts": 1782144000000,
-      "latest": "2026-06-23T00:00:00"
+      "count": 35091,
+      "latest_ts": 1782145800000,
+      "latest": "2026-06-23T00:30:00"
     },
     "BTC/USDT_1h": {
       "count": 8773,
@@ -37,9 +37,9 @@
       "latest": "2026-06-22T08:00:00"
     },
     "ETH/USDT_15m": {
-      "count": 35089,
-      "latest_ts": 1782144000000,
-      "latest": "2026-06-23T00:00:00"
+      "count": 35091,
+      "latest_ts": 1782145800000,
+      "latest": "2026-06-23T00:30:00"
     },
     "ETH/USDT_1h": {
       "count": 8773,
@@ -60,10 +60,10 @@
       "count": 608
     },
     "table_open_interest": {
-      "count": 662
+      "count": 672
     },
     "table_orderbook_snapshots": {
-      "count": 477
+      "count": 487
     },
     "table_trades_log": {
       "count": 3
@@ -112,9 +112,9 @@
   "db_table": "klines",
   "db_index": "PK (symbol, timeframe, open_time)",
   "last_heartbeat": "2026-06-22T13:15:00.000000+00:00",
-  "last_pipeline": "2026-06-22T16:07:30.427276+00:00",
-  "last_klines_ts": 1782144000000,
-  "klines_count": 92842,
+  "last_pipeline": "2026-06-22T16:39:36.478879+00:00",
+  "last_klines_ts": 1782145800000,
+  "klines_count": 92846,
   "pipeline_pid": 893424,
   "_cross_file_warnings": [
     "DonchianMR_BTC enabled=True in YAML but verdict=PAPER in athena.json → EXCLUDED"

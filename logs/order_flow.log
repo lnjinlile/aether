@@ -119,3 +119,119 @@
 2026-06-23 00:08:26,965 [OF] Order flow: ETH/USDT → 8 windows stored
 2026-06-23 00:08:26,965 [OF] Order flow pipeline complete: {'BTC/USDT': 7, 'ETH/USDT': 8}
 2026-06-23 00:08:26,969 [OF] Cycle complete
+2026-06-23 00:09:31,929 [OF] Order flow: BTC/USDT → 7 windows stored
+2026-06-23 00:09:32,931 [OF] Order flow: ETH/USDT → 8 windows stored
+2026-06-23 00:09:32,931 [OF] Order flow pipeline complete: {'BTC/USDT': 7, 'ETH/USDT': 8}
+2026-06-23 00:09:32,934 [OF] Cycle complete
+2026-06-23 00:10:37,587 [OF] Order flow: BTC/USDT → 8 windows stored
+2026-06-23 00:10:38,580 [OF] Order flow: ETH/USDT → 8 windows stored
+2026-06-23 00:10:38,580 [OF] Order flow pipeline complete: {'BTC/USDT': 8, 'ETH/USDT': 8}
+2026-06-23 00:10:38,584 [OF] Cycle complete
+2026-06-23 00:11:43,198 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:11:44,178 [OF] Order flow: ETH/USDT → 6 windows stored
+2026-06-23 00:11:44,178 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 6}
+2026-06-23 00:11:44,182 [OF] Cycle complete
+2026-06-23 00:12:48,819 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:12:49,814 [OF] Order flow: ETH/USDT → 7 windows stored
+2026-06-23 00:12:49,815 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 7}
+2026-06-23 00:12:49,818 [OF] Cycle complete
+2026-06-23 00:13:59,137 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:14:00,024 [OF] Order flow: ETH/USDT → 7 windows stored
+2026-06-23 00:14:00,025 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 7}
+2026-06-23 00:14:00,029 [OF] Cycle complete
+2026-06-23 00:15:04,692 [OF] Order flow: BTC/USDT → 10 windows stored
+2026-06-23 00:15:05,683 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:15:05,683 [OF] Order flow pipeline complete: {'BTC/USDT': 10, 'ETH/USDT': 9}
+2026-06-23 00:15:05,688 [OF] Cycle complete
+2026-06-23 00:16:10,274 [OF] Order flow: BTC/USDT → 10 windows stored
+2026-06-23 00:16:11,268 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:16:11,268 [OF] Order flow pipeline complete: {'BTC/USDT': 10, 'ETH/USDT': 9}
+2026-06-23 00:16:11,272 [OF] Cycle complete
+2026-06-23 00:17:14,311 [OF] Order flow: BTC/USDT → 10 windows stored
+2026-06-23 00:17:15,308 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:17:15,308 [OF] Order flow pipeline complete: {'BTC/USDT': 10, 'ETH/USDT': 9}
+2026-06-23 00:17:15,312 [OF] Cycle complete
+2026-06-23 00:18:20,437 [OF] Order flow: BTC/USDT → 10 windows stored
+2026-06-23 00:18:21,443 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:18:21,443 [OF] Order flow pipeline complete: {'BTC/USDT': 10, 'ETH/USDT': 9}
+2026-06-23 00:18:21,447 [OF] Cycle complete
+2026-06-23 00:19:26,126 [OF] Order flow: BTC/USDT → 10 windows stored
+2026-06-23 00:19:27,115 [OF] Order flow: ETH/USDT → 10 windows stored
+2026-06-23 00:19:27,115 [OF] Order flow pipeline complete: {'BTC/USDT': 10, 'ETH/USDT': 10}
+2026-06-23 00:19:27,119 [OF] Cycle complete
+2026-06-23 00:20:32,932 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:20:33,753 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:20:33,753 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 9}
+2026-06-23 00:20:33,757 [OF] Cycle complete
+2026-06-23 00:21:38,396 [OF] Order flow: BTC/USDT → 8 windows stored
+2026-06-23 00:21:39,386 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:21:39,386 [OF] Order flow pipeline complete: {'BTC/USDT': 8, 'ETH/USDT': 9}
+2026-06-23 00:21:39,390 [OF] Cycle complete
+2026-06-23 00:22:52,992 [OF] Order flow error for BTC/USDT: binanceusdm GET https://testnet.binancefuture.com/fapi/v1/exchangeInfo
+2026-06-23 00:23:04,850 [OF] Order flow error for ETH/USDT: binanceusdm GET https://testnet.binancefuture.com/fapi/v1/exchangeInfo
+2026-06-23 00:23:04,850 [OF] Order flow pipeline complete: {'BTC/USDT': -1, 'ETH/USDT': -1}
+2026-06-23 00:23:04,850 [OF] Cycle complete
+2026-06-23 00:24:09,548 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:24:10,566 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:24:10,566 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 9}
+2026-06-23 00:24:10,571 [OF] Cycle complete
+2026-06-23 00:25:15,220 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:25:15,445 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:25:15,446 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 9}
+2026-06-23 00:25:15,450 [OF] Cycle complete
+2026-06-23 00:26:18,365 [OF] Order flow: BTC/USDT → 8 windows stored
+2026-06-23 00:26:19,370 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:26:19,370 [OF] Order flow pipeline complete: {'BTC/USDT': 8, 'ETH/USDT': 9}
+2026-06-23 00:26:19,375 [OF] Cycle complete
+2026-06-23 00:27:24,120 [OF] Order flow: BTC/USDT → 8 windows stored
+2026-06-23 00:27:25,116 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:27:25,116 [OF] Order flow pipeline complete: {'BTC/USDT': 8, 'ETH/USDT': 9}
+2026-06-23 00:27:25,120 [OF] Cycle complete
+2026-06-23 00:28:39,975 [OF] Order flow error for BTC/USDT: binanceusdm GET https://testnet.binancefuture.com/fapi/v1/exchangeInfo
+2026-06-23 00:28:50,094 [OF] Order flow error for ETH/USDT: binanceusdm GET https://testnet.binancefuture.com/fapi/v1/exchangeInfo
+2026-06-23 00:28:50,094 [OF] Order flow pipeline complete: {'BTC/USDT': -1, 'ETH/USDT': -1}
+2026-06-23 00:28:50,094 [OF] Cycle complete
+2026-06-23 00:30:03,326 [OF] Order flow error for BTC/USDT: binanceusdm GET https://testnet.binancefuture.com/fapi/v1/exchangeInfo
+2026-06-23 00:30:04,568 [OF] Order flow: ETH/USDT → 10 windows stored
+2026-06-23 00:30:04,569 [OF] Order flow pipeline complete: {'BTC/USDT': -1, 'ETH/USDT': 10}
+2026-06-23 00:30:04,573 [OF] Cycle complete
+2026-06-23 00:31:08,882 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:31:09,882 [OF] Order flow: ETH/USDT → 10 windows stored
+2026-06-23 00:31:09,882 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 10}
+2026-06-23 00:31:09,886 [OF] Cycle complete
+2026-06-23 00:32:14,249 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:32:15,239 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:32:15,240 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 9}
+2026-06-23 00:32:15,244 [OF] Cycle complete
+2026-06-23 00:33:19,549 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:33:20,557 [OF] Order flow: ETH/USDT → 10 windows stored
+2026-06-23 00:33:20,557 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 10}
+2026-06-23 00:33:20,561 [OF] Cycle complete
+2026-06-23 00:34:33,754 [OF] Order flow error for BTC/USDT: binanceusdm GET https://testnet.binancefuture.com/fapi/v1/exchangeInfo
+2026-06-23 00:34:34,978 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:34:34,978 [OF] Order flow pipeline complete: {'BTC/USDT': -1, 'ETH/USDT': 9}
+2026-06-23 00:34:34,982 [OF] Cycle complete
+2026-06-23 00:35:40,417 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:35:41,496 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:35:41,496 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 9}
+2026-06-23 00:35:41,500 [OF] Cycle complete
+2026-06-23 00:36:54,961 [OF] Order flow error for BTC/USDT: binanceusdm GET https://testnet.binancefuture.com/fapi/v1/exchangeInfo
+2026-06-23 00:36:56,208 [OF] Order flow: ETH/USDT → 8 windows stored
+2026-06-23 00:36:56,208 [OF] Order flow pipeline complete: {'BTC/USDT': -1, 'ETH/USDT': 8}
+2026-06-23 00:36:56,212 [OF] Cycle complete
+2026-06-23 00:38:00,800 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:38:01,794 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:38:01,794 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 9}
+2026-06-23 00:38:01,798 [OF] Cycle complete
+2026-06-23 00:39:06,413 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:39:07,409 [OF] Order flow: ETH/USDT → 9 windows stored
+2026-06-23 00:39:07,410 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 9}
+2026-06-23 00:39:07,414 [OF] Cycle complete
+2026-06-23 00:40:12,438 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:40:13,065 [OF] Order flow: ETH/USDT → 10 windows stored
+2026-06-23 00:40:13,066 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 10}
+2026-06-23 00:40:13,069 [OF] Cycle complete
+2026-06-23 00:41:17,774 [OF] Order flow: BTC/USDT → 9 windows stored
+2026-06-23 00:41:18,783 [OF] Order flow: ETH/USDT → 8 windows stored
+2026-06-23 00:41:18,783 [OF] Order flow pipeline complete: {'BTC/USDT': 9, 'ETH/USDT': 8}
+2026-06-23 00:41:18,787 [OF] Cycle complete

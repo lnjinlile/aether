@@ -124,7 +124,7 @@
       "total_trades": 69,
       "backtest_period": "365d",
       "verdict": "DO_NOT_ENABLE",
-      "retired_reason": "All params negative across 90d/180d/365d. Best (ETH-like OS=20/OB=75/SL=2%/TP=4%): 90d=-5.5% 180d=-5.5% 365d=-17.1%. BTC lacks mean-reverting behavior in 1h \u2014 RSI_MR only works on ETH."
+      "retired_reason": "All params negative across 90d/180d/365d. Best (ETH-like OS=20/OB=75/SL=2%/TP=4%): 90d=-5.5% 180d=-5.5% 365d=-17.1%. BTC lacks mean-reverting behavior in 1h — RSI_MR only works on ETH."
     },
     "RSI_MR_ETH": {
       "status": "ok",
@@ -212,7 +212,7 @@
       "total_trades": 27,
       "backtest_period": "90d",
       "verdict": "RETIRED",
-      "retired_reason": "AUDIT-049: DD=21.18% > 20% max, SR=0.116 \u2248 noise, 27 trades. RETIRED per lifecycle rules."
+      "retired_reason": "AUDIT-049: DD=21.18% > 20% max, SR=0.116 ≈ noise, 27 trades. RETIRED per lifecycle rules."
     },
     "BBandRSI_BTC": {
       "status": "disabled",
@@ -486,5 +486,5 @@
       }
     }
   },
-  "_updated_at": "2026-06-22T15:44:39.759118+00:00"
+  "_updated_at": "2026-06-22T16:41:00.809191+00:00"
 }

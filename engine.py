@@ -522,10 +522,11 @@ def run_risk_check():
 _persistent_mgr = None
 _yaml_mtime = 0          # mtime of last-read strategies.yaml
 _yaml_enabled_names = set()  # cached set of enabled strategy names
+_all_yaml_strategy_names = set()  # cached set of ALL strategy names (for disabled calculation)
 
 def run_signal_check():
     """Generate trading signals from active strategies."""
-    global _persistent_mgr, _yaml_mtime, _yaml_enabled_names
+    global _persistent_mgr, _yaml_mtime, _yaml_enabled_names, _all_yaml_strategy_names
     try:
         from strategy.manager import StrategyManager
         from data.collector import BinanceDataCollector
@@ -534,6 +535,8 @@ def run_signal_check():
 
         cfg = get_config()
         collector = BinanceDataCollector(cfg.api_key, cfg.api_secret, cfg.testnet)
+        import sqlite3 as _sqlite3
+        import pandas as _pd
 
         # ── Reload strategies.yaml only when file changes (mtime check) ──
         _yaml_path = "config/strategies.yaml"
@@ -545,6 +548,7 @@ def run_signal_check():
             with open(_yaml_path) as _f:
                 _yaml_cfg = _yaml.safe_load(_f)
             _yaml_enabled_names = {s['name'] for s in _yaml_cfg.get('strategies', []) if s.get('enabled')}
+            _all_yaml_strategy_names = {s['name'] for s in _yaml_cfg.get('strategies', [])}  # all names for disabled calc
             _yaml_mtime = _cur_mtime
             _persistent_mgr = StrategyManager.load_from_yaml(_yaml_path)
             logger.info("Strategies reloaded from YAML (mtime changed): %d enabled", len(_yaml_enabled_names))
@@ -582,8 +586,12 @@ def run_signal_check():
                             "AUDIT-047 v2: %s athena verdict=LIVE but backtest_results=%s. Using backtest_results authority.",
                             _name, _btv
                         )
-                    # PAPER is a valid enabled state (paper trading); only block truly disabled verdicts
-                    if _v in ("DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
+                    # AUDIT-047 v3: PAPER strategies must NOT be enabled in YAML.
+                    # PAPER strategies accumulate paper trades only; they are NOT live.
+                    # Promotion PAPER→LIVE must go through Athena evaluation pipeline,
+                    # not by directly flipping enabled:true in YAML.
+                    # Block PAPER alongside DO_NOT_ENABLE/RETIRED/PAUSED/NOT_EVALUATED.
+                    if _v in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
                         _re_enabled.append(f"{_name}(verdict={_v})")
                 if _re_enabled:
                     # Auto-fix: flip enabled back to false in strategies.yaml
@@ -592,13 +600,14 @@ def run_signal_check():
                     for _s in _yaml_cfg.get("strategies", []):
                         _sn = _s.get("name", "")
                         _sv = _athena_strats.get(_sn, {}).get("verdict", "")
-                        if _sn in _yaml_enabled_names and _sv in ("DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
+                        if _sn in _yaml_enabled_names and _sv in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
                             _s["enabled"] = False
                             _fixed.append(_sn)
                     if _fixed:
                         with open(_yaml_path, "w") as _f:
                             _yaml2.dump(_yaml_cfg, _f, default_flow_style=False, sort_keys=False)
                         _yaml_enabled_names = {s['name'] for s in _yaml_cfg.get('strategies', []) if s.get('enabled')}
+                        _all_yaml_strategy_names = {s['name'] for s in _yaml_cfg.get('strategies', [])}
                         _yaml_mtime = os.path.getmtime(_yaml_path)
                         _persistent_mgr = StrategyManager.load_from_yaml(_yaml_path)
                         logger.critical(
@@ -628,7 +637,25 @@ def run_signal_check():
             try:
                 cache_key = (sym, tf)
                 if cache_key not in _klines_cache:
-                    _klines_cache[cache_key] = collector.fetch_current_klines(sym, tf, 300)
+                    try:
+                        _klines_cache[cache_key] = collector.fetch_current_klines(sym, tf, 300)
+                    except Exception as _api_err:
+                        # Fallback to local market.db when API is unreachable
+                        logger.warning("API fetch failed for %s %s, falling back to market.db: %s", sym, tf, _api_err)
+                        _db = _sqlite3.connect("data/market.db")
+                        _rows = _db.execute(
+                            "SELECT open_time, open, high, low, close, volume FROM klines WHERE symbol=? AND timeframe=? ORDER BY open_time DESC LIMIT 300",
+                            (sym, tf)
+                        ).fetchall()
+                        _db.close()
+                        if _rows:
+                            _rows.reverse()  # oldest first
+                            _klines_cache[cache_key] = _pd.DataFrame(
+                                _rows,
+                                columns=["open_time", "open", "high", "low", "close", "volume"]
+                            ).set_index("open_time")
+                        else:
+                            raise RuntimeError(f"No local data for {sym} {tf}") from _api_err
                 df = _klines_cache[cache_key]
                 mgr.feed_data_only(sym, tf, df)
                 sig = strat.generate_signal(sym)
@@ -721,6 +748,8 @@ def run_signal_check():
                 signals[best[0]] = best[1]
 
         write_json("signals.json", {"signals": signals, "timestamp": datetime.now(timezone.utc).isoformat()})
+        # Also write in executor-compatible format
+        write_json("trade_signals.json", {"signals": signals, "timestamp": datetime.now(timezone.utc).isoformat()})
         logger.info("Signals: %d generated", len(signals))
     except Exception as e:
         logger.error("Signal error: %s", e)
@@ -733,20 +762,23 @@ def fetch_live_exchange():
     AUDIT-009 FIX: When API is rate-limited, Binance returns balance=0
     and ghost positions. Detect this and retain the last valid state
     file instead of overwriting it with zeros.
+
+    PERF-001/002/003: Uses client.get_live_snapshot() which:
+      - Skips ccxt on testnet (balance/orders ccxt calls always time out)
+      - Uses /fapi/v1/ticker/bookTicker for both symbols in one REST call
+      - Reduces from 5-8 API calls to 4 sequential REST calls
     """
     try:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         from execution.client import BinanceFuturesClient
         from config.settings import get_config
+        import requests as _requests
         cfg = get_config()
         client = BinanceFuturesClient(cfg.api_key, cfg.api_secret, cfg.testnet)
 
-        bal = client.get_balance()
-        positions = client.get_positions()
-        orders = client.get_open_orders()
-        tickers = {}
-        for sym in ["BTC/USDT", "ETH/USDT"]:
-            try: tickers[sym] = client.get_ticker(sym).get("last", 0)
-            except: tickers[sym] = 0
+        # Use optimized snapshot: balance (REST, skips ccxt) + positions (REST)
+        # + orders (REST, skips ccxt) + tickers (single bookTicker REST call)
+        bal, positions, orders, tickers = client.get_live_snapshot()
 
         # ── AUDIT-009: Validate API data before overwriting ──
         bal_value = bal.get("balance", 0)
@@ -881,22 +913,13 @@ def sync_agent_states():
         except Exception:
             pass
 
-        # Sync strategies_enabled from strategies.yaml
-        # Also compute _disabled_in_yaml for AUDIT-047 guard (avoid double YAML read)
-        _disabled_in_yaml = set()
-        try:
-            import yaml
-            cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "strategies.yaml")
-            with open(cfg_path) as f:
-                cfg = yaml.safe_load(f)
-            strategies = cfg.get("strategies", [])
-            enabled = [s["name"] for s in strategies if s.get("enabled", False)]
-            disabled = [s["name"] for s in strategies if not s.get("enabled", False)]
-            _disabled_in_yaml = set(disabled)
-            oracle_updates["strategies_enabled"] = enabled
-            oracle_updates["strategies_disabled"] = len(disabled)
-        except Exception:
-            pass
+        # Sync strategies_enabled from cached YAML data (loaded by run_signal_check).
+        # Eliminates redundant YAML file read — run_signal_check already parsed it
+        # and cached the results in module-level globals (_yaml_enabled_names, _all_yaml_strategy_names).
+        # run_signal_check always executes before sync_agent_states in run_all().
+        _disabled_in_yaml = _all_yaml_strategy_names - _yaml_enabled_names
+        oracle_updates["strategies_enabled"] = sorted(_yaml_enabled_names)
+        oracle_updates["strategies_disabled"] = len(_disabled_in_yaml)
 
         merge_state("oracle", oracle_updates)
 

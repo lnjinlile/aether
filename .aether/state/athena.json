@@ -278,13 +278,16 @@
       "sharpe": 0.552,
       "win_rate": 72.0,
       "trades": 50,
-      "max_dd": 16.2,
+      "max_dd": 16.21,
       "verdict": "LIVE"
     }
   },
-  "_updated_at": "2026-06-22T16:06:09.780639+00:00",
-  "_last_run": "2026-06-22T14:19:08.619554+00:00",
-  "_last_signals": {},
+  "_updated_at": "2026-06-22T16:41:24.460774+00:00",
+  "_last_run": "2026-06-22T16:24:09.520543+00:00",
+  "_last_signals": {
+    "RSI_MR_ETH": "HOLD (RSI=51.3, neutral)",
+    "DonchianMR_ETH": "HOLD (RSI=51.3, DC=[1734.7,1774.9], neutral)"
+  },
   "_promoted_by": "prometheus",
   "_promotion_reason": "DonchianMR_ETH PAPER→LIVE: WF validation 4/4 OOS positive, 365d +429.48% SR=0.55 DD=16.21% WR=72% 50trades. Meets ALL LIVE criteria.",
   "_fixed_by": "athena",

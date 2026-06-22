@@ -408,7 +408,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.donchian_mr.DonchianMRStrategy
-  enabled: true
+  enabled: false
   name: DonchianMR_BTC
   params:
     cooldown_bars: 5

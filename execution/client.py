@@ -175,11 +175,13 @@ class BinanceFuturesClient:
         """Return a simplified balance snapshot.
 
         Uses direct REST API when ccxt fails or returns zero balance on testnet.
+        PERF-002: On testnet, skip ccxt (always times out) — go straight to REST.
         """
+        if self.testnet:
+            # ccxt fetch_balance() always times out on testnet. Skip it.
+            return self._get_balance_via_rest()
         try:
             result = self._get_balance_via_ccxt()
-            # On testnet, ccxt sometimes returns 0 balance silently (rate limit).
-            # Fall back to REST if both balance and available are 0.
             if result.get("balance", 0) == 0 and result.get("available", 0) == 0:
                 return self._get_balance_via_rest()
             return result
@@ -565,20 +567,68 @@ class BinanceFuturesClient:
 
         return results
 
+    def get_live_snapshot(self):
+        """Return (balance, positions, open_orders, tickers) in minimal API calls.
+        
+        Optimized for testnet latency — reduces 5-8 sequential calls to 4 calls
+        that can be parallelized. Uses /fapi/v1/ticker/bookTicker to get both
+        BTC and ETH tickers in a single REST call.
+        """
+        # Step 1: Account balance (/fapi/v2/account, cached 30s)
+        acct = self._get_account_via_rest()
+        bal = {
+            "balance": acct["balance"],
+            "available": acct["available"],
+            "unrealized_pnl": acct["unrealized_pnl"],
+        }
+        
+        # Step 2: Positions with accurate mark/liquidation/leverage
+        if self.testnet:
+            positions = self._get_positions_via_risk()
+        else:
+            positions = acct.get("positions", [])
+        
+        # Step 3: Orders
+        orders = self.get_open_orders()
+        
+        # Step 4: Tickers — single REST call for both symbols
+        tickers = {}
+        try:
+            raw = self._rest_get("/fapi/v1/ticker/bookTicker")
+            if isinstance(raw, list):
+                # Filter to BTC/ETH, map to ccxt symbol format
+                for t in raw:
+                    sym = t.get("symbol", "")
+                    if sym == "BTCUSDT":
+                        tickers["BTC/USDT"] = float(t.get("bidPrice", 0))
+                    elif sym == "ETHUSDT":
+                        tickers["ETH/USDT"] = float(t.get("bidPrice", 0))
+        except Exception:
+            # Fallback: try individual ticker calls
+            for sym in ["BTC/USDT", "ETH/USDT"]:
+                try:
+                    tickers[sym] = self.get_ticker(sym).get("last", 0)
+                except Exception:
+                    tickers[sym] = 0
+        
+        return bal, positions, orders, tickers
+
     def get_open_orders(self, symbol: Optional[str] = None) -> List[Dict]:
         """Get all open orders, including algo orders (STOP/TAKE_PROFIT).
 
         Merges ccxt standard orders + REST algo orders (testnet-safe).
         Falls back to REST openOrders when ccxt returns empty (common on testnet).
+        PERF-003: On testnet, skip ccxt fetch_open_orders (always times out).
         """
         orders = []
-        # Standard orders via ccxt
-        try:
-            ccxt_symbol = self.to_ccxt_symbol(symbol) if symbol else None
-            ccxt_orders = self._exchange.fetch_open_orders(ccxt_symbol) or []
-            orders.extend(ccxt_orders)
-        except Exception:
-            pass
+        # Standard orders via ccxt (skip on testnet — always times out)
+        if not self.testnet:
+            try:
+                ccxt_symbol = self.to_ccxt_symbol(symbol) if symbol else None
+                ccxt_orders = self._exchange.fetch_open_orders(ccxt_symbol) or []
+                orders.extend(ccxt_orders)
+            except Exception:
+                pass
 
         # Fallback: REST /fapi/v1/openOrders (ccxt may return empty on testnet)
         ccxt_count = len(orders)

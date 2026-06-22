@@ -40,6 +40,7 @@ class BinanceDataCollector:
             "apiKey": self.api_key,
             "secret": self.api_secret,
             "enableRateLimit": True,
+            "timeout": 8000,  # 8s HTTP timeout (default is often 10s; testnet can be slow)
             "options": {
                 "defaultType": "future",
                 "fetchCurrencies": False,
