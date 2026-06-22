@@ -6,7 +6,7 @@ Handles persistence of klines, trades, and trade logs into a local SQLite databa
 import os
 import sqlite3
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import pandas as pd
 
@@ -62,17 +62,6 @@ class MarketStorage:
                 )
             """)
             conn.execute("""
-                CREATE TABLE IF NOT EXISTS trades (
-                    symbol TEXT NOT NULL,
-                    trade_id INTEGER NOT NULL,
-                    price REAL NOT NULL,
-                    quantity REAL NOT NULL,
-                    time INTEGER NOT NULL,
-                    is_buyer_maker INTEGER NOT NULL,
-                    PRIMARY KEY (symbol, trade_id)
-                )
-            """)
-            conn.execute("""
                 CREATE TABLE IF NOT EXISTS trades_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     symbol TEXT NOT NULL,
@@ -102,18 +91,9 @@ class MarketStorage:
                 CREATE INDEX IF NOT EXISTS idx_trades_log_strategy
                 ON trades_log(strategy_name)
             """)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS orderbook (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    symbol TEXT NOT NULL,
-                    timestamp REAL NOT NULL,
-                    best_bid REAL, best_ask REAL,
-                    bid_volume_5 REAL, ask_volume_5 REAL,
-                    spread_pct REAL,
-                    imbalance REAL,
-                    created_at REAL DEFAULT (strftime('%s','now'))
-                )
-            """)
+            # orderbook table REMOVED — orderbook data is now exclusively managed
+            # by data_ext.py via the orderbook_snapshots table.
+            # (single source of truth principle, pipeline.py line 108-112)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS funding_rates (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -214,28 +194,6 @@ class MarketStorage:
             query += " ORDER BY open_time ASC"
             df = pd.read_sql_query(query, conn, params=params)
             return df
-        finally:
-            conn.close()
-
-    # ──────────────────────────────────────────────
-    # Trades
-    # ──────────────────────────────────────────────
-
-    def save_trades(self, trades_list: list):
-        """
-        Save trade records to the database.
-
-        Args:
-            trades_list: List of dicts, each with keys:
-                symbol, trade_id, price, quantity, time, is_buyer_maker
-        """
-        if not trades_list:
-            return
-
-        df = pd.DataFrame(trades_list)
-        conn = self._get_conn()
-        try:
-            df.to_sql("trades", conn, if_exists="append", index=False)
         finally:
             conn.close()
 
@@ -380,75 +338,9 @@ class MarketStorage:
         finally:
             conn.close()
 
-    # ──────────────────────────────────────────────
-    # Orderbook
-    # ──────────────────────────────────────────────
-
-    def save_orderbook(self, symbol: str, data: dict):
-        """
-        Save a single order book snapshot with derived metrics.
-
-        Args:
-            symbol: Trading symbol (e.g. 'BTC/USDT').
-            data: dict from collector.fetch_orderbook() with keys:
-                  bids, asks, timestamp.
-        """
-        bids = data.get("bids", [])
-        asks = data.get("asks", [])
-        ts = data.get("timestamp", time.time() * 1000)
-
-        best_bid = float(bids[0][0]) if bids else None
-        best_ask = float(asks[0][0]) if asks else None
-
-        # Top-5 volumes
-        bid_vol_5 = sum(float(b[1]) for b in bids[:5]) if bids else 0.0
-        ask_vol_5 = sum(float(a[1]) for a in asks[:5]) if asks else 0.0
-
-        # Spread percentage
-        if best_bid and best_ask:
-            spread_pct = round((best_ask - best_bid) / best_bid * 100, 6)
-        else:
-            spread_pct = None
-
-        # Imbalance: bid_vol / (bid_vol + ask_vol)
-        total_vol = bid_vol_5 + ask_vol_5
-        imbalance = round(bid_vol_5 / total_vol, 6) if total_vol > 0 else None
-
-        conn = self._get_conn()
-        try:
-            conn.execute(
-                """INSERT INTO orderbook
-                   (symbol, timestamp, best_bid, best_ask,
-                    bid_volume_5, ask_volume_5, spread_pct, imbalance)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                (symbol, ts, best_bid, best_ask,
-                 bid_vol_5, ask_vol_5, spread_pct, imbalance),
-            )
-            conn.commit()
-        finally:
-            conn.close()
-
-    def get_latest_orderbook(self, symbol: str) -> Optional[Dict]:
-        """
-        Get the most recent order book snapshot for a symbol.
-
-        Args:
-            symbol: Trading symbol.
-
-        Returns:
-            Dict with orderbook fields or None if no data.
-        """
-        conn = self._get_conn()
-        try:
-            row = conn.execute(
-                """SELECT * FROM orderbook
-                   WHERE symbol = ?
-                   ORDER BY timestamp DESC LIMIT 1""",
-                (symbol,),
-            ).fetchone()
-            return dict(row) if row else None
-        finally:
-            conn.close()
+    # Orderbook section REMOVED — orderbook data is now exclusively managed
+    # by data_ext.py via the orderbook_snapshots table.
+    # (single source of truth principle, pipeline.py line 108-112)
 
     # ──────────────────────────────────────────────
     # Funding Rates
@@ -543,7 +435,7 @@ class MarketStorage:
 
             # Row counts per table
             tables = {}
-            for table in ("klines", "trades", "trades_log"):
+            for table in ("klines", "trades_log"):
                 row = conn.execute(
                     f"SELECT COUNT(*) as cnt FROM {table}"
                 ).fetchone()

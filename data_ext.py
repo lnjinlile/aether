@@ -13,9 +13,8 @@ INTERVAL = 300
 FUNDING_INTERVAL = 3600  # 1h — funding rates change every 8h, no need for 5min polling
 
 def init_db():
-    conn = sqlite3.connect(DB)
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access (engine.py)
+    from data.db import get_market_db
+    conn = get_market_db()
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS orderbook_snapshots (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,8 +84,8 @@ def fetch_and_store():
         if key.startswith("fapi"): api[key] = base + "/fapi/v1"
     exchange.fetch_leverage_brackets = lambda *a, **kw: {}
 
-    conn = sqlite3.connect(DB)
-    conn.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access
+    from data.db import get_market_db
+    conn = get_market_db()
     now_ts = time.time()
     fetch_funding = (now_ts - _last_funding_fetch[0]) >= FUNDING_INTERVAL
 
@@ -119,7 +118,8 @@ def fetch_and_store():
                             "INSERT OR IGNORE INTO funding_rates(symbol,funding_time,funding_rate,mark_price) VALUES(?,?,?,?)",
                             (bin_sym, fr["timestamp"], fr["fundingRate"], fr.get("markPrice", 0))
                         )
-                    except: pass
+                    except Exception:
+                        logger.debug("%s FR insert skipped (duplicate or schema mismatch)", sym)
                 if fr_raw:
                     logger.info("%s FR: latest=%.6f%%", sym, fr_raw[-1]["fundingRate"] * 100)
 
@@ -131,57 +131,59 @@ def fetch_and_store():
             )
             logger.info("%s OI: %.0f", sym, oi.get("openInterestAmount", 0))
 
-            # === 4. Long/Short Ratio ===
-            try:
-                lsr = exchange.fetch_long_short_ratio(sym, params={"period": "5m"})
-                lsr_log = 0.5
-                if isinstance(lsr, list):
-                    for entry in lsr[-3:]:  # store last 3 periods
-                        lsr_ts = entry.get("timestamp", now_ts * 1000) / 1000.0
-                        conn.execute(
-                            "INSERT OR IGNORE INTO long_short_ratio(symbol,timestamp,long_ratio,short_ratio) VALUES(?,?,?,?)",
-                            (bin_sym, lsr_ts, entry.get("longShortRatio", 0.5), 1.0 - entry.get("longShortRatio", 0.5))
-                        )
-                    lsr_log = lsr[-1].get("longShortRatio", 0.5) if lsr else 0.5
-                elif isinstance(lsr, dict):
-                    lsr_val = lsr.get("longShortRatio") or lsr.get("longAccount") or 0.5
-                    if isinstance(lsr_val, (int, float)):
-                        conn.execute(
-                            "INSERT OR IGNORE INTO long_short_ratio(symbol,timestamp,long_ratio,short_ratio) VALUES(?,?,?,?)",
-                            (bin_sym, now_ts, lsr_val, 1.0 - lsr_val)
-                        )
-                    lsr_log = lsr_val if isinstance(lsr_val, (int, float)) else 0.5
-                logger.info("%s L/S: %.3f/%.3f", sym, lsr_log, 1.0 - lsr_log)
-            except Exception as e:
-                err_msg = str(e)
-                if "not supported" in err_msg.lower():
-                    logger.debug("%s L/S ratio not supported (testnet limitation)", sym)
-                else:
-                    logger.warning("%s L/S ratio fetch failed: %s", sym, err_msg[:80])
+            # === 4. Long/Short Ratio (disabled on testnet — endpoint unavailable) ===
+            if not cfg.testnet:
+                try:
+                    lsr = exchange.fetch_long_short_ratio(sym, params={"period": "5m"})
+                    lsr_log = 0.5
+                    if isinstance(lsr, list):
+                        for entry in lsr[-3:]:  # store last 3 periods
+                            lsr_ts = entry.get("timestamp", now_ts * 1000) / 1000.0
+                            conn.execute(
+                                "INSERT OR IGNORE INTO long_short_ratio(symbol,timestamp,long_ratio,short_ratio) VALUES(?,?,?,?)",
+                                (bin_sym, lsr_ts, entry.get("longShortRatio", 0.5), 1.0 - entry.get("longShortRatio", 0.5))
+                            )
+                        lsr_log = lsr[-1].get("longShortRatio", 0.5) if lsr else 0.5
+                    elif isinstance(lsr, dict):
+                        lsr_val = lsr.get("longShortRatio") or lsr.get("longAccount") or 0.5
+                        if isinstance(lsr_val, (int, float)):
+                            conn.execute(
+                                "INSERT OR IGNORE INTO long_short_ratio(symbol,timestamp,long_ratio,short_ratio) VALUES(?,?,?,?)",
+                                (bin_sym, now_ts, lsr_val, 1.0 - lsr_val)
+                            )
+                        lsr_log = lsr_val if isinstance(lsr_val, (int, float)) else 0.5
+                    logger.info("%s L/S: %.3f/%.3f", sym, lsr_log, 1.0 - lsr_log)
+                except Exception as e:
+                    err_msg = str(e)
+                    if "not supported" in err_msg.lower():
+                        logger.debug("%s L/S ratio not supported (testnet limitation)", sym)
+                    else:
+                        logger.warning("%s L/S ratio fetch failed: %s", sym, err_msg[:80])
 
-            # === 5. Taker Buy/Sell Volume ===
-            try:
-                ratio = 0.5
-                taker = exchange.fetch_taker_volume(sym) if hasattr(exchange, "fetch_taker_volume") else None
-                if taker is None:
-                    # Fallback: use Binance fapiDataGetTakerlongshortRatio
-                    raw = exchange.fapiDataGetTakerlongshortRatio({"symbol": bin_sym, "period": "5m", "limit": 3})
-                    for entry in (raw if isinstance(raw, list) else [raw]):
-                        tv_ts = entry.get("timestamp", now_ts * 1000) / 1000.0
-                        buy_vol = float(entry.get("buyVol", 0))
-                        sell_vol = float(entry.get("sellVol", 0))
-                        ratio = buy_vol / (buy_vol + sell_vol) if (buy_vol + sell_vol) > 0 else 0.5
-                        conn.execute(
-                            "INSERT OR IGNORE INTO taker_volume(symbol,timestamp,taker_buy_ratio,taker_buy_vol,taker_sell_vol) VALUES(?,?,?,?,?)",
-                            (bin_sym, tv_ts, ratio, buy_vol, sell_vol)
-                        )
-                logger.info("%s Taker: buy_ratio=%.3f", sym, ratio)
-            except Exception as e:
-                err_msg = str(e)
-                if "invalid" in err_msg.lower() or "not supported" in err_msg.lower():
-                    logger.debug("%s Taker volume not supported (testnet limitation)", sym)
-                else:
-                    logger.warning("%s Taker volume fetch failed: %s", sym, err_msg[:80])
+            # === 5. Taker Buy/Sell Volume (disabled on testnet — endpoint unavailable) ===
+            if not cfg.testnet:
+                try:
+                    ratio = 0.5
+                    taker = exchange.fetch_taker_volume(sym) if hasattr(exchange, "fetch_taker_volume") else None
+                    if taker is None:
+                        # Fallback: use Binance fapiDataGetTakerlongshortRatio
+                        raw = exchange.fapiDataGetTakerlongshortRatio({"symbol": bin_sym, "period": "5m", "limit": 3})
+                        for entry in (raw if isinstance(raw, list) else [raw]):
+                            tv_ts = entry.get("timestamp", now_ts * 1000) / 1000.0
+                            buy_vol = float(entry.get("buyVol", 0))
+                            sell_vol = float(entry.get("sellVol", 0))
+                            ratio = buy_vol / (buy_vol + sell_vol) if (buy_vol + sell_vol) > 0 else 0.5
+                            conn.execute(
+                                "INSERT OR IGNORE INTO taker_volume(symbol,timestamp,taker_buy_ratio,taker_buy_vol,taker_sell_vol) VALUES(?,?,?,?,?)",
+                                (bin_sym, tv_ts, ratio, buy_vol, sell_vol)
+                            )
+                    logger.info("%s Taker: buy_ratio=%.3f", sym, ratio)
+                except Exception as e:
+                    err_msg = str(e)
+                    if "invalid" in err_msg.lower() or "not supported" in err_msg.lower():
+                        logger.debug("%s Taker volume not supported (testnet limitation)", sym)
+                    else:
+                        logger.warning("%s Taker volume fetch failed: %s", sym, err_msg[:80])
 
         except Exception as e:
             logger.error("%s: %s", sym, str(e)[:80])

@@ -34,6 +34,53 @@ print(f'Strategies: {mgr.get_active_strategies()}')
 print(f'Testnet: {cfg.testnet}')
 print()
 
+def calculate_position_size(balance: float, entry_price: float, stop_loss: float,
+                            risk_pct: float = None, max_cap_pct: float = None,
+                            leverage: int = 3, min_notional: float = 10.0) -> float:
+    """Risk-based position sizing (Prometheus optimized 2026-06-22).
+
+    Calculates optimal quantity based on:
+    - Account risk: risk_pct of balance lost if stop-loss hit
+    - Stop distance: percentage distance from entry to stop
+    - Capital cap: max_cap_pct of balance as margin
+
+    Returns quantity rounded down to exchange precision (3dp for BTC, 4dp for ETH).
+    """
+    risk_pct = risk_pct if risk_pct is not None else cfg.risk_per_trade_pct
+    max_cap_pct = max_cap_pct if max_cap_pct is not None else cfg.max_capital_pct
+
+    # Risk amount in USDT
+    risk_amount = balance * risk_pct
+
+    # Stop distance as percentage
+    if stop_loss and stop_loss > 0 and not np.isnan(stop_loss):
+        stop_dist_pct = abs(entry_price - stop_loss) / entry_price
+    else:
+        stop_dist_pct = cfg.default_stop_loss_pct  # fallback: 5%
+
+    # Prevent division by zero / absurdly small stops
+    stop_dist_pct = max(stop_dist_pct, 0.005)  # minimum 0.5% stop distance
+
+    # Position notional: risk_amount / stop_distance
+    notional = risk_amount / stop_dist_pct
+
+    # Cap at max capital percentage
+    max_notional = balance * max_cap_pct * leverage
+    notional = min(notional, max_notional)
+
+    # Minimum notional floor
+    notional = max(notional, min_notional)
+
+    qty = notional / entry_price
+
+    # Round down to appropriate precision
+    if entry_price > 5000:  # BTC — 3 decimal places
+        qty = np.floor(qty * 1000) / 1000
+    else:  # ETH/others — 4 decimal places
+        qty = np.floor(qty * 10000) / 10000
+
+    return max(qty, 0.001)  # minimum 0.001 contract
+
 # ---- Step 1: Get current positions ----
 print('=== Current Positions ===')
 def normalize_pos_symbol(raw: str) -> str:
@@ -56,12 +103,28 @@ balance = client.get_balance()
 print(f"Balance: {balance['balance']:.2f} USDT | Available: {balance['available']:.2f}")
 print()
 
-# ---- Step 2: Fetch data and generate signals ----
+# ---- Step 2: Load athena.json to determine which strategies are actually enabled ----
+print('=== Loading Athena State ===')
+athena_enabled = set()
+try:
+    with open('.aether/state/athena.json') as f:
+        athena_state = json.load(f)
+    strategies = athena_state.get('strategies', {})
+    for name, cfg in strategies.items():
+        if cfg.get('status') == 'ok':
+            athena_enabled.add(name)
+    print(f'Athena-enabled strategies: {athena_enabled}')
+except Exception as e:
+    print(f'Warning: Failed to load athena.json: {e}')
+
+# ---- Step 3: Fetch data and generate signals (only for enabled strategies) ----
 print('=== Signal Generation ===')
-# Collect unique (symbol, timeframe) pairs needed by active strategies
+# Collect unique (symbol, timeframe) pairs needed by enabled strategies
 all_signals = {}
 active_tf_pairs: set = set()
 for name, strategy in mgr._strategies.items():
+    if name not in athena_enabled:
+        continue  # Skip disabled / unevaluated strategies
     for sym in strategy.symbols:
         for tf in strategy.timeframes:
             active_tf_pairs.add((sym, tf))
@@ -78,6 +141,8 @@ for sym, tf in sorted(active_tf_pairs):
 
 for sym in ['BTC/USDT', 'ETH/USDT']:
     signals = mgr.generate_all_signals(sym)
+    # Filter to only athena-enabled strategies
+    signals = {name: sig for name, sig in signals.items() if name in athena_enabled}
     all_signals[sym] = signals
     for name, sig in signals.items():
         print(f'  {sym} {name}: {sig.type.value} @ {sig.price:.1f} -- {sig.reason}')
@@ -169,13 +234,17 @@ for sym_ccxt in ['BTC/USDT', 'ETH/USDT']:
 
         df = collector.fetch_current_klines(sym_ccxt, '15m', 1)
         price = float(df.iloc[-1]['close'])
-        qty = 0.001
-        lev = 3
-        notional = qty * price
-        margin = notional / lev
+        lev = sig.leverage if not np.isnan(float(sig.leverage)) else 3
 
+        # Risk-based position sizing (Prometheus optimized 2026-06-22)
         sl = sig.stop_loss if not np.isnan(float(sig.stop_loss)) else price * (0.98 if sig.type == SignalType.LONG else 1.02)
         tp = sig.take_profit if not np.isnan(float(sig.take_profit)) else price * (1.04 if sig.type == SignalType.LONG else 0.96)
+        qty = calculate_position_size(
+            balance=balance['balance'],
+            entry_price=price, stop_loss=sl, leverage=lev,
+        )
+        notional = qty * price
+        margin = notional / lev
         mmr = 0.005
         liq = price * (1 - 1/lev + mmr) if sig.type == SignalType.LONG else price * (1 + 1/lev - mmr)
         liq_dist = abs(liq - price) / price * 100

@@ -14,6 +14,7 @@ warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dotenv import load_dotenv; load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+from data.db import get_market_db
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [ENGINE] %(message)s")
 logger = logging.getLogger("engine")
@@ -53,9 +54,7 @@ def sync_trades_db():
         if not positions:
             return
 
-        db = sqlite3.connect(db_path)
-        db.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access (data_ext.py)
-        db.row_factory = sqlite3.Row
+        db = get_market_db(db_path)
         now = time.time()
 
         open_trades = db.execute("SELECT * FROM trades_log WHERE status='OPEN'").fetchall()
@@ -103,14 +102,15 @@ def run_backtests():
     """Run backtests on all enabled strategies using BacktestEngine, write results.
     
     Cached: skips re-computation if results are < 30 min old (backtests are expensive:
-    14 strategies × data load × signal generation × metrics = ~30s per run).
+    21 strategies × data load × signal generation × metrics = ~30-60s per run).
+    Strategy evaluation doesn't need 5-min granularity — signals stay fresh via run_signal_check.
     """
     try:
         # Cache check: skip if results are fresh (< 30 min)
         results_path = os.path.join(STATE_DIR, "backtest_results.json")
         if os.path.exists(results_path):
             mtime = os.path.getmtime(results_path)
-            if time.time() - mtime < 300:  # 5 minutes (match engine cycle)
+            if time.time() - mtime < 1800:  # 30 minutes
                 logger.debug("Backtest results are fresh (%.0f min old), skipping.", (time.time() - mtime) / 60)
                 return
 
@@ -131,8 +131,69 @@ def run_backtests():
         from backtest.signal_gen import (
             trendfollow_signals, rsi_mr_signals,
             dynamic_grid_signals, ma_cross_signals,
-            bband_rsi_signals,
+            bband_rsi_signals, donchian_mr_signals,
+            vol_breakout_signals, supertrend_signals,
+            macd_crossover_signals,
+            adx_trend_signals, momentum_signals,
+            trend_pullback_signals,
+            stoch_rsi_signals,
         )
+
+        # ── Signal dispatch registry: O(1) dict lookup replaces 170-line if-elif ──
+        # Each entry: strategy_type → callable(df, params) → np.ndarray of signals
+        # Lazy imports for ML/ensemble strategies avoid loading heavy deps on every tick.
+        def _dispatch_mlalpha(df, p):
+            from athena_backtest import mlalpha_signals
+            return mlalpha_signals(
+                df, p.get("model_path", "ml_alpha/model.pkl"),
+                p.get("confidence_threshold", 0.55),
+                sl_pct=p.get("atr_sl_mult", 2.0) * 0.01,
+                tp_pct=p.get("atr_tp_mult", 3.0) * 0.01)
+
+        def _dispatch_mlensemble(df, p):
+            from athena_backtest import mlensemble_signals
+            return mlensemble_signals(
+                df, p.get("prediction_horizon", 5),
+                p.get("confidence_threshold", 0.60),
+                p.get("min_train_samples", 200),
+                sl_pct=p.get("atr_sl_mult", 2.0) * 0.01,
+                tp_pct=p.get("atr_tp_mult", 3.0) * 0.01)
+
+        def _dispatch_regimeswitch(df, p):
+            from athena_backtest import regimeswitch_signals
+            return regimeswitch_signals(
+                df,
+                trend_ema_period=p.get("trend_ema_period", 50),
+                trend_sl_pct=p.get("trend_sl_pct", 0.02),
+                trend_tp_pct=p.get("trend_tp_pct", 0.05),
+                mr_rsi_period=p.get("mr_rsi_period", 14),
+                mr_oversold=p.get("mr_oversold", 30),
+                mr_overbought=p.get("mr_overbought", 70),
+                mr_sl_pct=p.get("mr_sl_pct", 0.02),
+                mr_tp_pct=p.get("mr_tp_pct", 0.04),
+                vol_window=p.get("vol_window", 20),
+                regime_lookback=p.get("regime_lookback", 100),
+                cooldown_bars=p.get("cooldown_bars", 5),
+                high_vol_capital_pct=p.get("high_vol_capital_pct", 0.25))
+
+        _SIGNAL_DISPATCH = {
+            "TrendFollow":              lambda d, p: trendfollow_signals(d, p["ema_period"], p["stop_loss_pct"], p["take_profit_pct"], p["cooldown_bars"]),
+            "RSIMeanReversionStrategy": lambda d, p: rsi_mr_signals(d, p["rsi_period"], p["oversold"], p["overbought"], p["exit_rsi"], p["stop_loss_pct"], p["take_profit_pct"], p["cooldown_bars"]),
+            "MACrossoverStrategy":      lambda d, p: ma_cross_signals(d, p["fast_period"], p["slow_period"], p["atr_period"], p["atr_sl_mult"], p["atr_tp_mult"], p["cooldown_bars"]),
+            "DynamicGridStrategy":      lambda d, p: dynamic_grid_signals(d, p["grid_range_pct"], p["num_levels"], p["qty_per_level"], p["rebalance_interval_bars"], p["min_spread_pct"], p.get("leverage", 3)),
+            "MLAlphaStrategy":          _dispatch_mlalpha,
+            "MLEnsembleStrategy":       _dispatch_mlensemble,
+            "RegimeSwitchStrategy":     _dispatch_regimeswitch,
+            "BBandMeanReversion":       lambda d, p: bband_rsi_signals(d, p.get("bb_period", 20), p.get("bb_std", 2.5), p.get("rsi_period", 14), p.get("rsi_oversold", 30), p.get("rsi_overbought", 70), p.get("stop_loss_pct", 0.02), p.get("take_profit_pct", 0.05), p.get("cooldown_bars", 3)),
+            "DonchianMRStrategy":       lambda d, p: donchian_mr_signals(d, p.get("donchian_period", 20), p.get("rsi_period", 14), p.get("oversold", 25), p.get("overbought", 75), p.get("exit_level", 50), p.get("stop_loss_pct", 0.02), p.get("take_profit_pct", 0.04), p.get("cooldown_bars", 5)),
+            "SupertrendStrategy":       lambda d, p: supertrend_signals(d, p.get("atr_period", 10), p.get("atr_mult", 3.0), p.get("cooldown_bars", 3)),
+            "VolBreakoutStrategy":      lambda d, p: vol_breakout_signals(d, p.get("atr_period", 20), p.get("atr_mult", 2.0), p.get("ema_period", 50), p.get("atr_sl_mult", 1.5), p.get("atr_tp_mult", 3.0), p.get("cooldown_bars", 5), p.get("volume_filter", True), p.get("vol_ma_period", 20)),
+            "MACDCrossoverStrategy":    lambda d, p: macd_crossover_signals(d, p.get("fast_period", 12), p.get("slow_period", 26), p.get("signal_period", 9), p.get("stop_loss_pct", 0.02), p.get("take_profit_pct", 0.04), p.get("cooldown_bars", 5)),
+            "ADXTrendStrategy":         lambda d, p: adx_trend_signals(d, p.get("adx_period", 14), p.get("adx_threshold", 25), p.get("adx_exit", 20), p.get("ema_period", 50), p.get("atr_period", 14), p.get("atr_sl_mult", 2.0), p.get("atr_tp_mult", 4.0), p.get("cooldown_bars", 3)),
+            "MomentumStrategy":         lambda d, p: momentum_signals(d, p.get("fast_ema", 12), p.get("slow_ema", 26), p.get("signal_period", 9), p.get("atr_period", 14), p.get("atr_sl_mult", 2.0), p.get("atr_tp_mult", 3.5)),
+            "TrendPullback":            lambda d, p: trend_pullback_signals(d, p.get("ema_period", 100), p.get("atr_period", 14), p.get("atr_sl_mult", 1.5), p.get("atr_tp_mult", 3.0), p.get("cooldown_bars", 5)),
+            "StochRSIMeanReversionStrategy": lambda d, p: stoch_rsi_signals(d, p.get("rsi_period", 14), p.get("stoch_period", 14), p.get("smooth_k", 3), p.get("smooth_d", 3), p.get("oversold", 0.20), p.get("overbought", 0.80), p.get("stop_loss_pct", 0.02), p.get("take_profit_pct", 0.04), p.get("cooldown_bars", 5)),
+        }
         import numpy as np
         import pandas as pd
         import yaml
@@ -159,9 +220,25 @@ def run_backtests():
             tf = p.get("timeframes", [None])[0]
             strategy_type = s["class"].split(".")[-1]
 
-            # Skip disabled strategies — preserve any existing backtest metrics
+            # Skip disabled strategies — preserve existing metrics but enforce correct verdict
+            # AUDIT-040: Don't blindly preserve "LIVE" verdict for disabled strategies.
+            # Use performance data from existing results to determine correct verdict.
             if not enabled:
                 existing = existing_results.get(name, {})
+                # Derive verdict from actual performance data, not from stale cached verdict
+                existing_verdict = existing.get("verdict", "NOT_EVALUATED")
+                existing_return = existing.get("total_return_pct", None)
+                existing_sharpe = existing.get("sharpe_ratio", None)
+                existing_wr = existing.get("win_rate", None)
+                # If strategy is disabled and has performance data, override stale LIVE verdict
+                if existing_verdict == "LIVE" and existing_return is not None:
+                    ret = existing_return
+                    sr = existing_sharpe or 0
+                    wr = existing_wr or 0
+                    if ret <= 0 or sr <= 0.3 or wr <= 40:
+                        existing_verdict = "RETIRED"
+                    elif sr <= 0.5:
+                        existing_verdict = "PAUSED"
                 results[name] = {
                     "status": "disabled",
                     "enabled": False,
@@ -174,7 +251,7 @@ def run_backtests():
                     "win_rate": existing.get("win_rate", None),
                     "total_trades": existing.get("total_trades", 0),
                     "backtest_period": existing.get("backtest_period", "pending"),
-                    "verdict": existing.get("verdict", "NOT_EVALUATED"),
+                    "verdict": existing_verdict,
                     "retired_reason": existing.get("retired_reason", None),
                 }
                 continue
@@ -217,77 +294,12 @@ def run_backtests():
                 leverage = p.get('leverage', 1)
 
                 # Generate signals based on strategy type
+                # ── Signal registry: strategy_type → callable(df, params) → signals ──
+                # Replaces 170-line if-elif chain with O(1) dict dispatch.
+                # New strategies only need to be registered here — no code change elsewhere.
                 try:
-                    if strategy_type == "TrendFollow":
-                        signals = trendfollow_signals(
-                            df, p["ema_period"], p["stop_loss_pct"],
-                            p["take_profit_pct"], p["cooldown_bars"],
-                        )
-                    elif strategy_type == "RSIMeanReversionStrategy":
-                        signals = rsi_mr_signals(
-                            df, p["rsi_period"], p["oversold"], p["overbought"],
-                            p["exit_rsi"], p["stop_loss_pct"], p["take_profit_pct"],
-                            p["cooldown_bars"],
-                        )
-                    elif strategy_type == "MACrossoverStrategy":
-                        signals = ma_cross_signals(
-                            df, p["fast_period"], p["slow_period"],
-                            p["atr_period"], p["atr_sl_mult"], p["atr_tp_mult"],
-                            p["cooldown_bars"],
-                        )
-                    elif strategy_type == "DynamicGridStrategy":
-                        signals = dynamic_grid_signals(
-                            df, p["grid_range_pct"], p["num_levels"],
-                            p["qty_per_level"], p["rebalance_interval_bars"],
-                            p["min_spread_pct"], p.get("leverage", 3),
-                        )
-                    elif strategy_type == "MLAlphaStrategy":
-                        from athena_backtest import mlalpha_signals
-                        signals = mlalpha_signals(
-                            df, p.get("model_path", "ml_alpha/model.pkl"),
-                            p.get("confidence_threshold", 0.55),
-                            sl_pct=p.get("atr_sl_mult", 2.0) * 0.01,
-                            tp_pct=p.get("atr_tp_mult", 3.0) * 0.01,
-                        )
-                    elif strategy_type == "MLEnsembleStrategy":
-                        from athena_backtest import mlensemble_signals
-                        signals = mlensemble_signals(
-                            df, p.get("prediction_horizon", 5),
-                            p.get("confidence_threshold", 0.60),
-                            p.get("min_train_samples", 200),
-                            sl_pct=p.get("atr_sl_mult", 2.0) * 0.01,
-                            tp_pct=p.get("atr_tp_mult", 3.0) * 0.01,
-                        )
-                    elif strategy_type == "RegimeSwitchStrategy":
-                        from athena_backtest import regimeswitch_signals
-                        signals = regimeswitch_signals(
-                            df,
-                            trend_ema_period=p.get("trend_ema_period", 50),
-                            trend_sl_pct=p.get("trend_sl_pct", 0.02),
-                            trend_tp_pct=p.get("trend_tp_pct", 0.05),
-                            mr_rsi_period=p.get("mr_rsi_period", 14),
-                            mr_oversold=p.get("mr_oversold", 30),
-                            mr_overbought=p.get("mr_overbought", 70),
-                            mr_sl_pct=p.get("mr_sl_pct", 0.02),
-                            mr_tp_pct=p.get("mr_tp_pct", 0.04),
-                            vol_window=p.get("vol_window", 20),
-                            regime_lookback=p.get("regime_lookback", 100),
-                            cooldown_bars=p.get("cooldown_bars", 5),
-                            high_vol_capital_pct=p.get("high_vol_capital_pct", 0.25),
-                        )
-                    elif strategy_type == "BBandMeanReversion":
-                        signals = bband_rsi_signals(
-                            df,
-                            bb_period=p.get("bb_period", 20),
-                            bb_std=p.get("bb_std", 2.5),
-                            rsi_period=p.get("rsi_period", 14),
-                            rsi_oversold=p.get("rsi_oversold", 30),
-                            rsi_overbought=p.get("rsi_overbought", 70),
-                            stop_loss_pct=p.get("stop_loss_pct", 0.02),
-                            take_profit_pct=p.get("take_profit_pct", 0.05),
-                            cooldown_bars=p.get("cooldown_bars", 3),
-                        )
-                    else:
+                    _sig = _SIGNAL_DISPATCH.get(strategy_type)
+                    if _sig is None:
                         results[name] = {
                             "status": "skipped",
                             "symbol": sym, "timeframe": tf,
@@ -295,6 +307,7 @@ def run_backtests():
                             "error": f"Unknown strategy type: {strategy_type}",
                         }
                         continue
+                    signals = _sig(df, p)
                 except KeyError as ke:
                     results[name] = {
                         "status": "error",
@@ -341,7 +354,7 @@ def run_backtests():
                     "total_trades": m["total_trades"],
                     "profit_factor": m["profit_factor"],
                     "backtest_period": "90d",
-                    "verdict": "LIVE" if enabled else "PAPER",
+                    "verdict": existing_results.get(name, {}).get("verdict", "PAPER"),
                     # Nested detailed metrics (for backward compat)
                     "metrics": {
                         "total_return_pct": m["total_return_pct"],
@@ -364,10 +377,53 @@ def run_backtests():
                     "error": str(e),
                 }
 
+        # AUDIT-048 FIX: Preserve existing backtest results that have MORE trades
+        # (indicating a more comprehensive backtest like Prometheus 365d sweep).
+        # Engine's 90d backtest must not overwrite longer-window authoritative results.
+        existing_bt = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
+        existing_strategies = existing_bt.get("strategies", {}) if isinstance(existing_bt, dict) else {}
+        for name, new_entry in list(results.items()):
+            old_entry = existing_strategies.get(name, {})
+            old_trades = old_entry.get("total_trades") or 0
+            new_trades = new_entry.get("total_trades") or 0
+            # Preserve old entry if it has strictly more trades (longer/better backtest)
+            # AND the new entry doesn't have a status upgrade (e.g. disabled→ok)
+            if old_trades > new_trades and new_trades > 0:
+                logger.info(
+                    "AUDIT-048 PRESERVED: %s (old=%d trades > new=%d trades) — keeping longer backtest",
+                    name, old_trades, new_trades
+                )
+                # Keep old entry but update enabled/status fields from current config
+                old_entry["enabled"] = new_entry.get("enabled", old_entry.get("enabled", False))
+                old_entry["status"] = new_entry.get("status", old_entry.get("status", "?"))
+                results[name] = old_entry
+            elif old_trades > 0 and new_trades == 0:
+                logger.info(
+                    "AUDIT-048 PRESERVED: %s (old=%d trades > new=0) — new backtest produced no trades, keeping old",
+                    name, old_trades
+                )
+                old_entry["enabled"] = new_entry.get("enabled", old_entry.get("enabled", False))
+                old_entry["status"] = new_entry.get("status", old_entry.get("status", "?"))
+                results[name] = old_entry
+
         write_json("backtest_results.json", {"strategies": results})
         # Summary log
         ok_count = sum(1 for r in results.values() if r.get("status") == "ok")
         logger.info("Backtests: %d/%d strategies evaluated with real metrics", ok_count, len(results))
+
+        # ═══ AUDIT-040: Cross-file consistency guard ═══
+        # Verify no disabled strategy leaked through with verdict=LIVE.
+        # This catches engine.py bugs and stale cache poisoning at write time.
+        leaked = []
+        for name, r in results.items():
+            if not r.get("enabled", False) and r.get("verdict") == "LIVE":
+                leaked.append(name)
+        if leaked:
+            logger.error("AUDIT-040 CONSISTENCY VIOLATION: %d disabled strategies have verdict=LIVE: %s",
+                         len(leaked), ", ".join(leaked))
+        else:
+            live_count = sum(1 for r in results.values() if r.get("verdict") == "LIVE")
+            logger.info("AUDIT-040 guard: %d LIVE strategies, 0 leaked — consistency OK", live_count)
     except Exception as e:
         logger.error("Backtest error: %s", e)
         write_json("backtest_results.json", {"error": str(e), "status": "error"})
@@ -464,10 +520,13 @@ def run_risk_check():
 # Peristent strategy manager — survives across engine ticks so strategy
 # state (regime, cooldown, bars_since_last_trade) is preserved.
 _persistent_mgr = None
+_yaml_mtime = 0          # mtime of last-read strategies.yaml
+_yaml_enabled_names = set()  # cached set of enabled strategy names
+_all_yaml_strategy_names = set()  # cached set of ALL strategy names (for disabled calculation)
 
 def run_signal_check():
     """Generate trading signals from active strategies."""
-    global _persistent_mgr
+    global _persistent_mgr, _yaml_mtime, _yaml_enabled_names, _all_yaml_strategy_names
     try:
         from strategy.manager import StrategyManager
         from data.collector import BinanceDataCollector
@@ -476,24 +535,128 @@ def run_signal_check():
 
         cfg = get_config()
         collector = BinanceDataCollector(cfg.api_key, cfg.api_secret, cfg.testnet)
+        import sqlite3 as _sqlite3
+        import pandas as _pd
 
-        # Reuse persistent manager so strategy state survives across ticks
-        if _persistent_mgr is None:
-            _persistent_mgr = StrategyManager.load_from_yaml("config/strategies.yaml")
+        # ── Reload strategies.yaml only when file changes (mtime check) ──
+        _yaml_path = "config/strategies.yaml"
+        _cur_mtime = os.path.getmtime(_yaml_path)
+        _reload = (_persistent_mgr is None or _cur_mtime != _yaml_mtime)
+
+        if _reload:
+            import yaml as _yaml
+            with open(_yaml_path) as _f:
+                _yaml_cfg = _yaml.safe_load(_f)
+            _yaml_enabled_names = {s['name'] for s in _yaml_cfg.get('strategies', []) if s.get('enabled')}
+            _all_yaml_strategy_names = {s['name'] for s in _yaml_cfg.get('strategies', [])}  # all names for disabled calc
+            _yaml_mtime = _cur_mtime
+            _persistent_mgr = StrategyManager.load_from_yaml(_yaml_path)
+            logger.info("Strategies reloaded from YAML (mtime changed): %d enabled", len(_yaml_enabled_names))
+
+            # ═══ AUDIT-047: Regression guard — detect re-enabled disabled strategies ═══
+            # Cross-reference newly-enabled strategies against athena.json AND backtest_results.json.
+            # If a strategy was previously disabled (verdict=PAPER/DO_NOT_ENABLE/RETIRED)
+            # and appears as enabled:true in YAML, auto-correct it back to enabled:false.
+            # 
+            # AUDIT-047 v2: Also cross-check backtest_results.json (Prometheus authority).
+            # If athena.json is manipulated to show LIVE while backtest_results.json
+            # shows PAPER/DO_NOT_ENABLE/RETIRED, block the promotion.
+            _athena_path = os.path.join(STATE_DIR, "athena.json")
+            _bt_results_path = os.path.join(STATE_DIR, "backtest_results.json")
+            _bt_verdicts = {}
+            if os.path.exists(_bt_results_path):
+                try:
+                    _bt_data = load_json(_bt_results_path)
+                    for _bn, _bv in _bt_data.get("strategies", {}).items():
+                        _bt_verdicts[_bn] = _bv.get("verdict", "")
+                except Exception:
+                    pass
+            if os.path.exists(_athena_path):
+                _athena = load_json(_athena_path)
+                _athena_strats = _athena.get("strategies", {})
+                _re_enabled = []
+                for _name in _yaml_enabled_names:
+                    _v = _athena_strats.get(_name, {}).get("verdict", "")
+                    # AUDIT-047 v2: also check backtest_results.json authority
+                    _btv = _bt_verdicts.get(_name, "")
+                    # If athena says LIVE but backtest_results says non-LIVE, treat as blocked
+                    if _v == "LIVE" and _btv and _btv not in ("LIVE", ""):
+                        _v = _btv  # use backtest_results authority
+                        logger.warning(
+                            "AUDIT-047 v2: %s athena verdict=LIVE but backtest_results=%s. Using backtest_results authority.",
+                            _name, _btv
+                        )
+                    # AUDIT-047 v3: PAPER strategies must NOT be enabled in YAML.
+                    # PAPER strategies accumulate paper trades only; they are NOT live.
+                    # Promotion PAPER→LIVE must go through Athena evaluation pipeline,
+                    # not by directly flipping enabled:true in YAML.
+                    # Block PAPER alongside DO_NOT_ENABLE/RETIRED/PAUSED/NOT_EVALUATED.
+                    if _v in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
+                        _re_enabled.append(f"{_name}(verdict={_v})")
+                if _re_enabled:
+                    # Auto-fix: flip enabled back to false in strategies.yaml
+                    import yaml as _yaml2
+                    _fixed = []
+                    for _s in _yaml_cfg.get("strategies", []):
+                        _sn = _s.get("name", "")
+                        _sv = _athena_strats.get(_sn, {}).get("verdict", "")
+                        if _sn in _yaml_enabled_names and _sv in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
+                            _s["enabled"] = False
+                            _fixed.append(_sn)
+                    if _fixed:
+                        with open(_yaml_path, "w") as _f:
+                            _yaml2.dump(_yaml_cfg, _f, default_flow_style=False, sort_keys=False)
+                        _yaml_enabled_names = {s['name'] for s in _yaml_cfg.get('strategies', []) if s.get('enabled')}
+                        _all_yaml_strategy_names = {s['name'] for s in _yaml_cfg.get('strategies', [])}
+                        _yaml_mtime = os.path.getmtime(_yaml_path)
+                        _persistent_mgr = StrategyManager.load_from_yaml(_yaml_path)
+                        logger.critical(
+                            "AUDIT-047 AUTO-FIX: Re-disabled %d strategies that were re-enabled in YAML: %s",
+                            len(_fixed), ", ".join(_fixed)
+                        )
+
         mgr = _persistent_mgr
+        _enabled_names = _yaml_enabled_names
 
         signals = {}
         # Track signals per symbol for conflict detection
         symbol_signals = {}  # symbol -> list of (name, signal_dict)
+        
+        # Cache fetched klines by (symbol, timeframe) to avoid redundant API calls
+        # when multiple strategies share the same symbol/timeframe
+        _klines_cache = {}
 
         for name in mgr.get_active_strategies():
+            if name not in _enabled_names:
+                continue  # Skip disabled strategies (guard against stale persistent manager)
             strat = mgr.get_strategy(name)
             if not strat: continue
             sym = strat.symbols[0]
             tf = strat.timeframes[0]
 
             try:
-                df = collector.fetch_current_klines(sym, tf, 300)
+                cache_key = (sym, tf)
+                if cache_key not in _klines_cache:
+                    try:
+                        _klines_cache[cache_key] = collector.fetch_current_klines(sym, tf, 300)
+                    except Exception as _api_err:
+                        # Fallback to local market.db when API is unreachable
+                        logger.warning("API fetch failed for %s %s, falling back to market.db: %s", sym, tf, _api_err)
+                        _db = _sqlite3.connect("data/market.db")
+                        _rows = _db.execute(
+                            "SELECT open_time, open, high, low, close, volume FROM klines WHERE symbol=? AND timeframe=? ORDER BY open_time DESC LIMIT 300",
+                            (sym, tf)
+                        ).fetchall()
+                        _db.close()
+                        if _rows:
+                            _rows.reverse()  # oldest first
+                            _klines_cache[cache_key] = _pd.DataFrame(
+                                _rows,
+                                columns=["open_time", "open", "high", "low", "close", "volume"]
+                            ).set_index("open_time")
+                        else:
+                            raise RuntimeError(f"No local data for {sym} {tf}") from _api_err
+                df = _klines_cache[cache_key]
                 mgr.feed_data_only(sym, tf, df)
                 sig = strat.generate_signal(sym)
             except Exception as e:
@@ -520,12 +683,25 @@ def run_signal_check():
         bt_strategies = bt_results.get("strategies", {})
 
         def strategy_score(name: str) -> float:
-            """Score a strategy for priority: positive metrics = higher score."""
+            """Score a strategy for priority: positive metrics = higher score.
+            
+            Supports both nested 'metrics' sub-dict (newer format) and flat top-level
+            fields (legacy format from Prometheus sweeps). Returns -999.0 for
+            NOT_EVALUATED / error strategies to ensure they lose in arbitration.
+            """
             s = bt_strategies.get(name, {})
+            if s.get("status") == "error" or s.get("verdict") == "NOT_EVALUATED":
+                return -999.0
+            # Try nested metrics first (engine.py format), fall back to flat fields (Prometheus sweep format)
             m = s.get("metrics", {})
-            if not m or s.get("status") == "error":
-                return -999.0  # unverified/errored strategies lose
-            return m.get("sharpe_ratio", 0) * 10 + m.get("total_return_pct", 0) / 10
+            if m:
+                return m.get("sharpe_ratio", 0) * 10 + m.get("total_return_pct", 0) / 10
+            # Flat format: top-level sharpe_ratio / total_return_pct
+            sr = s.get("sharpe_ratio") or 0
+            ret = s.get("total_return_pct") or 0
+            if sr == 0 and ret == 0:
+                return -999.0  # no real metrics
+            return sr * 10 + ret / 10
 
         for sym, candidates in symbol_signals.items():
             if len(candidates) == 1:
@@ -572,6 +748,8 @@ def run_signal_check():
                 signals[best[0]] = best[1]
 
         write_json("signals.json", {"signals": signals, "timestamp": datetime.now(timezone.utc).isoformat()})
+        # Also write in executor-compatible format
+        write_json("trade_signals.json", {"signals": signals, "timestamp": datetime.now(timezone.utc).isoformat()})
         logger.info("Signals: %d generated", len(signals))
     except Exception as e:
         logger.error("Signal error: %s", e)
@@ -584,20 +762,23 @@ def fetch_live_exchange():
     AUDIT-009 FIX: When API is rate-limited, Binance returns balance=0
     and ghost positions. Detect this and retain the last valid state
     file instead of overwriting it with zeros.
+
+    PERF-001/002/003: Uses client.get_live_snapshot() which:
+      - Skips ccxt on testnet (balance/orders ccxt calls always time out)
+      - Uses /fapi/v1/ticker/bookTicker for both symbols in one REST call
+      - Reduces from 5-8 API calls to 4 sequential REST calls
     """
     try:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
         from execution.client import BinanceFuturesClient
         from config.settings import get_config
+        import requests as _requests
         cfg = get_config()
         client = BinanceFuturesClient(cfg.api_key, cfg.api_secret, cfg.testnet)
 
-        bal = client.get_balance()
-        positions = client.get_positions()
-        orders = client.get_open_orders()
-        tickers = {}
-        for sym in ["BTC/USDT", "ETH/USDT"]:
-            try: tickers[sym] = client.get_ticker(sym).get("last", 0)
-            except: tickers[sym] = 0
+        # Use optimized snapshot: balance (REST, skips ccxt) + positions (REST)
+        # + orders (REST, skips ccxt) + tickers (single bookTicker REST call)
+        bal, positions, orders, tickers = client.get_live_snapshot()
 
         # ── AUDIT-009: Validate API data before overwriting ──
         bal_value = bal.get("balance", 0)
@@ -724,44 +905,186 @@ def sync_agent_states():
         with open(pid_path, "w") as pf:
             pf.write(str(os.getpid()))
 
-        # Count klines
+        # Count klines (use shared db helper for WAL + busy_timeout)
         try:
-            import sqlite3
-            db = sqlite3.connect(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "market.db"))
+            db = get_market_db()
             oracle_updates["klines_total"] = db.execute("SELECT COUNT(*) FROM klines").fetchone()[0]
             db.close()
         except Exception:
             pass
 
-        # Sync strategies_enabled from strategies.yaml
-        try:
-            import yaml
-            cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "strategies.yaml")
-            with open(cfg_path) as f:
-                cfg = yaml.safe_load(f)
-            strategies = cfg.get("strategies", [])
-            enabled = [s["name"] for s in strategies if s.get("enabled", False)]
-            disabled = [s["name"] for s in strategies if not s.get("enabled", False)]
-            oracle_updates["strategies_enabled"] = enabled
-            oracle_updates["strategies_disabled"] = len(disabled)
-        except Exception:
-            pass
+        # Sync strategies_enabled from cached YAML data (loaded by run_signal_check).
+        # Eliminates redundant YAML file read — run_signal_check already parsed it
+        # and cached the results in module-level globals (_yaml_enabled_names, _all_yaml_strategy_names).
+        # run_signal_check always executes before sync_agent_states in run_all().
+        _disabled_in_yaml = _all_yaml_strategy_names - _yaml_enabled_names
+        oracle_updates["strategies_enabled"] = sorted(_yaml_enabled_names)
+        oracle_updates["strategies_disabled"] = len(_disabled_in_yaml)
 
         merge_state("oracle", oracle_updates)
 
         bt = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
+
+        # ═══ AUDIT-053 v3: Cross-check prometheus.json for authoritative sweep data ═══
+        # Prometheus 365d sweeps are the source of truth. When backtest_results.json
+        # has been degraded by engine's 90d backtest (fewer trades), inject the
+        # authoritative Prometheus sweep metrics before building strat_summary.
+        # This is a BELT-AND-SUSPENDERS defense: AUDIT-048 protects backtest_results.json
+        # at write time, but if backtest_results was already degraded before AUDIT-048
+        # was in place, this injection ensures athena.json (and downstream consumers)
+        # still get the correct Prometheus-authoritative data.
+        _prom_bt_path = os.path.join(STATE_DIR, "prometheus.json")
+        _prom_data = load_json(_prom_bt_path)  # returns {} if missing/corrupt — reused below
+        if _prom_data:
+            try:
+                _prom_strategies = _prom_data.get("strategies", {})
+                # Map special prometheus.json keys to strategy names
+                _prom_special_map = {
+                    "donchianmr_btc_paper_ready": "DonchianMR_BTC",
+                    "donchianmr_eth_paper_ready": "DonchianMR_ETH",
+                    "rsi_mr_eth_live_confirmed": "RSI_MR_ETH",
+                }
+                for _pk, _pv in _prom_data.items():
+                    if _pk in _prom_special_map and isinstance(_pv, dict) and _pv.get("trades"):
+                        _prom_strategies[_prom_special_map[_pk]] = _pv
+                # AUDIT-053 v4: Guardian.json fallback — when prometheus.json strategies
+                # are degraded (e.g. engine 90d overwrite before v4 fix), Guardian retains
+                # the authoritative 365d metrics synced from athena.json.
+                _gd_path = os.path.join(STATE_DIR, "guardian.json")
+                _gd_data = load_json(_gd_path)
+                if _gd_data:
+                    _gd_live = _gd_data.get("live_strategy_metrics", {})
+                    for _gn, _gv in _gd_live.items():
+                        if not isinstance(_gv, dict):
+                            continue
+                        _g_trades = _gv.get("trades") or 0
+                        _p_trades_existing = (_prom_strategies.get(_gn, {}) or {}).get("trades") or 0
+                        if _g_trades > _p_trades_existing:
+                            _prom_strategies[_gn] = {
+                                "return_pct": _gv.get("return_pct", 0),
+                                "sharpe": _gv.get("sharpe", 0),
+                                "win_rate": _gv.get("win_rate", 0),
+                                "trades": _g_trades,
+                                "max_dd": _gv.get("max_dd", 0),
+                            }
+                # Inject prometheus data into bt when prom has MORE trades
+                _bt_strategies = bt.get("strategies", {})
+                for _name, _pdata in _prom_strategies.items():
+                    if not isinstance(_pdata, dict):
+                        continue
+                    _p_trades = _pdata.get("trades") or 0
+                    if _p_trades <= 0:
+                        continue
+                    _bt_entry = _bt_strategies.get(_name, {})
+                    _bt_trades = _bt_entry.get("total_trades") or 0
+                    if _p_trades > _bt_trades:
+                        # Inject authoritative Prometheus metrics (prometheus format → bt format)
+                        _injected = {
+                            "total_return_pct": _pdata.get("return_pct", 0),
+                            "sharpe_ratio": _pdata.get("sharpe", 0),
+                            "max_drawdown_pct": _pdata.get("max_dd", _pdata.get("dd_pct", 0)),
+                            "win_rate": _pdata.get("win_rate", _pdata.get("wr_pct", 0)),
+                            "total_trades": _p_trades,
+                            "profit_factor": _pdata.get("profit_factor", _pdata.get("pf", None)),
+                            "backtest_period": _pdata.get("backtest_period", "365d"),
+                        }
+                        for k, v in _injected.items():
+                            if v is not None:
+                                _bt_entry[k] = v
+                                # Also inject into nested metrics dict (used by strat_summary L965-974)
+                                _bt_metrics = _bt_entry.setdefault("metrics", {})
+                                _bt_metrics[k] = v
+                        _bt_strategies[_name] = _bt_entry
+                        logger.info(
+                            "AUDIT-053 v3 INJECTED: %s metrics from prometheus.json "
+                            "(prom=%d trades > bt=%d trades)", _name, _p_trades, _bt_trades
+                        )
+                bt["strategies"] = _bt_strategies
+            except Exception as _e:
+                logger.warning("AUDIT-053 v3 prometheus injection failed: %s", _e)
+
         strat_summary = {}
         for name, s in bt.get("strategies", {}).items():
             entry = {"signals": s.get("signals_count", 0), "status": s.get("status", "?")}
-            # Support both nested (legacy) and top-level (flattened) metrics
+            # Support both nested (canonical metrics) and top-level (legacy) fields.
+            # Prefer nested metrics when available — top-level can be stale duplicates
+            # (both top-level and nested come from same engine run — identical)
             m = s.get("metrics", {})
-            entry["return_pct"] = s.get("total_return_pct") or m.get("total_return_pct", 0)
-            entry["sharpe"] = s.get("sharpe_ratio") or m.get("sharpe_ratio", 0)
-            entry["win_rate"] = s.get("win_rate") or m.get("win_rate", 0)
-            entry["trades"] = s.get("total_trades") or m.get("total_trades", 0)
-            entry["max_dd"] = s.get("max_drawdown_pct") or m.get("max_drawdown_pct", 0)
+            has_metrics = m and m.get("total_trades", 0) > 0
+            top_trades = s.get("total_trades") or 0
+            # Use nested metrics if they exist and have >= trades (more authoritative)
+            if has_metrics and m.get("total_trades", 0) >= top_trades:
+                entry["return_pct"] = m.get("total_return_pct", 0)
+                entry["sharpe"] = m.get("sharpe_ratio", 0)
+                entry["win_rate"] = m.get("win_rate", 0)
+                entry["trades"] = m.get("total_trades", 0)
+                entry["max_dd"] = m.get("max_drawdown_pct", 0)
+            else:
+                entry["return_pct"] = s.get("total_return_pct") or m.get("total_return_pct", 0)
+                entry["sharpe"] = s.get("sharpe_ratio") or m.get("sharpe_ratio", 0)
+                entry["win_rate"] = s.get("win_rate") or m.get("win_rate", 0)
+                entry["trades"] = s.get("total_trades") or m.get("total_trades", 0)
+                entry["max_dd"] = s.get("max_drawdown_pct") or m.get("max_drawdown_pct", 0)
             entry["verdict"] = s.get("verdict", m.get("verdict", ""))
             strat_summary[name] = entry
+        # Preserve existing verdicts from athena.json that were manually set
+        # (e.g. Athena/Prometheus promote to LIVE, PAUSE, RETIRE — engine must not overwrite)
+        #
+        # AUDIT-047 guard: Never preserve a LIVE verdict for a strategy that is
+        # disabled in strategies.yaml. This prevents the pattern where a strategy
+        # is re-enabled by accident (YAML flip), promoted by Athena, and the
+        # engine blindly preserves the now-invalid LIVE verdict.
+        #
+        # AUDIT-047 v2: Cross-check backtest_results.json authority.
+        # If athena says LIVE but backtest_results (Prometheus authority) says non-LIVE,
+        # downgrade to the backtest_results verdict.
+        existing_athena = load_json(os.path.join(STATE_DIR, "athena.json"))
+        # Build verdict map from already-loaded bt (avoids redundant file read)
+        _bt_results_v2 = {}
+        for _bn, _bv in bt.get("strategies", {}).items():
+            _bt_results_v2[_bn] = _bv.get("verdict", "")
+        # AUDIT-053 FIX: Preserve quantitative metrics from existing athena.json
+        # when the existing data has MORE trades (from longer/better backtests like
+        # Prometheus 365d sweep). Engine's 90d backtest must not overwrite authoritative
+        # 365d metrics. Previously only verdict was preserved, causing return_pct/sharpe/
+        # trades/win_rate/max_dd to be silently downgraded from 365d → 90d.
+        for name in strat_summary:
+            existing_strat = existing_athena.get("strategies", {}).get(name, {})
+            existing_trades = existing_strat.get("trades") or 0
+            new_trades = strat_summary[name].get("trades") or 0
+            if existing_trades > new_trades and new_trades > 0:
+                # Preserve all quantitative fields from the more authoritative source
+                for field in ("return_pct", "sharpe", "win_rate", "trades", "max_dd"):
+                    if field in existing_strat:
+                        strat_summary[name][field] = existing_strat[field]
+                logger.info(
+                    "AUDIT-053 PRESERVED: %s metrics (old=%d trades > new=%d trades) — "
+                    "keeping longer backtest metrics", name, existing_trades, new_trades
+                )
+        # _disabled_in_yaml already computed in oracle section above (avoids double YAML read)
+        for name in strat_summary:
+            existing_verdict = existing_athena.get("strategies", {}).get(name, {}).get("verdict", "")
+            if existing_verdict and existing_verdict not in ("", "?"):
+                # AUDIT-047: Block LIVE verdict for disabled strategies
+                if existing_verdict == "LIVE" and name in _disabled_in_yaml:
+                    logger.warning(
+                        "AUDIT-047 BLOCKED: %s verdict=LIVE but strategy is disabled in YAML. "
+                        "Downgrading to PAPER.", name
+                    )
+                    strat_summary[name]["verdict"] = "PAPER"
+                # AUDIT-047 v2: Block LIVE verdict if backtest_results contradicts
+                elif existing_verdict == "LIVE":
+                    _btv2 = _bt_results_v2.get(name, "")
+                    if _btv2 and _btv2 not in ("LIVE", ""):
+                        logger.warning(
+                            "AUDIT-047 v2 BLOCKED: %s athena verdict=LIVE but backtest_results=%s. "
+                            "Downgrading to %s.", name, _btv2, _btv2
+                        )
+                        strat_summary[name]["verdict"] = _btv2
+                    else:
+                        strat_summary[name]["verdict"] = existing_verdict
+                else:
+                    strat_summary[name]["verdict"] = existing_verdict
         merge_state("athena", {"status": "ok", "strategies": strat_summary})
 
         risk = load_json(os.path.join(STATE_DIR, "risk_check.json"))
@@ -810,24 +1133,38 @@ def sync_agent_states():
         sig = load_json(os.path.join(STATE_DIR, "signals.json"))
         merge_state("mercury", {"status": "ok", "signals_active": len(sig.get("signals",{})), "signals": sig.get("signals",{})})
 
-        # Prometheus: pull real backtest metrics, never hardcode PnL
+        # Prometheus: pull real backtest metrics from strat_summary (which has
+        # AUDIT-053 athena.json preservation applied at L1000-1017), NOT raw
+        # s["metrics"] which contains engine's 90d short backtest that may have
+        # fewer trades than Prometheus-authoritative 365d sweeps.
+        # AUDIT-053 v4: This was the missing link — strat_summary already has
+        # the correct preserved metrics but prometheus.json write was bypassing it.
         prom_state = {"status": "active", "strategies": {}, "engine_pid": os.getpid()}
-        for name, s in bt.get("strategies", {}).items():
-            if "metrics" not in s:
+        for name, ss_entry in strat_summary.items():
+            # Only include strategies that exist in bt and have meaningful data
+            if ss_entry.get("trades", 0) <= 0:
                 continue
-            m = s["metrics"]
             prom_state["strategies"][name] = {
-                "return_pct": m.get("total_return_pct", 0),
-                "sharpe": m.get("sharpe_ratio", 0),
-                "win_rate": m.get("win_rate", 0),
-                "trades": m.get("total_trades", 0),
-                "max_dd": m.get("max_drawdown_pct", 0),
+                "return_pct": ss_entry.get("return_pct", 0),
+                "sharpe": ss_entry.get("sharpe", 0),
+                "win_rate": ss_entry.get("win_rate", 0),
+                "trades": ss_entry.get("trades", 0),
+                "max_dd": ss_entry.get("max_dd", 0),
             }
-        # Also preserve any Prometheus-specific fields from existing state
-        existing_prom = load_json(os.path.join(STATE_DIR, "prometheus.json"))
-        for key in ("dsr_implemented", "walk_forward_implemented", "anti_overfitting_run", "wf_findings", "next"):
-            if key in existing_prom:
-                prom_state[key] = existing_prom[key]
+        # Preserve Prometheus-specific metadata fields from already-loaded _prom_data
+        for key in ("dsr_implemented", "walk_forward_implemented", "anti_overfitting_run", "wf_findings", "next",
+                     "recommendation", "live_validation", "ml_alpha_status", "ml_validation",
+                     "regime_model", "regime_monitor", "regime_classifier", "last_optimization",
+                     "strategy_landscape_20260622", "rsi_mr_eth_live_confirmed",
+                     "donchian_mr_eth_wf_validation", "donchian_mr_eth_365d",
+                     "donchian_mr_btc_optimized", "portfolio_correlation"):
+            if key in _prom_data:
+                prom_state[key] = _prom_data[key]
+        # NOTE: strategies metrics are ENGINE-DERIVED (from backtest_results.json).
+        # Prometheus-generated metrics live in rsi_mr_eth_live_confirmed etc., NOT
+        # in the strategies section which is overwritten by every engine tick.
+        # Do NOT preserve existing prometheus.json strategies metrics — the engine
+        # is the single source of truth for backtest performance data.
         # Clean up stale hardcoded fake fields (replaced by strategies dict)
         prom_state["dgt_deployed"] = None
         prom_state["dgt_btc_pnl"] = None
@@ -840,7 +1177,8 @@ def sync_agent_states():
     try:
         import subprocess, sys
         subprocess.run([sys.executable, "generate_dashboard.py"], capture_output=True, timeout=30)
-    except: pass
+    except Exception as e:
+        logger.warning("Dashboard regeneration failed: %s", e)
 
     # Post engine heartbeat summary to bulletin (keeps bulletin fresh every tick)
     try:
@@ -991,8 +1329,25 @@ def run_regime_monitor():
         logger.warning("Regime monitor error: %s", e)
 
 
+def _wal_checkpoint():
+    """Periodic WAL checkpoint — prevents WAL file from growing unbounded.
+    
+    SQLite WAL accumulates all writes since the last checkpoint. Without periodic
+    truncation, the WAL file grows indefinitely (observed: 6.9MB after ~12h).
+    This runs every 60 minutes to keep the WAL file small.
+    """
+    try:
+        from data.db import wal_checkpoint
+        before, after = wal_checkpoint(truncate=True)
+        if before > 100:  # Only log if there was meaningful work
+            logger.info("WAL checkpoint: %d → %d pages", before, after)
+    except Exception as e:
+        logger.debug("WAL checkpoint skipped: %s", e)
+
+
 def run_all():
     logger.info("Aether Engine started — interval %ds", INTERVAL)
+    _last_wal_checkpoint = 0
     while True:
         loop_start = time.time()
         try:
@@ -1003,6 +1358,10 @@ def run_all():
             _timed("risk_check", run_risk_check)
             _timed("signal_check", run_signal_check)
             _timed("state_sync", sync_agent_states)
+            # WAL checkpoint every 60 minutes (12 loops × 5min)
+            if time.time() - _last_wal_checkpoint > 3600:
+                _wal_checkpoint()
+                _last_wal_checkpoint = time.time()
         except Exception as e:
             logger.error("Engine loop error: %s", e)
         elapsed = time.time() - loop_start

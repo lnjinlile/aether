@@ -9,8 +9,8 @@ Bollinger Band + RSI 均值回归策略 — 专为盘整市设计 (v2: TP/SL-onl
 """
 from typing import List, Optional
 import pandas as pd
-import numpy as np
 from ..base import BaseStrategy, Signal, SignalType
+from ..indicators import compute_rsi, compute_bollinger_bands
 
 
 class BBandMeanReversion(BaseStrategy):
@@ -40,15 +40,6 @@ class BBandMeanReversion(BaseStrategy):
         })
         self._bars_since_last_trade = cooldown_bars + 1
 
-    def _compute_rsi(self, close: pd.Series, period: int) -> pd.Series:
-        delta = close.diff()
-        gain = delta.where(delta > 0, 0.0)
-        loss = (-delta).where(delta < 0, 0.0)
-        avg_gain = gain.ewm(alpha=1/period, adjust=False).mean()
-        avg_loss = loss.ewm(alpha=1/period, adjust=False).mean()
-        rs = avg_gain / avg_loss.replace(0, np.nan)
-        return 100 - (100 / (1 + rs))
-
     def _preprocess(self, symbol: str, timeframe: str, df: pd.DataFrame):
         key = (symbol, timeframe)
         p = self.params
@@ -56,14 +47,14 @@ class BBandMeanReversion(BaseStrategy):
 
         # Bollinger Bands
         close = df["close"]
-        ind["sma"] = close.rolling(p["bb_period"]).mean()
-        std = close.rolling(p["bb_period"]).std()
-        ind["upper"] = ind["sma"] + p["bb_std"] * std
-        ind["lower"] = ind["sma"] - p["bb_std"] * std
-        ind["bb_width"] = (ind["upper"] - ind["lower"]) / ind["sma"]  # relative width
+        bb = compute_bollinger_bands(close, p["bb_period"], p["bb_std"])
+        ind["sma"] = bb["middle"]
+        ind["upper"] = bb["upper"]
+        ind["lower"] = bb["lower"]
+        ind["bb_width"] = bb["bandwidth"]
 
         # RSI
-        ind["rsi"] = self._compute_rsi(close, p["rsi_period"])
+        ind["rsi"] = compute_rsi(close, p["rsi_period"])
 
         # Touch signals
         ind["touch_lower"] = close <= ind["lower"]

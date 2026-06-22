@@ -1,6 +1,6 @@
 strategies:
 - class: strategy.examples.dynamic_grid.DynamicGridStrategy
-  enabled: true
+  enabled: false
   name: DynamicGrid_BTC
   params:
     grid_range_pct: 3.0
@@ -14,7 +14,7 @@ strategies:
     timeframes:
     - 15m
 - class: strategy.examples.dynamic_grid.DynamicGridStrategy
-  enabled: true
+  enabled: false
   name: DynamicGrid_ETH
   params:
     grid_range_pct: 4.0
@@ -38,7 +38,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.ma_cross.MACrossoverStrategy
-  enabled: true
+  enabled: false
   name: MA_Cross_BTC
   params:
     atr_period: 14
@@ -53,7 +53,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.ma_cross.MACrossoverStrategy
-  enabled: true
+  enabled: false
   name: MA_Cross_ETH
   params:
     atr_period: 14
@@ -68,7 +68,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.trend_follow.TrendFollow
-  enabled: true
+  enabled: false
   name: TrendFollow_BTC
   params:
     cooldown_bars: 10
@@ -81,7 +81,7 @@ strategies:
     timeframes:
     - 15m
 - class: strategy.examples.trend_follow.TrendFollow
-  enabled: true
+  enabled: false
   name: TrendFollow_ETH
   params:
     cooldown_bars: 8
@@ -139,7 +139,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.ml_ensemble.MLEnsembleStrategy
-  enabled: true
+  enabled: false
   name: MLEnsemble_BTC
   params:
     atr_period: 14
@@ -157,7 +157,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.ml_ensemble.MLEnsembleStrategy
-  enabled: true
+  enabled: false
   name: MLEnsemble_ETH
   params:
     atr_period: 14
@@ -209,7 +209,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.regime_switch.RegimeSwitchStrategy
-  enabled: true
+  enabled: false
   name: RegimeSwitch_BTC
   params:
     cooldown_bars: 5
@@ -233,7 +233,7 @@ strategies:
     trend_window: 50
     vol_window: 20
 - class: strategy.examples.regime_switch.RegimeSwitchStrategy
-  enabled: true
+  enabled: false
   name: RegimeSwitch_ETH
   params:
     cooldown_bars: 5
@@ -299,5 +299,145 @@ strategies:
     leverage: 3
     symbols:
     - ETH/USDT
+    timeframes:
+    - 1h
+- class: strategy.examples.vol_breakout.VolBreakoutStrategy
+  enabled: false
+  name: VolBreakout_BTC
+  params:
+    atr_mult: 2.0
+    atr_period: 20
+    atr_sl_mult: 1.5
+    atr_tp_mult: 3.0
+    cooldown_bars: 5
+    ema_period: 50
+    leverage: 3
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+    vol_ma_period: 20
+    volume_filter: true
+- class: strategy.examples.vol_breakout.VolBreakoutStrategy
+  enabled: false
+  name: VolBreakout_ETH
+  params:
+    atr_mult: 2.0
+    atr_period: 20
+    atr_sl_mult: 1.5
+    atr_tp_mult: 3.0
+    cooldown_bars: 5
+    ema_period: 50
+    leverage: 3
+    symbols:
+    - ETH/USDT
+    timeframes:
+    - 1h
+    vol_ma_period: 20
+    volume_filter: true
+- class: strategy.examples.supertrend.SupertrendStrategy
+  enabled: false
+  name: Supertrend_BTC
+  params:
+    atr_mult: 3.0
+    atr_period: 10
+    cooldown_bars: 5
+    leverage: 3
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+- class: strategy.examples.supertrend.SupertrendStrategy
+  enabled: false
+  name: Supertrend_ETH
+  params:
+    atr_mult: 3.0
+    atr_period: 10
+    cooldown_bars: 5
+    leverage: 3
+    symbols:
+    - ETH/USDT
+    timeframes:
+    - 1h
+- class: strategy.examples.macd.MACDCrossoverStrategy
+  enabled: false
+  name: MACD_BTC
+  params:
+    cooldown_bars: 5
+    fast_period: 12
+    leverage: 3
+    signal_period: 9
+    slow_period: 26
+    stop_loss_pct: 0.02
+    symbols:
+    - BTC/USDT
+    take_profit_pct: 0.04
+    timeframes:
+    - 1h
+- class: strategy.examples.macd.MACDCrossoverStrategy
+  enabled: false
+  name: MACD_ETH
+  params:
+    cooldown_bars: 5
+    fast_period: 12
+    leverage: 3
+    signal_period: 9
+    slow_period: 26
+    stop_loss_pct: 0.02
+    symbols:
+    - ETH/USDT
+    take_profit_pct: 0.04
+    timeframes:
+    - 1h
+- class: strategy.examples.stoch_rsi.StochRSIMeanReversionStrategy
+  enabled: false
+  name: StochRSI_ETH
+  params:
+    cooldown_bars: 5
+    leverage: 3
+    overbought: 0.8
+    oversold: 0.2
+    rsi_period: 14
+    smooth_d: 3
+    smooth_k: 3
+    stoch_period: 14
+    stop_loss_pct: 0.02
+    symbols:
+    - ETH/USDT
+    take_profit_pct: 0.04
+    timeframes:
+    - 1h
+- class: strategy.examples.donchian_mr.DonchianMRStrategy
+  enabled: false
+  name: DonchianMR_BTC
+  params:
+    cooldown_bars: 5
+    donchian_period: 10
+    exit_level: 50
+    leverage: 3
+    overbought: 80
+    oversold: 20
+    rsi_period: 14
+    stop_loss_pct: 0.015
+    symbols:
+    - BTC/USDT
+    take_profit_pct: 0.04
+    timeframes:
+    - 1h
+- class: strategy.examples.donchian_mr.DonchianMRStrategy
+  enabled: true
+  name: DonchianMR_ETH
+  params:
+    cooldown_bars: 5
+    donchian_period: 10
+    exit_level: 50
+    leverage: 3
+    overbought: 80
+    oversold: 20
+    rsi_period: 14
+    stop_loss_pct: 0.02
+    symbols:
+    - ETH/USDT
+    take_profit_pct: 0.04
     timeframes:
     - 1h

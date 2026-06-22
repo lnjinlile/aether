@@ -592,6 +592,120 @@ def momentum_signals(df: pd.DataFrame,
     return pd.Series(signals, index=df.index)
 
 
+def vol_breakout_signals(
+    df: pd.DataFrame,
+    atr_period: int = 20,
+    atr_mult: float = 2.0,
+    ema_period: int = 50,
+    atr_sl_mult: float = 1.5,
+    atr_tp_mult: float = 3.0,
+    cooldown_bars: int = 5,
+    volume_filter: bool = True,
+    vol_ma_period: int = 20,
+) -> pd.Series:
+    """Vectorized VolBreakout — signals: 1=LONG, -1=SHORT, 0=FLAT.
+
+    Mirrors strategy/examples/vol_breakout.py logic:
+    - Price breaks above EMA + N*ATR → LONG
+    - Price breaks below EMA - N*ATR → SHORT
+    - Price crosses back through EMA → exit
+    - ATR trailing stop while in position
+    """
+    close = df["close"].values.astype(float)
+    high = df["high"].values.astype(float)
+    low = df["low"].values.astype(float)
+    volume = df.get("volume", pd.Series(1.0, index=df.index)).values.astype(float)
+    n = len(close)
+    min_bars = max(ema_period, atr_period) * 2 + 10
+    if n < min_bars:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # ATR
+    tr1 = high - low
+    tr2 = np.abs(high - np.roll(close, 1))
+    tr3 = np.abs(low - np.roll(close, 1))
+    tr2[0] = tr3[0] = 0.0
+    tr = np.maximum(np.maximum(tr1, tr2), tr3)
+    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+
+    # EMA
+    ema = pd.Series(close).ewm(span=ema_period, adjust=False).mean().values
+
+    # Upper/Lower channel
+    upper = ema + atr * atr_mult
+    lower = ema - atr * atr_mult
+
+    # Break signals (using prev bar's channel)
+    prev_close = np.roll(close, 1)
+    prev_upper = np.roll(upper, 1)
+    prev_lower = np.roll(lower, 1)
+    break_up = (close > prev_upper) & (prev_close <= prev_upper)
+    break_down = (close < prev_lower) & (prev_close >= prev_lower)
+
+    # Cross EMA signals
+    prev_ema = np.roll(ema, 1)
+    cross_below_ema = (close < ema) & (np.roll(close, 1) >= prev_ema)
+    cross_above_ema = (close > ema) & (np.roll(close, 1) <= prev_ema)
+
+    # Volume ratio
+    if volume_filter:
+        vol_ma = pd.Series(volume).rolling(vol_ma_period).mean().values
+        vol_ratio = np.where(vol_ma > 0, volume / vol_ma, 1.0)
+    else:
+        vol_ratio = np.ones(n)
+
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    trailing_stop = 0.0
+    bars_since_trade = cooldown_bars + 1
+
+    for i in range(min_bars, n):
+        bars_since_trade += 1
+        price = close[i]
+        _atr = atr[i]
+        if np.isnan(_atr) or _atr <= 0:
+            continue
+
+        # --- Exit logic ---
+        if pos == 1:
+            if cross_below_ema[i]:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+            new_trail = max(trailing_stop, price - _atr * atr_sl_mult)
+            trailing_stop = new_trail
+            if price <= trailing_stop:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+        elif pos == -1:
+            if cross_above_ema[i]:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+            new_trail = min(trailing_stop, price + _atr * atr_sl_mult)
+            trailing_stop = new_trail
+            if price >= trailing_stop:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+
+        if pos != 0:
+            signals[i] = pos
+            continue
+
+        # --- Entry logic ---
+        if bars_since_trade <= cooldown_bars:
+            continue
+        if volume_filter and vol_ratio[i] < 1.0:
+            continue
+
+        if break_up[i]:
+            pos = 1
+            trailing_stop = price - _atr * atr_sl_mult
+            signals[i] = 1
+            bars_since_trade = 0
+        elif break_down[i]:
+            pos = -1
+            trailing_stop = price + _atr * atr_sl_mult
+            signals[i] = -1
+            bars_since_trade = 0
+
+    return pd.Series(signals, index=df.index)
+
+
 def trend_pullback_signals(df: pd.DataFrame,
                             ema_period: int = 100, atr_period: int = 14,
                             atr_sl_mult: float = 1.5, atr_tp_mult: float = 3.0,
@@ -693,5 +807,422 @@ def trend_pullback_signals(df: pd.DataFrame,
             entry_price = price
             signals[i] = -1
             bars_since_trade = 0
+
+    return pd.Series(signals, index=df.index)
+
+
+def supertrend_signals(
+    df: pd.DataFrame,
+    atr_period: int = 10,
+    atr_mult: float = 3.0,
+    cooldown_bars: int = 3,
+) -> pd.Series:
+    """Vectorized Supertrend — signals: 1=LONG, -1=SHORT, 0=FLAT.
+
+    Mirrors strategy/examples/supertrend.py logic:
+    - Compute ATR and Supertrend bands (upper/lower)
+    - Trend flip UP (close crosses above previous lower band) → LONG
+    - Trend flip DOWN (close crosses below previous upper band) → SHORT
+    - Trend reversal → exit current position
+    - Cooldown bars after each trade exit
+    """
+    close = df["close"].values.astype(float)
+    high = df["high"].values.astype(float)
+    low = df["low"].values.astype(float)
+    n = len(close)
+    min_bars = atr_period * 2 + 10
+    if n < min_bars:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # ATR (via ewm)
+    tr1 = high - low
+    tr2 = np.abs(high - np.roll(close, 1))
+    tr3 = np.abs(low - np.roll(close, 1))
+    tr2[0] = tr3[0] = 0.0
+    tr = np.maximum(np.maximum(tr1, tr2), tr3)
+    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+
+    # Basic bands
+    hl2 = (high + low) / 2
+    basic_upper = hl2 + atr_mult * atr
+    basic_lower = hl2 - atr_mult * atr
+
+    # Final bands and trend (loop required for Supertrend propagation)
+    final_upper = np.full(n, np.nan)
+    final_lower = np.full(n, np.nan)
+    trend = np.zeros(n, dtype=int)
+
+    # Find first valid bar
+    first_valid = atr_period
+    for i in range(atr_period, n):
+        if not np.isnan(atr[i]):
+            first_valid = i
+            break
+    else:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    final_upper[first_valid] = basic_upper[first_valid]
+    final_lower[first_valid] = basic_lower[first_valid]
+
+    for i in range(first_valid + 1, n):
+        # Final Upper Band
+        if basic_upper[i] < final_upper[i-1] or close[i-1] > final_upper[i-1]:
+            final_upper[i] = basic_upper[i]
+        else:
+            final_upper[i] = final_upper[i-1]
+        # Final Lower Band
+        if basic_lower[i] > final_lower[i-1] or close[i-1] < final_lower[i-1]:
+            final_lower[i] = basic_lower[i]
+        else:
+            final_lower[i] = final_lower[i-1]
+        # Trend
+        prev_lower = final_lower[i-1]
+        prev_upper = final_upper[i-1]
+        if np.isnan(prev_lower):
+            trend[i] = 0
+        elif close[i] > prev_lower:
+            trend[i] = 1  # Uptrend
+        elif close[i] < prev_upper:
+            trend[i] = -1  # Downtrend
+        else:
+            trend[i] = trend[i-1]
+
+    # Signal generation with position tracking and cooldown
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    bars_since_trade = cooldown_bars + 1
+
+    for i in range(first_valid + 1, n):
+        bars_since_trade += 1
+
+        # Exit on trend reversal
+        if pos == 1 and trend[i] == -1:
+            signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+        if pos == -1 and trend[i] == 1:
+            signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+
+        if pos != 0:
+            signals[i] = pos
+            continue
+
+        # Entry with cooldown
+        if bars_since_trade <= cooldown_bars:
+            continue
+
+        # Bull flip: -1 → 1
+        if trend[i] == 1 and trend[i-1] == -1:
+            pos = 1; signals[i] = 1; bars_since_trade = 0; continue
+        # Bear flip: 1 → -1
+        if trend[i] == -1 and trend[i-1] == 1:
+            pos = -1; signals[i] = -1; bars_since_trade = 0; continue
+
+    return pd.Series(signals, index=df.index)
+
+
+def macd_crossover_signals(df: pd.DataFrame,
+                           fast_period: int = 12,
+                           slow_period: int = 26,
+                           signal_period: int = 9,
+                           stop_loss_pct: float = 0.02,
+                           take_profit_pct: float = 0.04,
+                           cooldown_bars: int = 5) -> pd.Series:
+    """Vectorized MACD Crossover — signals: 1=LONG, -1=SHORT, 0=FLAT.
+
+    Mirrors strategy/examples/macd.py:
+    - Bullish crossover (MACD crosses above signal) → LONG
+    - Bearish crossover (MACD crosses below signal) → SHORT
+    - Cross back to opposite direction → CLOSE
+    - Fixed SL/TP with cooldown between trades
+    """
+    close = df['close'].values.astype(float)
+    n = len(close)
+    min_bars = max(slow_period, signal_period) + 2
+
+    if n < min_bars:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # MACD computation
+    ema_fast = pd.Series(close).ewm(span=fast_period, adjust=False).mean().values
+    ema_slow = pd.Series(close).ewm(span=slow_period, adjust=False).mean().values
+    macd_line = ema_fast - ema_slow
+    signal_line = pd.Series(macd_line).ewm(span=signal_period, adjust=False).mean().values
+
+    # Crossover detection
+    macd_above = macd_line > signal_line
+    macd_above_prev = np.roll(macd_above, 1)
+    macd_above_prev[0] = macd_above_prev[1]
+
+    cross_above = macd_above & ~macd_above_prev
+    cross_below = ~macd_above & macd_above_prev
+
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    entry_price = 0.0
+    bars_since_trade = cooldown_bars + 1
+
+    for i in range(min_bars, n):
+        bars_since_trade += 1
+        price = close[i]
+
+        if pos == 1:
+            if cross_below[i]:
+                pos = 0; bars_since_trade = 0; continue
+            if price <= entry_price * (1 - stop_loss_pct):
+                pos = 0; bars_since_trade = 0; continue
+            if price >= entry_price * (1 + take_profit_pct):
+                pos = 0; bars_since_trade = 0; continue
+            signals[i] = 1; continue
+        elif pos == -1:
+            if cross_above[i]:
+                pos = 0; bars_since_trade = 0; continue
+            if price >= entry_price * (1 + stop_loss_pct):
+                pos = 0; bars_since_trade = 0; continue
+            if price <= entry_price * (1 - take_profit_pct):
+                pos = 0; bars_since_trade = 0; continue
+            signals[i] = -1; continue
+
+        if pos == 0 and bars_since_trade > cooldown_bars:
+            if cross_above[i]:
+                pos = 1; entry_price = price; signals[i] = 1; bars_since_trade = 0; continue
+            if cross_below[i]:
+                pos = -1; entry_price = price; signals[i] = -1; bars_since_trade = 0; continue
+
+    return pd.Series(signals, index=df.index)
+
+
+def donchian_mr_signals(df: pd.DataFrame,
+                        donchian_period: int = 20,
+                        rsi_period: int = 14,
+                        oversold: float = 20.0,
+                        overbought: float = 80.0,
+                        exit_level: float = 50.0,
+                        stop_loss_pct: float = 0.02,
+                        take_profit_pct: float = 0.04,
+                        cooldown_bars: int = 5) -> pd.Series:
+    """
+    Donchian Channel Mean Reversion — fade the breakout.
+
+    Donchian bands are computed on shifted close so current bar can break through.
+    LONG: close drops below N-period min close + RSI oversold
+    SHORT: close rises above N-period max close + RSI overbought
+    Exit: cross back through mid-line, RSI normalizes, or SL/TP hit.
+
+    Optimized params (from 162-run sweep, ETH 1h 365d):
+        DP=10, OS=20, OB=80, CD=5 → +429% SR=0.552 DD=16.2% WR=72%
+    """
+    close = df['close'].values.astype(float)
+    n = len(close)
+
+    if n < max(donchian_period, rsi_period) + 5:
+        return pd.Series(0, index=df.index, dtype=int)
+
+    signals = np.zeros(n, dtype=int) if isinstance(df.index, pd.DatetimeIndex) else np.zeros(n, dtype=int)
+
+    # Donchian Channel — shifted so current bar excluded from window
+    prev_close = np.roll(close, 1)
+    prev_close[0] = close[0]
+
+    dc_upper = np.full(n, np.nan)
+    dc_lower = np.full(n, np.nan)
+    dc_mid = np.full(n, np.nan)
+
+    for i in range(donchian_period, n):
+        window = prev_close[i - donchian_period + 1:i + 1]
+        dc_upper[i] = np.max(window)
+        dc_lower[i] = np.min(window)
+        dc_mid[i] = (dc_upper[i] + dc_lower[i]) / 2.0
+
+    # RSI (Wilder's smoothing)
+    delta = np.diff(close, prepend=close[0])
+    gain = np.maximum(delta, 0.0)
+    loss = np.maximum(-delta, 0.0)
+
+    alpha = 1.0 / rsi_period
+    avg_gain = np.full(n, np.nan)
+    avg_loss = np.full(n, np.nan)
+
+    # Seed with SMA
+    avg_gain[rsi_period - 1] = np.mean(gain[:rsi_period])
+    avg_loss[rsi_period - 1] = np.mean(loss[:rsi_period])
+
+    for i in range(rsi_period, n):
+        avg_gain[i] = avg_gain[i - 1] * (1 - alpha) + gain[i] * alpha
+        avg_loss[i] = avg_loss[i - 1] * (1 - alpha) + loss[i] * alpha
+
+    rsi = np.full(n, np.nan)
+    for i in range(rsi_period, n):
+        if avg_loss[i] == 0:
+            rsi[i] = 100.0
+        elif avg_gain[i] == 0:
+            rsi[i] = 0.0
+        else:
+            rs = avg_gain[i] / avg_loss[i]
+            rsi[i] = 100.0 - (100.0 / (1.0 + rs))
+
+    min_bars = max(donchian_period, rsi_period) + 5
+    pos = 0
+    entry_price = 0.0
+    bars_since_trade = cooldown_bars + 1
+
+    for i in range(min_bars, n):
+        bars_since_trade += 1
+        price = close[i]
+
+        if np.isnan(dc_upper[i]) or np.isnan(rsi[i]):
+            continue
+
+        # Position management
+        if pos == 1:
+            cross_mid = (price > dc_mid[i]) and (close[i - 1] <= dc_mid[i - 1])
+            rsi_exit = (rsi[i] > exit_level) and (rsi[i - 1] <= exit_level)
+            sl_hit = price <= entry_price * (1 - stop_loss_pct)
+            tp_hit = price >= entry_price * (1 + take_profit_pct)
+            if cross_mid or rsi_exit or sl_hit or tp_hit:
+                pos = 0
+                bars_since_trade = 0
+                continue
+            signals[i] = 1
+            continue
+
+        elif pos == -1:
+            cross_mid = (price < dc_mid[i]) and (close[i - 1] >= dc_mid[i - 1])
+            rsi_exit = (rsi[i] < exit_level) and (rsi[i - 1] >= exit_level)
+            sl_hit = price >= entry_price * (1 + stop_loss_pct)
+            tp_hit = price <= entry_price * (1 - take_profit_pct)
+            if cross_mid or rsi_exit or sl_hit or tp_hit:
+                pos = 0
+                bars_since_trade = 0
+                continue
+            signals[i] = -1
+            continue
+
+        # Entry
+        if pos == 0 and bars_since_trade > cooldown_bars:
+            if price < dc_lower[i] and rsi[i] < oversold:
+                pos = 1
+                entry_price = price
+                signals[i] = 1
+                bars_since_trade = 0
+                continue
+            if price > dc_upper[i] and rsi[i] > overbought:
+                pos = -1
+                entry_price = price
+                signals[i] = -1
+                bars_since_trade = 0
+                continue
+
+    return pd.Series(signals, index=df.index)
+
+
+def stoch_rsi_signals(df: pd.DataFrame,
+                      rsi_period: int = 14,
+                      stoch_period: int = 14,
+                      smooth_k: int = 3,
+                      smooth_d: int = 3,
+                      oversold: float = 0.20,
+                      overbought: float = 0.80,
+                      stop_loss_pct: float = 0.02,
+                      take_profit_pct: float = 0.04,
+                      cooldown_bars: int = 5) -> pd.Series:
+    """Vectorized StochRSI Mean Reversion — signals: 1=LONG, -1=SHORT, 0=FLAT.
+
+    StochRSI = (RSI - min(RSI, stoch_period)) / (max(RSI, stoch_period) - min(RSI, stoch_period))
+    %K = SMA(StochRSI, smooth_k)
+
+    Entry:
+      %K crosses below oversold → LONG
+      %K crosses above overbought → SHORT
+    Exit:
+      %K crosses 0.5 midline from below → CLOSE_LONG
+      %K crosses 0.5 midline from above → CLOSE_SHORT
+    """
+    close = df["close"].values
+    n = len(close)
+
+    # ── Compute RSI ──
+    delta = pd.Series(close).diff()
+    gain = delta.where(delta > 0, 0.0)
+    loss = (-delta).where(delta < 0, 0.0)
+    avg_gain = gain.ewm(alpha=1 / rsi_period, adjust=False).mean().values
+    avg_loss = loss.ewm(alpha=1 / rsi_period, adjust=False).mean().values
+    rs = np.divide(avg_gain, avg_loss, out=np.full_like(avg_gain, np.inf), where=avg_loss != 0)
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+    rsi[avg_loss == 0] = 100.0
+    rsi[avg_gain == 0] = 0.0
+
+    # ── Compute StochRSI %K ──
+    stoch_k_vals = np.full(n, np.nan)
+    warmup = rsi_period + stoch_period
+    for i in range(warmup, n):
+        window = rsi[i - stoch_period + 1 : i + 1]
+        rsi_min = np.min(window)
+        rsi_max = np.max(window)
+        denom = rsi_max - rsi_min
+        if denom == 0:
+            stoch_raw = 0.5
+        else:
+            stoch_raw = (rsi[i] - rsi_min) / denom
+        stoch_k_vals[i] = np.clip(stoch_raw, 0.0, 1.0)
+
+    # ── Signal generation ──
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    entry_price = 0.0
+    bars_since_trade = cooldown_bars + 1
+    min_bars = rsi_period + stoch_period + smooth_k + smooth_d + 5
+
+    for i in range(min_bars, n):
+        bars_since_trade += 1
+        price = close[i]
+        curr_k = stoch_k_vals[i]
+        prev_k = stoch_k_vals[i - 1]
+        if np.isnan(curr_k) or np.isnan(prev_k):
+            continue
+
+        # ── Exit: midline crossover + SL/TP ──
+        cross_above_mid = (prev_k <= 0.5) and (curr_k > 0.5)
+        cross_below_mid = (prev_k >= 0.5) and (curr_k < 0.5)
+
+        if pos == 1:
+            exit_trigger = cross_above_mid
+            if not exit_trigger and price <= entry_price * (1 - stop_loss_pct):
+                exit_trigger = True
+            if not exit_trigger and price >= entry_price * (1 + take_profit_pct):
+                exit_trigger = True
+            if exit_trigger:
+                signals[i] = 0
+                pos = 0
+                bars_since_trade = 0
+                continue
+        elif pos == -1:
+            exit_trigger = cross_below_mid
+            if not exit_trigger and price >= entry_price * (1 + stop_loss_pct):
+                exit_trigger = True
+            if not exit_trigger and price <= entry_price * (1 - take_profit_pct):
+                exit_trigger = True
+            if exit_trigger:
+                signals[i] = 0
+                pos = 0
+                bars_since_trade = 0
+                continue
+
+        if pos != 0:
+            signals[i] = pos
+
+        # ── Entry: oversold/overbought crossover on %K ──
+        cross_below_os = (prev_k >= oversold) and (curr_k < oversold)
+        cross_above_ob = (prev_k <= overbought) and (curr_k > overbought)
+
+        if pos == 0 and bars_since_trade > cooldown_bars:
+            if cross_below_os:
+                pos = 1
+                entry_price = price
+                signals[i] = 1
+                bars_since_trade = 0
+            elif cross_above_ob:
+                pos = -1
+                entry_price = price
+                signals[i] = -1
+                bars_since_trade = 0
 
     return pd.Series(signals, index=df.index)

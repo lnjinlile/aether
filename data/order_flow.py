@@ -10,12 +10,16 @@ Stores aggregated features in a new 'order_flow' table in market.db.
 """
 
 import os
+import sys
 import time
 import json
 import logging
 from datetime import datetime, timezone
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
+
+# Add project root to Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import pandas as pd
@@ -55,7 +59,11 @@ class OrderFlowCollector:
             "apiKey": self.api_key,
             "secret": self.api_secret,
             "enableRateLimit": True,
-            "options": {"defaultType": "future"},
+            "options": {
+                "defaultType": "future",
+                "fetchCurrencies": False,       # prevents unnecessary spot API call
+                "fetchLeverageBrackets": False, # disables bracket fetch
+            },
         })
 
         if self.testnet:
@@ -63,10 +71,6 @@ class OrderFlowCollector:
             api = self.exchange.urls.get("api", {})
             for key in list(api.keys()):
                 if key.startswith("fapi"):
-                    api[key] = base + "/fapi/v1"
-                elif key.startswith("dapi"):
-                    api[key] = base + "/dapi/v1"
-                elif key in ("public", "private"):
                     api[key] = base + "/fapi/v1"
             self.exchange.fetch_leverage_brackets = lambda *a, **kw: {}
             self.exchange.fetch_leverage_tiers = lambda *a, **kw: {}
@@ -495,5 +499,13 @@ def run_order_flow_pipeline():
 
 
 if __name__ == "__main__":
+    INTERVAL = 60  # collect order flow every 60s (trades are high-frequency)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [OF] %(message)s")
-    run_order_flow_pipeline()
+    logger.info("Order flow pipeline started — interval %ds", INTERVAL)
+    while True:
+        try:
+            run_order_flow_pipeline()
+            logger.info("Cycle complete")
+        except Exception as e:
+            logger.error("Cycle error: %s", e)
+        time.sleep(INTERVAL)

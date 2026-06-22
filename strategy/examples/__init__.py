@@ -5,6 +5,8 @@ from .ml_ensemble import MLEnsembleStrategy
 from .regime_switch import RegimeSwitchStrategy
 from .momentum import MomentumStrategy
 from .trend_pullback import TrendPullback
+from .vol_breakout import VolBreakoutStrategy
+from .supertrend import SupertrendStrategy
 
 __all__ = [
     "MACrossoverStrategy",
@@ -14,4 +16,6 @@ __all__ = [
     "RegimeSwitchStrategy",
     "MomentumStrategy",
     "TrendPullback",
+    "VolBreakoutStrategy",
+    "SupertrendStrategy",
 ]

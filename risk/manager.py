@@ -33,6 +33,12 @@ class RiskManager:
         max_total_position_pct: Max total notional as fraction of balance (0.50 = 50%)
         daily_loss_limit_pct:   Max daily realized loss as fraction of starting balance (0.05 = 5%)
         min_order_usdt:         Minimum order value in USDT (default 10)
+        correlated_groups:      List of strategy name groups that are mutually exclusive
+                                (e.g. [['RSI_MR_ETH', 'DonchianMR_ETH']])
+        max_correlated_exposure_pct: Max combined notional for all positions in a correlated
+                                      group, as fraction of balance (0.30 = 30%). Prevents
+                                      correlated strategies from collectively over-allocating
+                                      even when only one has an open position.
     """
 
     def __init__(
@@ -43,6 +49,8 @@ class RiskManager:
         max_total_position_pct: float = 0.50,
         daily_loss_limit_pct: float = 0.05,
         min_order_usdt: float = 10.0,
+        correlated_groups: Optional[List[List[str]]] = None,
+        max_correlated_exposure_pct: float = 0.30,
     ):
         self.max_positions = max_positions
         self.max_leverage = max_leverage
@@ -50,6 +58,14 @@ class RiskManager:
         self.max_total_position_pct = max_total_position_pct
         self.daily_loss_limit_pct = daily_loss_limit_pct
         self.min_order_usdt = min_order_usdt
+        self.correlated_groups: List[List[str]] = correlated_groups or []
+        self.max_correlated_exposure_pct = max_correlated_exposure_pct
+
+        # Build reverse lookup: strategy_name → group index
+        self._correlated_map: Dict[str, int] = {}
+        for i, group in enumerate(self.correlated_groups):
+            for name in group:
+                self._correlated_map[name] = i
 
         # Daily PnL tracking
         self._today: date = date.today()
@@ -63,6 +79,13 @@ class RiskManager:
                 setattr(self, key, value)
             else:
                 logger.warning("Unknown risk parameter: %s", key)
+
+        # Rebuild correlated map if groups changed
+        if "correlated_groups" in kwargs:
+            self._correlated_map = {}
+            for i, group in enumerate(self.correlated_groups):
+                for name in group:
+                    self._correlated_map[name] = i
 
     # ------------------------------------------------------------------
     # Daily PnL tracking
@@ -142,6 +165,62 @@ class RiskManager:
                 action="REJECT",
                 reason=f"Max positions ({self.max_positions}) reached: {len(positions)} open",
             )
+
+        # ---- Check 2.5: Correlated strategy mutual exclusion ----
+        strategy_name = signal.get("strategy") or signal.get("strategy_name")
+        if strategy_name and self._correlated_map:
+            group_idx = self._correlated_map.get(strategy_name)
+            if group_idx is not None:
+                group = self.correlated_groups[group_idx]
+                # Check if any open position belongs to a correlated strategy
+                for p in positions:
+                    pos_strat = p.get("strategy_name") or p.get("strategy")
+                    if pos_strat and pos_strat in group and pos_strat != strategy_name:
+                        return RiskCheckResult(
+                            action="REJECT",
+                            reason=(
+                                f"Correlated strategy '{pos_strat}' already has an open "
+                                f"position on {p.get('symbol', '?')}. "
+                                f"Mutual exclusion group: {group}"
+                            ),
+                        )
+
+                # ---- Check 2.6: Correlated exposure cap ----
+                # Calculate total notional from all positions in this correlated group
+                group_notional = sum(
+                    abs(float(p.get("notional", 0)))
+                    for p in positions
+                    if (p.get("strategy_name") or p.get("strategy")) in group
+                )
+                new_notional = quantity * price if price > 0 else 0
+                combined_notional = group_notional + new_notional
+                max_exposure = balance * self.max_correlated_exposure_pct
+                if combined_notional > max_exposure:
+                    # Try REDUCE if there's room for a partial fill
+                    if group_notional < max_exposure:
+                        room = max_exposure - group_notional
+                        reduced_qty = room / price if price > 0 else 0
+                        if reduced_qty >= self.min_order_usdt / price if price > 0 else 0:
+                            return RiskCheckResult(
+                                action="REDUCE",
+                                adjusted_quantity=round(reduced_qty, 8),
+                                reason=(
+                                    f"Correlated exposure cap: group={group} "
+                                    f"current=${group_notional:.0f} new=${new_notional:.0f} "
+                                    f"combined=${combined_notional:.0f} > max=${max_exposure:.0f} "
+                                    f"({self.max_correlated_exposure_pct*100:.0f}% of ${balance:.0f}). "
+                                    f"Reduced to qty={reduced_qty:.4f}"
+                                ),
+                            )
+                    return RiskCheckResult(
+                        action="REJECT",
+                        reason=(
+                            f"Correlated exposure cap hit: group={group} "
+                            f"current=${group_notional:.0f} + new=${new_notional:.0f} "
+                            f"= ${combined_notional:.0f} > max=${max_exposure:.0f} "
+                            f"({self.max_correlated_exposure_pct*100:.0f}% of balance)"
+                        ),
+                    )
 
         # ---- Check 3: Daily loss limit ----
         if self._daily_starting_balance > 0:
