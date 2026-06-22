@@ -138,6 +138,62 @@ def run_backtests():
             trend_pullback_signals,
             stoch_rsi_signals,
         )
+
+        # ── Signal dispatch registry: O(1) dict lookup replaces 170-line if-elif ──
+        # Each entry: strategy_type → callable(df, params) → np.ndarray of signals
+        # Lazy imports for ML/ensemble strategies avoid loading heavy deps on every tick.
+        def _dispatch_mlalpha(df, p):
+            from athena_backtest import mlalpha_signals
+            return mlalpha_signals(
+                df, p.get("model_path", "ml_alpha/model.pkl"),
+                p.get("confidence_threshold", 0.55),
+                sl_pct=p.get("atr_sl_mult", 2.0) * 0.01,
+                tp_pct=p.get("atr_tp_mult", 3.0) * 0.01)
+
+        def _dispatch_mlensemble(df, p):
+            from athena_backtest import mlensemble_signals
+            return mlensemble_signals(
+                df, p.get("prediction_horizon", 5),
+                p.get("confidence_threshold", 0.60),
+                p.get("min_train_samples", 200),
+                sl_pct=p.get("atr_sl_mult", 2.0) * 0.01,
+                tp_pct=p.get("atr_tp_mult", 3.0) * 0.01)
+
+        def _dispatch_regimeswitch(df, p):
+            from athena_backtest import regimeswitch_signals
+            return regimeswitch_signals(
+                df,
+                trend_ema_period=p.get("trend_ema_period", 50),
+                trend_sl_pct=p.get("trend_sl_pct", 0.02),
+                trend_tp_pct=p.get("trend_tp_pct", 0.05),
+                mr_rsi_period=p.get("mr_rsi_period", 14),
+                mr_oversold=p.get("mr_oversold", 30),
+                mr_overbought=p.get("mr_overbought", 70),
+                mr_sl_pct=p.get("mr_sl_pct", 0.02),
+                mr_tp_pct=p.get("mr_tp_pct", 0.04),
+                vol_window=p.get("vol_window", 20),
+                regime_lookback=p.get("regime_lookback", 100),
+                cooldown_bars=p.get("cooldown_bars", 5),
+                high_vol_capital_pct=p.get("high_vol_capital_pct", 0.25))
+
+        _SIGNAL_DISPATCH = {
+            "TrendFollow":              lambda d, p: trendfollow_signals(d, p["ema_period"], p["stop_loss_pct"], p["take_profit_pct"], p["cooldown_bars"]),
+            "RSIMeanReversionStrategy": lambda d, p: rsi_mr_signals(d, p["rsi_period"], p["oversold"], p["overbought"], p["exit_rsi"], p["stop_loss_pct"], p["take_profit_pct"], p["cooldown_bars"]),
+            "MACrossoverStrategy":      lambda d, p: ma_cross_signals(d, p["fast_period"], p["slow_period"], p["atr_period"], p["atr_sl_mult"], p["atr_tp_mult"], p["cooldown_bars"]),
+            "DynamicGridStrategy":      lambda d, p: dynamic_grid_signals(d, p["grid_range_pct"], p["num_levels"], p["qty_per_level"], p["rebalance_interval_bars"], p["min_spread_pct"], p.get("leverage", 3)),
+            "MLAlphaStrategy":          _dispatch_mlalpha,
+            "MLEnsembleStrategy":       _dispatch_mlensemble,
+            "RegimeSwitchStrategy":     _dispatch_regimeswitch,
+            "BBandMeanReversion":       lambda d, p: bband_rsi_signals(d, p.get("bb_period", 20), p.get("bb_std", 2.5), p.get("rsi_period", 14), p.get("rsi_oversold", 30), p.get("rsi_overbought", 70), p.get("stop_loss_pct", 0.02), p.get("take_profit_pct", 0.05), p.get("cooldown_bars", 3)),
+            "DonchianMRStrategy":       lambda d, p: donchian_mr_signals(d, p.get("donchian_period", 20), p.get("rsi_period", 14), p.get("oversold", 25), p.get("overbought", 75), p.get("exit_level", 50), p.get("stop_loss_pct", 0.02), p.get("take_profit_pct", 0.04), p.get("cooldown_bars", 5)),
+            "SupertrendStrategy":       lambda d, p: supertrend_signals(d, p.get("atr_period", 10), p.get("atr_mult", 3.0), p.get("cooldown_bars", 3)),
+            "VolBreakoutStrategy":      lambda d, p: vol_breakout_signals(d, p.get("atr_period", 20), p.get("atr_mult", 2.0), p.get("ema_period", 50), p.get("atr_sl_mult", 1.5), p.get("atr_tp_mult", 3.0), p.get("cooldown_bars", 5), p.get("volume_filter", True), p.get("vol_ma_period", 20)),
+            "MACDCrossoverStrategy":    lambda d, p: macd_crossover_signals(d, p.get("fast_period", 12), p.get("slow_period", 26), p.get("signal_period", 9), p.get("stop_loss_pct", 0.02), p.get("take_profit_pct", 0.04), p.get("cooldown_bars", 5)),
+            "ADXTrendStrategy":         lambda d, p: adx_trend_signals(d, p.get("adx_period", 14), p.get("adx_threshold", 25), p.get("adx_exit", 20), p.get("ema_period", 50), p.get("atr_period", 14), p.get("atr_sl_mult", 2.0), p.get("atr_tp_mult", 4.0), p.get("cooldown_bars", 3)),
+            "MomentumStrategy":         lambda d, p: momentum_signals(d, p.get("fast_ema", 12), p.get("slow_ema", 26), p.get("signal_period", 9), p.get("atr_period", 14), p.get("atr_sl_mult", 2.0), p.get("atr_tp_mult", 3.5)),
+            "TrendPullback":            lambda d, p: trend_pullback_signals(d, p.get("ema_period", 100), p.get("atr_period", 14), p.get("atr_sl_mult", 1.5), p.get("atr_tp_mult", 3.0), p.get("cooldown_bars", 5)),
+            "StochRSIMeanReversionStrategy": lambda d, p: stoch_rsi_signals(d, p.get("rsi_period", 14), p.get("stoch_period", 14), p.get("smooth_k", 3), p.get("smooth_d", 3), p.get("oversold", 0.20), p.get("overbought", 0.80), p.get("stop_loss_pct", 0.02), p.get("take_profit_pct", 0.04), p.get("cooldown_bars", 5)),
+        }
         import numpy as np
         import pandas as pd
         import yaml
@@ -238,162 +294,12 @@ def run_backtests():
                 leverage = p.get('leverage', 1)
 
                 # Generate signals based on strategy type
+                # ── Signal registry: strategy_type → callable(df, params) → signals ──
+                # Replaces 170-line if-elif chain with O(1) dict dispatch.
+                # New strategies only need to be registered here — no code change elsewhere.
                 try:
-                    if strategy_type == "TrendFollow":
-                        signals = trendfollow_signals(
-                            df, p["ema_period"], p["stop_loss_pct"],
-                            p["take_profit_pct"], p["cooldown_bars"],
-                        )
-                    elif strategy_type == "RSIMeanReversionStrategy":
-                        signals = rsi_mr_signals(
-                            df, p["rsi_period"], p["oversold"], p["overbought"],
-                            p["exit_rsi"], p["stop_loss_pct"], p["take_profit_pct"],
-                            p["cooldown_bars"],
-                        )
-                    elif strategy_type == "MACrossoverStrategy":
-                        signals = ma_cross_signals(
-                            df, p["fast_period"], p["slow_period"],
-                            p["atr_period"], p["atr_sl_mult"], p["atr_tp_mult"],
-                            p["cooldown_bars"],
-                        )
-                    elif strategy_type == "DynamicGridStrategy":
-                        signals = dynamic_grid_signals(
-                            df, p["grid_range_pct"], p["num_levels"],
-                            p["qty_per_level"], p["rebalance_interval_bars"],
-                            p["min_spread_pct"], p.get("leverage", 3),
-                        )
-                    elif strategy_type == "MLAlphaStrategy":
-                        from athena_backtest import mlalpha_signals
-                        signals = mlalpha_signals(
-                            df, p.get("model_path", "ml_alpha/model.pkl"),
-                            p.get("confidence_threshold", 0.55),
-                            sl_pct=p.get("atr_sl_mult", 2.0) * 0.01,
-                            tp_pct=p.get("atr_tp_mult", 3.0) * 0.01,
-                        )
-                    elif strategy_type == "MLEnsembleStrategy":
-                        from athena_backtest import mlensemble_signals
-                        signals = mlensemble_signals(
-                            df, p.get("prediction_horizon", 5),
-                            p.get("confidence_threshold", 0.60),
-                            p.get("min_train_samples", 200),
-                            sl_pct=p.get("atr_sl_mult", 2.0) * 0.01,
-                            tp_pct=p.get("atr_tp_mult", 3.0) * 0.01,
-                        )
-                    elif strategy_type == "RegimeSwitchStrategy":
-                        from athena_backtest import regimeswitch_signals
-                        signals = regimeswitch_signals(
-                            df,
-                            trend_ema_period=p.get("trend_ema_period", 50),
-                            trend_sl_pct=p.get("trend_sl_pct", 0.02),
-                            trend_tp_pct=p.get("trend_tp_pct", 0.05),
-                            mr_rsi_period=p.get("mr_rsi_period", 14),
-                            mr_oversold=p.get("mr_oversold", 30),
-                            mr_overbought=p.get("mr_overbought", 70),
-                            mr_sl_pct=p.get("mr_sl_pct", 0.02),
-                            mr_tp_pct=p.get("mr_tp_pct", 0.04),
-                            vol_window=p.get("vol_window", 20),
-                            regime_lookback=p.get("regime_lookback", 100),
-                            cooldown_bars=p.get("cooldown_bars", 5),
-                            high_vol_capital_pct=p.get("high_vol_capital_pct", 0.25),
-                        )
-                    elif strategy_type == "BBandMeanReversion":
-                        signals = bband_rsi_signals(
-                            df,
-                            bb_period=p.get("bb_period", 20),
-                            bb_std=p.get("bb_std", 2.5),
-                            rsi_period=p.get("rsi_period", 14),
-                            rsi_oversold=p.get("rsi_oversold", 30),
-                            rsi_overbought=p.get("rsi_overbought", 70),
-                            stop_loss_pct=p.get("stop_loss_pct", 0.02),
-                            take_profit_pct=p.get("take_profit_pct", 0.05),
-                            cooldown_bars=p.get("cooldown_bars", 3),
-                        )
-                    elif strategy_type == "DonchianMRStrategy":
-                        signals = donchian_mr_signals(
-                            df,
-                            donchian_period=p.get("donchian_period", 20),
-                            rsi_period=p.get("rsi_period", 14),
-                            oversold=p.get("oversold", 25),
-                            overbought=p.get("overbought", 75),
-                            exit_level=p.get("exit_level", 50),
-                            stop_loss_pct=p.get("stop_loss_pct", 0.02),
-                            take_profit_pct=p.get("take_profit_pct", 0.04),
-                            cooldown_bars=p.get("cooldown_bars", 5),
-                        )
-                    elif strategy_type == "SupertrendStrategy":
-                        signals = supertrend_signals(
-                            df,
-                            atr_period=p.get("atr_period", 10),
-                            atr_mult=p.get("atr_mult", 3.0),
-                            cooldown_bars=p.get("cooldown_bars", 3),
-                        )
-                    elif strategy_type == "VolBreakoutStrategy":
-                        signals = vol_breakout_signals(
-                            df,
-                            atr_period=p.get("atr_period", 20),
-                            atr_mult=p.get("atr_mult", 2.0),
-                            ema_period=p.get("ema_period", 50),
-                            atr_sl_mult=p.get("atr_sl_mult", 1.5),
-                            atr_tp_mult=p.get("atr_tp_mult", 3.0),
-                            cooldown_bars=p.get("cooldown_bars", 5),
-                            volume_filter=p.get("volume_filter", True),
-                            vol_ma_period=p.get("vol_ma_period", 20),
-                        )
-                    elif strategy_type == "MACDCrossoverStrategy":
-                        signals = macd_crossover_signals(
-                            df,
-                            fast_period=p.get("fast_period", 12),
-                            slow_period=p.get("slow_period", 26),
-                            signal_period=p.get("signal_period", 9),
-                            stop_loss_pct=p.get("stop_loss_pct", 0.02),
-                            take_profit_pct=p.get("take_profit_pct", 0.04),
-                            cooldown_bars=p.get("cooldown_bars", 5),
-                        )
-                    elif strategy_type == "ADXTrendStrategy":
-                        signals = adx_trend_signals(
-                            df,
-                            adx_period=p.get("adx_period", 14),
-                            adx_threshold=p.get("adx_threshold", 25),
-                            adx_exit=p.get("adx_exit", 20),
-                            ema_period=p.get("ema_period", 50),
-                            atr_period=p.get("atr_period", 14),
-                            atr_sl_mult=p.get("atr_sl_mult", 2.0),
-                            atr_tp_mult=p.get("atr_tp_mult", 4.0),
-                            cooldown_bars=p.get("cooldown_bars", 3),
-                        )
-                    elif strategy_type == "MomentumStrategy":
-                        signals = momentum_signals(
-                            df,
-                            fast_ema=p.get("fast_ema", 12),
-                            slow_ema=p.get("slow_ema", 26),
-                            signal_period=p.get("signal_period", 9),
-                            atr_period=p.get("atr_period", 14),
-                            atr_sl_mult=p.get("atr_sl_mult", 2.0),
-                            atr_tp_mult=p.get("atr_tp_mult", 3.5),
-                        )
-                    elif strategy_type == "TrendPullback":
-                        signals = trend_pullback_signals(
-                            df,
-                            ema_period=p.get("ema_period", 100),
-                            atr_period=p.get("atr_period", 14),
-                            atr_sl_mult=p.get("atr_sl_mult", 1.5),
-                            atr_tp_mult=p.get("atr_tp_mult", 3.0),
-                            cooldown_bars=p.get("cooldown_bars", 5),
-                        )
-                    elif strategy_type == "StochRSIMeanReversionStrategy":
-                        signals = stoch_rsi_signals(
-                            df,
-                            rsi_period=p.get("rsi_period", 14),
-                            stoch_period=p.get("stoch_period", 14),
-                            smooth_k=p.get("smooth_k", 3),
-                            smooth_d=p.get("smooth_d", 3),
-                            oversold=p.get("oversold", 0.20),
-                            overbought=p.get("overbought", 0.80),
-                            stop_loss_pct=p.get("stop_loss_pct", 0.02),
-                            take_profit_pct=p.get("take_profit_pct", 0.04),
-                            cooldown_bars=p.get("cooldown_bars", 5),
-                        )
-                    else:
+                    _sig = _SIGNAL_DISPATCH.get(strategy_type)
+                    if _sig is None:
                         results[name] = {
                             "status": "skipped",
                             "symbol": sym, "timeframe": tf,
@@ -401,6 +307,7 @@ def run_backtests():
                             "error": f"Unknown strategy type: {strategy_type}",
                         }
                         continue
+                    signals = _sig(df, p)
                 except KeyError as ke:
                     results[name] = {
                         "status": "error",
