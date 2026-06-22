@@ -80,6 +80,8 @@ def main():
         max_total_position_pct=0.50,
         daily_loss_limit_pct=0.05,
         min_order_usdt=10.0,
+        correlated_groups=[["RSI_MR_ETH", "DonchianMR_ETH"]],
+        max_correlated_exposure_pct=0.30,
     )
     storage = MarketStorage()
 
@@ -572,6 +574,7 @@ def main():
                         "liquidation_price": 0,
                         "leverage": sig_dict.get("leverage", cfg.default_leverage),
                         "notional": executed_qty * avg_price,
+                        "strategy_name": strategy_name,
                     }
                     positions.append(new_pos)
                     account_info["positions"] = positions
