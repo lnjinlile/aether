@@ -769,10 +769,8 @@ def fetch_live_exchange():
       - Reduces from 5-8 API calls to 4 sequential REST calls
     """
     try:
-        from concurrent.futures import ThreadPoolExecutor, as_completed
         from execution.client import BinanceFuturesClient
         from config.settings import get_config
-        import requests as _requests
         cfg = get_config()
         client = BinanceFuturesClient(cfg.api_key, cfg.api_secret, cfg.testnet)
 

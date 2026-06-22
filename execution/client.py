@@ -201,7 +201,7 @@ class BinanceFuturesClient:
             "unrealized_pnl": 0.0,
         }
 
-    def _get_account_via_rest(self) -> Dict[str, Any]:
+    def _get_account_via_rest(self, timeout: int = 15) -> Dict[str, Any]:
         """Single REST call to /fapi/v2/account — returns both balance AND positions.
         
         Avoids duplicate API calls when both balance and positions are needed.
@@ -212,7 +212,7 @@ class BinanceFuturesClient:
         if hasattr(self, '_account_cache') and (now - self._account_cache_ts) < 30:
             return self._account_cache
 
-        data = self._rest_get("/fapi/v2/account")
+        data = self._rest_get("/fapi/v2/account", timeout=timeout)
 
         # Parse balance — v2 returns top-level fields, NOT an "assets" array
         total_balance = float(data.get("totalWalletBalance", 0))
@@ -343,7 +343,7 @@ class BinanceFuturesClient:
             })
         return positions
 
-    def _get_positions_via_risk(self) -> List[Dict[str, Any]]:
+    def _get_positions_via_risk(self, timeout: int = 15) -> List[Dict[str, Any]]:
         """Get positions via /fapi/v2/positionRisk — authoritative on testnet.
 
         Unlike ccxt fetch_positions() and /fapi/v2/account, this endpoint
@@ -351,7 +351,7 @@ class BinanceFuturesClient:
         On testnet this is the ONLY endpoint that returns correct values for
         all three fields.
         """
-        raw = self._rest_get("/fapi/v2/positionRisk")
+        raw = self._rest_get("/fapi/v2/positionRisk", timeout=timeout)
         positions = []
         for p in raw:
             pos_amt = float(p.get("positionAmt", 0))
@@ -573,30 +573,41 @@ class BinanceFuturesClient:
         Optimized for testnet latency — reduces 5-8 sequential calls to 4 calls
         that can be parallelized. Uses /fapi/v1/ticker/bookTicker to get both
         BTC and ETH tickers in a single REST call.
+        Each step is independently fault-tolerant — one timeout won't kill the rest.
+        PERF-004: Uses 5s REST timeout (vs 15s default) — monitoring data is
+        non-critical per-cycle; stale data via AUDIT-009 is acceptable.
         """
-        # Step 1: Account balance (/fapi/v2/account, cached 30s)
-        acct = self._get_account_via_rest()
-        bal = {
-            "balance": acct["balance"],
-            "available": acct["available"],
-            "unrealized_pnl": acct["unrealized_pnl"],
-        }
+        # Step 1: Account balance (/fapi/v2/account, cached 30s, 5s timeout)
+        try:
+            acct = self._get_account_via_rest(timeout=5)
+            bal = {
+                "balance": acct["balance"],
+                "available": acct["available"],
+                "unrealized_pnl": acct["unrealized_pnl"],
+            }
+        except Exception:
+            bal = {"balance": 0, "available": 0, "unrealized_pnl": 0.0}
         
-        # Step 2: Positions with accurate mark/liquidation/leverage
-        if self.testnet:
-            positions = self._get_positions_via_risk()
-        else:
-            positions = acct.get("positions", [])
+        # Step 2: Positions with accurate mark/liquidation/leverage (5s timeout)
+        try:
+            if self.testnet:
+                positions = self._get_positions_via_risk(timeout=5)
+            else:
+                positions = acct.get("positions", []) if 'acct' in dir() else []
+        except Exception:
+            positions = []
         
-        # Step 3: Orders
-        orders = self.get_open_orders()
+        # Step 3: Orders (5s REST timeout)
+        try:
+            orders = self.get_open_orders(timeout=5)
+        except Exception:
+            orders = []
         
-        # Step 4: Tickers — single REST call for both symbols
+        # Step 4: Tickers — single REST call for both symbols (5s timeout)
         tickers = {}
         try:
-            raw = self._rest_get("/fapi/v1/ticker/bookTicker")
+            raw = self._rest_get("/fapi/v1/ticker/bookTicker", timeout=5)
             if isinstance(raw, list):
-                # Filter to BTC/ETH, map to ccxt symbol format
                 for t in raw:
                     sym = t.get("symbol", "")
                     if sym == "BTCUSDT":
@@ -604,16 +615,20 @@ class BinanceFuturesClient:
                     elif sym == "ETHUSDT":
                         tickers["ETH/USDT"] = float(t.get("bidPrice", 0))
         except Exception:
-            # Fallback: try individual ticker calls
+            pass
+        # Fallback: individual ticker calls for any missing symbols
+        # On testnet, ccxt ticker calls always time out — skip fallback, accept 0
+        if not self.testnet:
             for sym in ["BTC/USDT", "ETH/USDT"]:
-                try:
-                    tickers[sym] = self.get_ticker(sym).get("last", 0)
-                except Exception:
-                    tickers[sym] = 0
+                if sym not in tickers:
+                    try:
+                        tickers[sym] = self.get_ticker(sym).get("last", 0)
+                    except Exception:
+                        tickers[sym] = 0
         
         return bal, positions, orders, tickers
 
-    def get_open_orders(self, symbol: Optional[str] = None) -> List[Dict]:
+    def get_open_orders(self, symbol: Optional[str] = None, timeout: int = 15) -> List[Dict]:
         """Get all open orders, including algo orders (STOP/TAKE_PROFIT).
 
         Merges ccxt standard orders + REST algo orders (testnet-safe).
@@ -637,7 +652,7 @@ class BinanceFuturesClient:
                 params = {}
                 if symbol:
                     params["symbol"] = self.to_binance_symbol(symbol)
-                rest_orders = self._rest_get("/fapi/v1/openOrders", params)
+                rest_orders = self._rest_get("/fapi/v1/openOrders", params, timeout=timeout)
                 if isinstance(rest_orders, list):
                     orders.extend(rest_orders)
             except Exception:
@@ -648,7 +663,7 @@ class BinanceFuturesClient:
             params = {}
             if symbol:
                 params["symbol"] = self.to_binance_symbol(symbol)
-            algos = self._rest_get("/fapi/v1/openAlgoOrders", params)
+            algos = self._rest_get("/fapi/v1/openAlgoOrders", params, timeout=timeout)
             if isinstance(algos, list):
                 orders.extend(algos)
         except Exception:
@@ -689,7 +704,7 @@ class BinanceFuturesClient:
         except Exception:
             pass  # keep existing offset if sync fails
 
-    def _signed_request(self, method: str, endpoint: str, params: dict, retries: int = 3) -> dict:
+    def _signed_request(self, method: str, endpoint: str, params: dict, retries: int = 3, timeout: int = 15) -> dict:
         import hmac, hashlib, time, requests
         from urllib.parse import urlencode
         params = {k: v for k, v in params.items() if v is not None}
@@ -703,9 +718,9 @@ class BinanceFuturesClient:
             url = f"{self._rest_base()}{endpoint}?{query}&signature={signature}"
             headers = {"X-MBX-APIKEY": self.api_key}
             if method == "GET":
-                resp = requests.get(url, headers=headers, timeout=15)
+                resp = requests.get(url, headers=headers, timeout=timeout)
             elif method == "POST":
-                resp = requests.post(url, headers=headers, timeout=15)
+                resp = requests.post(url, headers=headers, timeout=timeout)
             elif method == "DELETE":
                 resp = requests.delete(url, headers=headers, timeout=15)
             else:
@@ -734,11 +749,11 @@ class BinanceFuturesClient:
         logger.error("REST %s %s → failed after %d attempts", method, endpoint, retries)
         return {"code": -1003, "msg": "Rate limited after retries"}
 
-    def _rest_get(self, endpoint: str, params: dict = None) -> dict:
-        return self._signed_request("GET", endpoint, params or {})
+    def _rest_get(self, endpoint: str, params: dict = None, timeout: int = 15) -> dict:
+        return self._signed_request("GET", endpoint, params or {}, timeout=timeout)
 
-    def _rest_post(self, endpoint: str, params: dict) -> dict:
-        return self._signed_request("POST", endpoint, params)
+    def _rest_post(self, endpoint: str, params: dict, timeout: int = 15) -> dict:
+        return self._signed_request("POST", endpoint, params, timeout=timeout)
 
     def _rest_delete(self, endpoint: str, params: dict) -> dict:
         return self._signed_request("DELETE", endpoint, params)
