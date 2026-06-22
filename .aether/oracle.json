@@ -1,5 +1,5 @@
 {
-  "_updated_at": "2026-06-22T13:26:36.271576+00:00",
+  "_updated_at": "2026-06-22T13:47:56.219629+00:00",
   "status": "healthy",
   "strategies_enabled": [
     "RSI_MR_ETH",
@@ -7,8 +7,8 @@
   ],
   "strategies_disabled": 26,
   "data_fresh": true,
-  "db_size_mb": 9.1,
-  "klines_total": 92812,
+  "db_size_mb": 11.6,
+  "klines_total": 92814,
   "data_sources": {
     "klines": "pipeline.py: 15m/1h/4h/1d BTC+ETH",
     "orderbook": "data_ext.py: BTC+ETH snapshots (~5min)",
@@ -17,9 +17,9 @@
   },
   "data_stats": {
     "BTC/USDT_15m": {
-      "count": 35078,
-      "latest_ts": 1782134100000,
-      "latest": "2026-06-22T21:15:00"
+      "count": 35079,
+      "latest_ts": 1782135000000,
+      "latest": "2026-06-22T21:30:00"
     },
     "BTC/USDT_1h": {
       "count": 8770,
@@ -37,9 +37,9 @@
       "latest": "2026-06-22T08:00:00"
     },
     "ETH/USDT_15m": {
-      "count": 35078,
-      "latest_ts": 1782134100000,
-      "latest": "2026-06-22T21:15:00"
+      "count": 35079,
+      "latest_ts": 1782135000000,
+      "latest": "2026-06-22T21:30:00"
     },
     "ETH/USDT_1h": {
       "count": 8770,
@@ -60,10 +60,10 @@
       "count": 606
     },
     "table_open_interest": {
-      "count": 599
+      "count": 606
     },
     "table_orderbook_snapshots": {
-      "count": 414
+      "count": 421
     },
     "table_trades_log": {
       "count": 3
@@ -112,8 +112,8 @@
   "db_table": "klines",
   "db_index": "PK (symbol, timeframe, open_time)",
   "last_heartbeat": "2026-06-22T13:15:00.000000+00:00",
-  "last_pipeline": "2026-06-22T13:26:36.271576+00:00",
-  "last_klines_ts": 1782134100000,
-  "klines_count": 92812,
+  "last_pipeline": "2026-06-22T13:47:56.219629+00:00",
+  "last_klines_ts": 1782135900000,
+  "klines_count": 92816,
   "pipeline_pid": 842125
 }

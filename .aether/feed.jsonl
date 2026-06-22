@@ -419,3 +419,6 @@
 {"ts": "06-22 13:17", "agent": "oracle", "type": "report", "msg": "修复+优化: (1)oracle.json data_stats陈旧8h刷新(strategies_disabled 27→26); (2)check_integrity.py增强自动刷新oracle.json data_stats防未来陈旧", "status": "ok"}
 {"ts": "06-22 13:20", "agent": "mercury", "type": "heartbeat", "msg": "Mercury patrol 21:17 — engine PID corrected (884016→873861). 0 signals 0 positions. RSI_MR_ETH HOLD(RSI=62.5), DonchianMR_ETH HOLD(pos=85.6%). Market RANGING 12h+. All clear.", "status": "ok"}
 {"ts": "06-22 13:24", "agent": "athena", "type": "heartbeat", "msg": "Athena patrol done. 2 LIVE strategies (RSI_MR_ETH + DonchianMR_ETH) both HOLD, no signals. ETH RSI=64.0 DC=86.5% price=1762.10. Engine PID 873861 healthy since 19:54. DonchianMR_BTC stays PAPER (SR 0.391).", "status": "ok"}
+{"ts": "06-22 13:28", "agent": "prometheus", "type": "task", "msg": "AUDIT-047 v2永久修复 + prometheus.json陈旧数据修正 + WAL checkpoint (commit bebe6e5)", "status": "done"}
+{"ts": "06-22 13:29", "agent": "guardian", "type": "action", "msg": "NORMAL patrol: 0 positions 0 orders, balance 4995.42. Prometheus SR=0/WR=0 -> conservative params risk=1%/kelly=0.15", "status": "ok"}
+{"ts": "06-22 13:36", "agent": "oracle", "type": "report", "msg": "优化: check_integrity.py _refresh_oracle_stats 从9次DB连接改为1次(单连接模式)，消除重复open/close开销。数据管道全绿: 92814 klines, 0 gaps, 0 pending requests, config一致", "status": "ok"}

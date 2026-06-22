@@ -41,7 +41,7 @@
     }
   },
   "next": "Portfolio risk: reduce per-trade risk or add mutual exclusion for correlated ETH strategies (corr=0.878). Guardian max_correlated_exposure cap. TrendFollow_BTC_1h param sweep when regime shifts to TRENDING. StochRSI signal_gen still missing (low priority). regime_monitor trend_ratio tracking.",
-  "_updated_at": "2026-06-22T13:28:00.000000+00:00",
+  "_updated_at": "2026-06-22T13:51:32.484768+00:00",
   "recommendation": "RSI_MR_ETH LIVE (os=20/ob=75/sl=2%/tp=4%/lev=3x) ENGINE-CONFIRMED: 90d=+50.23% SR=0.6984 DD=11.35% WR=81.25% 16trades. DonchianMR_ETH PROMOTED TO LIVE 2026-06-22 (WF 4/4 OOS, 365d +429%). DonchianMR_BTC PAPER (SR=0.508 DD=11.62% — Athena promotion reverted per AUDIT-047). Now TWO LIVE strategies on ETH (RSI_MR_ETH + DonchianMR_ETH). Both are mean-reversion with correlation=0.878 — portfolio concentration risk exists. Need trend-following strategy or BTC diversification for regime protection.",
   "strategies": {
     "RSI_MR_ETH": {
@@ -51,12 +51,19 @@
       "trades": 16,
       "max_dd": 11.35
     },
+    "DonchianMR_BTC": {
+      "return_pct": 18.64,
+      "sharpe": 0.5289,
+      "win_rate": 66.67,
+      "trades": 12,
+      "max_dd": 6.32
+    },
     "DonchianMR_ETH": {
-      "return_pct": 429.48,
-      "sharpe": 0.552,
-      "win_rate": 72.0,
-      "trades": 50,
-      "max_dd": 16.21
+      "return_pct": 20.52,
+      "sharpe": 0.5332,
+      "win_rate": 80.0,
+      "trades": 10,
+      "max_dd": 6.47
     }
   },
   "ml_alpha_status": "FAILED_WF",

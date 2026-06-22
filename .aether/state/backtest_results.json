@@ -411,18 +411,64 @@
       "retired_reason": "5 param sweep 365d. Best OS=0.18: -14.87% SR=0.117 DD=69.4%. All combos negative. StochRSI overtrades vs plain RSI."
     },
     "DonchianMR_BTC": {
-      "status": "disabled",
-      "enabled": false,
+      "status": "ok",
+      "enabled": true,
       "symbol": "BTC/USDT",
       "timeframe": "1h",
-      "total_return_pct": 128.8,
-      "sharpe_ratio": 0.3912,
-      "max_drawdown_pct": 17.9,
-      "win_rate": 63.2,
-      "total_trades": 38,
-      "backtest_period": "365d",
+      "data_rows": 2161,
+      "signals_count": 97,
+      "latest_signal": {
+        "time": "2026-06-04 02:00:00",
+        "signal": "LONG",
+        "price": 63226.2
+      },
+      "last_5_signals": [
+        {
+          "time": "2026-06-03 02:00:00",
+          "signal": "LONG",
+          "price": 66590.0
+        },
+        {
+          "time": "2026-06-03 03:00:00",
+          "signal": "LONG",
+          "price": 65784.0
+        },
+        {
+          "time": "2026-06-03 04:00:00",
+          "signal": "LONG",
+          "price": 66449.9
+        },
+        {
+          "time": "2026-06-04 01:00:00",
+          "signal": "LONG",
+          "price": 62150.5
+        },
+        {
+          "time": "2026-06-04 02:00:00",
+          "signal": "LONG",
+          "price": 63226.2
+        }
+      ],
+      "total_return_pct": 18.64,
+      "sharpe_ratio": 0.5289,
+      "max_drawdown_pct": 6.32,
+      "win_rate": 66.67,
+      "total_trades": 12,
+      "profit_factor": 3.0122,
+      "backtest_period": "90d",
       "verdict": "PAPER",
-      "retired_reason": "365d +128.8% SR=0.391 DD=17.9% WR=63.2% 38trades. WF 3/4 OOS positive. SR < 0.5 → PAPER (needs 30+ live observed trades for LIVE eval)."
+      "metrics": {
+        "total_return_pct": 18.64,
+        "sharpe_ratio": 0.5289,
+        "deflated_sharpe_ratio": 1.0,
+        "max_drawdown_pct": 6.32,
+        "win_rate": 66.67,
+        "profit_factor": 3.0122,
+        "total_trades": 12,
+        "avg_win_pct": 3.38,
+        "avg_loss_pct": 2.24,
+        "final_equity": 11863.81
+      }
     },
     "DonchianMR_ETH": {
       "status": "ok",
@@ -485,5 +531,5 @@
       }
     }
   },
-  "_updated_at": "2026-06-22T13:19:34.524656+00:00"
+  "_updated_at": "2026-06-22T13:51:25.998595+00:00"
 }

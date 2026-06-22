@@ -661,7 +661,8 @@ def run_signal_check():
                             "AUDIT-047 v2: %s athena verdict=LIVE but backtest_results=%s. Using backtest_results authority.",
                             _name, _btv
                         )
-                    if _v in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
+                    # PAPER is a valid enabled state (paper trading); only block truly disabled verdicts
+                    if _v in ("DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
                         _re_enabled.append(f"{_name}(verdict={_v})")
                 if _re_enabled:
                     # Auto-fix: flip enabled back to false in strategies.yaml
@@ -670,7 +671,7 @@ def run_signal_check():
                     for _s in _yaml_cfg.get("strategies", []):
                         _sn = _s.get("name", "")
                         _sv = _athena_strats.get(_sn, {}).get("verdict", "")
-                        if _sn in _yaml_enabled_names and _sv in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
+                        if _sn in _yaml_enabled_names and _sv in ("DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
                             _s["enabled"] = False
                             _fixed.append(_sn)
                     if _fixed:

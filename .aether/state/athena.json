@@ -262,13 +262,13 @@
       "verdict": "DO_NOT_ENABLE"
     },
     "DonchianMR_BTC": {
-      "signals": 0,
-      "status": "disabled",
-      "return_pct": 128.8,
-      "sharpe": 0.3912,
-      "win_rate": 63.2,
-      "trades": 38,
-      "max_dd": 17.9,
+      "signals": 97,
+      "status": "ok",
+      "return_pct": 18.64,
+      "sharpe": 0.5289,
+      "win_rate": 66.67,
+      "trades": 12,
+      "max_dd": 6.32,
       "verdict": "PAPER"
     },
     "DonchianMR_ETH": {
@@ -282,7 +282,7 @@
       "verdict": "LIVE"
     }
   },
-  "_updated_at": "2026-06-22T13:24:59.552163+00:00",
+  "_updated_at": "2026-06-22T13:51:32.482206+00:00",
   "_last_run": "2026-06-22T13:24:39.237817+00:00",
   "_last_signals": {},
   "_promoted_by": "prometheus",
