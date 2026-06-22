@@ -62,17 +62,6 @@ class MarketStorage:
                 )
             """)
             conn.execute("""
-                CREATE TABLE IF NOT EXISTS trades (
-                    symbol TEXT NOT NULL,
-                    trade_id INTEGER NOT NULL,
-                    price REAL NOT NULL,
-                    quantity REAL NOT NULL,
-                    time INTEGER NOT NULL,
-                    is_buyer_maker INTEGER NOT NULL,
-                    PRIMARY KEY (symbol, trade_id)
-                )
-            """)
-            conn.execute("""
                 CREATE TABLE IF NOT EXISTS trades_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     symbol TEXT NOT NULL,
@@ -205,28 +194,6 @@ class MarketStorage:
             query += " ORDER BY open_time ASC"
             df = pd.read_sql_query(query, conn, params=params)
             return df
-        finally:
-            conn.close()
-
-    # ──────────────────────────────────────────────
-    # Trades
-    # ──────────────────────────────────────────────
-
-    def save_trades(self, trades_list: list):
-        """
-        Save trade records to the database.
-
-        Args:
-            trades_list: List of dicts, each with keys:
-                symbol, trade_id, price, quantity, time, is_buyer_maker
-        """
-        if not trades_list:
-            return
-
-        df = pd.DataFrame(trades_list)
-        conn = self._get_conn()
-        try:
-            df.to_sql("trades", conn, if_exists="append", index=False)
         finally:
             conn.close()
 
@@ -468,7 +435,7 @@ class MarketStorage:
 
             # Row counts per table
             tables = {}
-            for table in ("klines", "trades", "trades_log"):
+            for table in ("klines", "trades_log"):
                 row = conn.execute(
                     f"SELECT COUNT(*) as cnt FROM {table}"
                 ).fetchone()

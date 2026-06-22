@@ -136,6 +136,7 @@ def run_backtests():
             macd_crossover_signals,
             adx_trend_signals, momentum_signals,
             trend_pullback_signals,
+            stoch_rsi_signals,
         )
         import numpy as np
         import pandas as pd
@@ -377,6 +378,19 @@ def run_backtests():
                             atr_period=p.get("atr_period", 14),
                             atr_sl_mult=p.get("atr_sl_mult", 1.5),
                             atr_tp_mult=p.get("atr_tp_mult", 3.0),
+                            cooldown_bars=p.get("cooldown_bars", 5),
+                        )
+                    elif strategy_type == "StochRSIMeanReversionStrategy":
+                        signals = stoch_rsi_signals(
+                            df,
+                            rsi_period=p.get("rsi_period", 14),
+                            stoch_period=p.get("stoch_period", 14),
+                            smooth_k=p.get("smooth_k", 3),
+                            smooth_d=p.get("smooth_d", 3),
+                            oversold=p.get("oversold", 0.20),
+                            overbought=p.get("overbought", 0.80),
+                            stop_loss_pct=p.get("stop_loss_pct", 0.02),
+                            take_profit_pct=p.get("take_profit_pct", 0.04),
                             cooldown_bars=p.get("cooldown_bars", 5),
                         )
                     else:
@@ -980,6 +994,62 @@ def sync_agent_states():
         merge_state("oracle", oracle_updates)
 
         bt = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
+
+        # ═══ AUDIT-053 v3: Cross-check prometheus.json for authoritative sweep data ═══
+        # Prometheus 365d sweeps are the source of truth. When backtest_results.json
+        # has been degraded by engine's 90d backtest (fewer trades), inject the
+        # authoritative Prometheus sweep metrics before building strat_summary.
+        # This is a BELT-AND-SUSPENDERS defense: AUDIT-048 protects backtest_results.json
+        # at write time, but if backtest_results was already degraded before AUDIT-048
+        # was in place, this injection ensures athena.json (and downstream consumers)
+        # still get the correct Prometheus-authoritative data.
+        _prom_bt_path = os.path.join(STATE_DIR, "prometheus.json")
+        if os.path.exists(_prom_bt_path):
+            try:
+                _prom_data = load_json(_prom_bt_path)
+                _prom_strategies = _prom_data.get("strategies", {})
+                # Map special prometheus.json keys to strategy names
+                _prom_special_map = {
+                    "donchianmr_btc_paper_ready": "DonchianMR_BTC",
+                    "donchianmr_eth_paper_ready": "DonchianMR_ETH",
+                    "rsi_mr_eth_live_confirmed": "RSI_MR_ETH",
+                }
+                for _pk, _pv in _prom_data.items():
+                    if _pk in _prom_special_map and isinstance(_pv, dict) and _pv.get("trades"):
+                        _prom_strategies[_prom_special_map[_pk]] = _pv
+                # Inject prometheus data into bt when prom has MORE trades
+                _bt_strategies = bt.get("strategies", {})
+                for _name, _pdata in _prom_strategies.items():
+                    if not isinstance(_pdata, dict):
+                        continue
+                    _p_trades = _pdata.get("trades") or 0
+                    if _p_trades <= 0:
+                        continue
+                    _bt_entry = _bt_strategies.get(_name, {})
+                    _bt_trades = _bt_entry.get("total_trades") or 0
+                    if _p_trades > _bt_trades:
+                        # Inject authoritative Prometheus metrics (prometheus format → bt format)
+                        _injected = {
+                            "total_return_pct": _pdata.get("return_pct", 0),
+                            "sharpe_ratio": _pdata.get("sharpe", 0),
+                            "max_drawdown_pct": _pdata.get("max_dd", _pdata.get("dd_pct", 0)),
+                            "win_rate": _pdata.get("win_rate", _pdata.get("wr_pct", 0)),
+                            "total_trades": _p_trades,
+                            "profit_factor": _pdata.get("profit_factor", _pdata.get("pf", None)),
+                            "backtest_period": _pdata.get("backtest_period", "365d"),
+                        }
+                        for k, v in _injected.items():
+                            if v is not None:
+                                _bt_entry[k] = v
+                        _bt_strategies[_name] = _bt_entry
+                        logger.info(
+                            "AUDIT-053 v3 INJECTED: %s metrics from prometheus.json "
+                            "(prom=%d trades > bt=%d trades)", _name, _p_trades, _bt_trades
+                        )
+                bt["strategies"] = _bt_strategies
+            except Exception as _e:
+                logger.warning("AUDIT-053 v3 prometheus injection failed: %s", _e)
+
         strat_summary = {}
         for name, s in bt.get("strategies", {}).items():
             entry = {"signals": s.get("signals_count", 0), "status": s.get("status", "?")}
@@ -1025,6 +1095,24 @@ def sync_agent_states():
                     _bt_results_v2[_bn] = _bv.get("verdict", "")
             except Exception:
                 pass
+        # AUDIT-053 FIX: Preserve quantitative metrics from existing athena.json
+        # when the existing data has MORE trades (from longer/better backtests like
+        # Prometheus 365d sweep). Engine's 90d backtest must not overwrite authoritative
+        # 365d metrics. Previously only verdict was preserved, causing return_pct/sharpe/
+        # trades/win_rate/max_dd to be silently downgraded from 365d → 90d.
+        for name in strat_summary:
+            existing_strat = existing_athena.get("strategies", {}).get(name, {})
+            existing_trades = existing_strat.get("trades") or 0
+            new_trades = strat_summary[name].get("trades") or 0
+            if existing_trades > new_trades and new_trades > 0:
+                # Preserve all quantitative fields from the more authoritative source
+                for field in ("return_pct", "sharpe", "win_rate", "trades", "max_dd"):
+                    if field in existing_strat:
+                        strat_summary[name][field] = existing_strat[field]
+                logger.info(
+                    "AUDIT-053 PRESERVED: %s metrics (old=%d trades > new=%d trades) — "
+                    "keeping longer backtest metrics", name, existing_trades, new_trades
+                )
         # _disabled_in_yaml already computed in oracle section above (avoids double YAML read)
         for name in strat_summary:
             existing_verdict = existing_athena.get("strategies", {}).get(name, {}).get("verdict", "")
@@ -1137,7 +1225,8 @@ def sync_agent_states():
     try:
         import subprocess, sys
         subprocess.run([sys.executable, "generate_dashboard.py"], capture_output=True, timeout=30)
-    except: pass
+    except Exception as e:
+        logger.warning("Dashboard regeneration failed: %s", e)
 
     # Post engine heartbeat summary to bulletin (keeps bulletin fresh every tick)
     try:

@@ -100,7 +100,8 @@ def check_engine_health():
             age = (datetime.now(timezone.utc) - datetime.fromisoformat(ts)).total_seconds()
             if age > 600:
                 issues.append(f"回测数据过期({int(age)}s), 引擎可能挂了")
-        except: pass
+        except Exception:
+            pass  # timestamp parse failure is non-critical for safety check
     
     return issues
 

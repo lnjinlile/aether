@@ -118,7 +118,8 @@ def fetch_and_store():
                             "INSERT OR IGNORE INTO funding_rates(symbol,funding_time,funding_rate,mark_price) VALUES(?,?,?,?)",
                             (bin_sym, fr["timestamp"], fr["fundingRate"], fr.get("markPrice", 0))
                         )
-                    except: pass
+                    except Exception:
+                        logger.debug("%s FR insert skipped (duplicate or schema mismatch)", sym)
                 if fr_raw:
                     logger.info("%s FR: latest=%.6f%%", sym, fr_raw[-1]["fundingRate"] * 100)
 
