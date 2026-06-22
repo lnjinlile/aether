@@ -124,7 +124,7 @@
       "total_trades": 69,
       "backtest_period": "365d",
       "verdict": "DO_NOT_ENABLE",
-      "retired_reason": "All params negative across 90d/180d/365d. Best (ETH-like OS=20/OB=75/SL=2%/TP=4%): 90d=-5.5% 180d=-5.5% 365d=-17.1%. BTC lacks mean-reverting behavior in 1h — RSI_MR only works on ETH."
+      "retired_reason": "All params negative across 90d/180d/365d. Best (ETH-like OS=20/OB=75/SL=2%/TP=4%): 90d=-5.5% 180d=-5.5% 365d=-17.1%. BTC lacks mean-reverting behavior in 1h \u2014 RSI_MR only works on ETH."
     },
     "RSI_MR_ETH": {
       "status": "ok",
@@ -212,7 +212,7 @@
       "total_trades": 27,
       "backtest_period": "90d",
       "verdict": "RETIRED",
-      "retired_reason": "AUDIT-049: DD=21.18% > 20% max, SR=0.116 ≈ noise, 27 trades. RETIRED per lifecycle rules."
+      "retired_reason": "AUDIT-049: DD=21.18% > 20% max, SR=0.116 \u2248 noise, 27 trades. RETIRED per lifecycle rules."
     },
     "BBandRSI_BTC": {
       "status": "disabled",
@@ -411,64 +411,18 @@
       "retired_reason": "5 param sweep 365d. Best OS=0.18: -14.87% SR=0.117 DD=69.4%. All combos negative. StochRSI overtrades vs plain RSI."
     },
     "DonchianMR_BTC": {
-      "status": "ok",
-      "enabled": true,
+      "status": "disabled",
+      "enabled": false,
       "symbol": "BTC/USDT",
       "timeframe": "1h",
-      "data_rows": 2161,
-      "signals_count": 97,
-      "latest_signal": {
-        "time": "2026-06-04 02:00:00",
-        "signal": "LONG",
-        "price": 63226.2
-      },
-      "last_5_signals": [
-        {
-          "time": "2026-06-03 02:00:00",
-          "signal": "LONG",
-          "price": 66590.0
-        },
-        {
-          "time": "2026-06-03 03:00:00",
-          "signal": "LONG",
-          "price": 65784.0
-        },
-        {
-          "time": "2026-06-03 04:00:00",
-          "signal": "LONG",
-          "price": 66449.9
-        },
-        {
-          "time": "2026-06-04 01:00:00",
-          "signal": "LONG",
-          "price": 62150.5
-        },
-        {
-          "time": "2026-06-04 02:00:00",
-          "signal": "LONG",
-          "price": 63226.2
-        }
-      ],
-      "total_return_pct": 18.64,
-      "sharpe_ratio": 0.5289,
-      "max_drawdown_pct": 6.32,
-      "win_rate": 66.67,
-      "total_trades": 12,
-      "profit_factor": 3.0122,
-      "backtest_period": "90d",
+      "total_return_pct": 128.8,
+      "sharpe_ratio": 0.3912,
+      "max_drawdown_pct": 17.9,
+      "win_rate": 63.2,
+      "total_trades": 38,
+      "backtest_period": "365d",
       "verdict": "PAPER",
-      "metrics": {
-        "total_return_pct": 18.64,
-        "sharpe_ratio": 0.5289,
-        "deflated_sharpe_ratio": 1.0,
-        "max_drawdown_pct": 6.32,
-        "win_rate": 66.67,
-        "profit_factor": 3.0122,
-        "total_trades": 12,
-        "avg_win_pct": 3.38,
-        "avg_loss_pct": 2.24,
-        "final_equity": 11863.81
-      }
+      "retired_reason": null
     },
     "DonchianMR_ETH": {
       "status": "ok",
@@ -509,27 +463,28 @@
           "price": 1810.2
         }
       ],
-      "total_return_pct": 20.52,
-      "sharpe_ratio": 0.5332,
-      "max_drawdown_pct": 6.47,
-      "win_rate": 80.0,
-      "total_trades": 10,
+      "total_return_pct": 429.48,
+      "sharpe_ratio": 0.552,
+      "max_drawdown_pct": 16.21,
+      "win_rate": 72.0,
+      "total_trades": 50,
       "profit_factor": 3.575,
-      "backtest_period": "90d",
+      "backtest_period": "365d",
       "verdict": "LIVE",
       "metrics": {
-        "total_return_pct": 20.52,
-        "sharpe_ratio": 0.5332,
+        "total_return_pct": 429.48,
+        "sharpe_ratio": 0.552,
         "deflated_sharpe_ratio": 1.0,
-        "max_drawdown_pct": 6.47,
-        "win_rate": 80.0,
+        "max_drawdown_pct": 16.21,
+        "win_rate": 72.0,
         "profit_factor": 3.575,
-        "total_trades": 10,
+        "total_trades": 50,
         "avg_win_pct": 3.43,
         "avg_loss_pct": 3.84,
-        "final_equity": 12052.29
+        "final_equity": 12052.29,
+        "backtest_period": "365d"
       }
     }
   },
-  "_updated_at": "2026-06-22T13:51:25.998595+00:00"
+  "_updated_at": "2026-06-22T15:44:39.759118+00:00"
 }

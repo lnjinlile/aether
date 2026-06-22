@@ -173,6 +173,7 @@ def main():
             'trending_bars': trending_count,
             'ranging_bars': ranging_count,
             'dominant': 'TRENDING' if trending_count >= 6 else 'RANGING',
+            'trend_ratio': round(trending_count / 12, 3),
         },
         'last_5_regimes': recent_regimes[-5:],
         'regime_shift': (prev_regime is not None and prev_regime != regime),

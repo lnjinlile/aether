@@ -262,28 +262,28 @@
       "verdict": "DO_NOT_ENABLE"
     },
     "DonchianMR_BTC": {
-      "signals": 97,
-      "status": "ok",
-      "return_pct": 18.64,
-      "sharpe": 0.5289,
-      "win_rate": 66.67,
-      "trades": 12,
-      "max_dd": 6.32,
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 128.8,
+      "sharpe": 0.3912,
+      "win_rate": 63.2,
+      "trades": 38,
+      "max_dd": 17.9,
       "verdict": "PAPER"
     },
     "DonchianMR_ETH": {
       "signals": 88,
       "status": "ok",
-      "return_pct": 20.52,
-      "sharpe": 0.5332,
-      "win_rate": 80.0,
-      "trades": 10,
-      "max_dd": 6.47,
+      "return_pct": 429.48,
+      "sharpe": 0.552,
+      "win_rate": 72.0,
+      "trades": 50,
+      "max_dd": 16.2,
       "verdict": "LIVE"
     }
   },
-  "_updated_at": "2026-06-22T13:51:32.482206+00:00",
-  "_last_run": "2026-06-22T13:24:39.237817+00:00",
+  "_updated_at": "2026-06-22T16:06:09.780639+00:00",
+  "_last_run": "2026-06-22T14:19:08.619554+00:00",
   "_last_signals": {},
   "_promoted_by": "prometheus",
   "_promotion_reason": "DonchianMR_ETH PAPER→LIVE: WF validation 4/4 OOS positive, 365d +429.48% SR=0.55 DD=16.21% WR=72% 50trades. Meets ALL LIVE criteria.",
@@ -292,5 +292,6 @@
   "_last_volbreakout_sweep": "2026-06-22T07:31:44.985615+00:00",
   "_note": "Hermes 2026-06-22 16:30 data integrity fix: RSI_MR_ETH prometheus.json strategies+live_confirmed corrected 81.24%→50.23% (matching engine/backtest_results/athena — Prometheus ran independent backtest with different methodology). DonchianMR_ETH verdict PAPER→LIVE, DonchianMR_BTC PAPER_READY→PAPER",
   "_hermes_fix": "AUDIT-045 regression: DonchianMR_BTC verdict LIVE->PAPER",
-  "_audit_048_fix": "DonchianMR metrics synced from Prometheus 365d sweeps (#156/#158)"
+  "_audit_048_fix": "DonchianMR metrics synced from Prometheus 365d sweeps (#156/#158)",
+  "_audit_053_fix": "AUDIT-053: Restored DonchianMR_ETH/BTC metrics from authoritative 365d data (guardian.json + prometheus.json). DonchianMR_ETH: 20.52%/10t→429.48%/50t, DonchianMR_BTC: 18.64%/12t→128.8%/38t."
 }

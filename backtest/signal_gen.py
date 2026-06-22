@@ -1112,3 +1112,117 @@ def donchian_mr_signals(df: pd.DataFrame,
                 continue
 
     return pd.Series(signals, index=df.index)
+
+
+def stoch_rsi_signals(df: pd.DataFrame,
+                      rsi_period: int = 14,
+                      stoch_period: int = 14,
+                      smooth_k: int = 3,
+                      smooth_d: int = 3,
+                      oversold: float = 0.20,
+                      overbought: float = 0.80,
+                      stop_loss_pct: float = 0.02,
+                      take_profit_pct: float = 0.04,
+                      cooldown_bars: int = 5) -> pd.Series:
+    """Vectorized StochRSI Mean Reversion — signals: 1=LONG, -1=SHORT, 0=FLAT.
+
+    StochRSI = (RSI - min(RSI, stoch_period)) / (max(RSI, stoch_period) - min(RSI, stoch_period))
+    %K = SMA(StochRSI, smooth_k)
+
+    Entry:
+      %K crosses below oversold → LONG
+      %K crosses above overbought → SHORT
+    Exit:
+      %K crosses 0.5 midline from below → CLOSE_LONG
+      %K crosses 0.5 midline from above → CLOSE_SHORT
+    """
+    close = df["close"].values
+    n = len(close)
+
+    # ── Compute RSI ──
+    delta = pd.Series(close).diff()
+    gain = delta.where(delta > 0, 0.0)
+    loss = (-delta).where(delta < 0, 0.0)
+    avg_gain = gain.ewm(alpha=1 / rsi_period, adjust=False).mean().values
+    avg_loss = loss.ewm(alpha=1 / rsi_period, adjust=False).mean().values
+    rs = np.divide(avg_gain, avg_loss, out=np.full_like(avg_gain, np.inf), where=avg_loss != 0)
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+    rsi[avg_loss == 0] = 100.0
+    rsi[avg_gain == 0] = 0.0
+
+    # ── Compute StochRSI %K ──
+    stoch_k_vals = np.full(n, np.nan)
+    warmup = rsi_period + stoch_period
+    for i in range(warmup, n):
+        window = rsi[i - stoch_period + 1 : i + 1]
+        rsi_min = np.min(window)
+        rsi_max = np.max(window)
+        denom = rsi_max - rsi_min
+        if denom == 0:
+            stoch_raw = 0.5
+        else:
+            stoch_raw = (rsi[i] - rsi_min) / denom
+        stoch_k_vals[i] = np.clip(stoch_raw, 0.0, 1.0)
+
+    # ── Signal generation ──
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    entry_price = 0.0
+    bars_since_trade = cooldown_bars + 1
+    min_bars = rsi_period + stoch_period + smooth_k + smooth_d + 5
+
+    for i in range(min_bars, n):
+        bars_since_trade += 1
+        price = close[i]
+        curr_k = stoch_k_vals[i]
+        prev_k = stoch_k_vals[i - 1]
+        if np.isnan(curr_k) or np.isnan(prev_k):
+            continue
+
+        # ── Exit: midline crossover + SL/TP ──
+        cross_above_mid = (prev_k <= 0.5) and (curr_k > 0.5)
+        cross_below_mid = (prev_k >= 0.5) and (curr_k < 0.5)
+
+        if pos == 1:
+            exit_trigger = cross_above_mid
+            if not exit_trigger and price <= entry_price * (1 - stop_loss_pct):
+                exit_trigger = True
+            if not exit_trigger and price >= entry_price * (1 + take_profit_pct):
+                exit_trigger = True
+            if exit_trigger:
+                signals[i] = 0
+                pos = 0
+                bars_since_trade = 0
+                continue
+        elif pos == -1:
+            exit_trigger = cross_below_mid
+            if not exit_trigger and price >= entry_price * (1 + stop_loss_pct):
+                exit_trigger = True
+            if not exit_trigger and price <= entry_price * (1 - take_profit_pct):
+                exit_trigger = True
+            if exit_trigger:
+                signals[i] = 0
+                pos = 0
+                bars_since_trade = 0
+                continue
+
+        if pos != 0:
+            signals[i] = pos
+
+        # ── Entry: oversold/overbought crossover on %K ──
+        cross_below_os = (prev_k >= oversold) and (curr_k < oversold)
+        cross_above_ob = (prev_k <= overbought) and (curr_k > overbought)
+
+        if pos == 0 and bars_since_trade > cooldown_bars:
+            if cross_below_os:
+                pos = 1
+                entry_price = price
+                signals[i] = 1
+                bars_since_trade = 0
+            elif cross_above_ob:
+                pos = -1
+                entry_price = price
+                signals[i] = -1
+                bars_since_trade = 0
+
+    return pd.Series(signals, index=df.index)

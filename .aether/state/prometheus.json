@@ -1,8 +1,6 @@
 {
   "status": "active",
-  "dsr_implemented": true,
   "walk_forward_implemented": true,
-  "anti_overfitting_run": true,
   "regime_model": {
     "symbol": "ETH",
     "horizon": "6h",
@@ -40,9 +38,9 @@
       "verdict": "STILL_LOSING"
     }
   },
-  "next": "Portfolio risk: reduce per-trade risk or add mutual exclusion for correlated ETH strategies (corr=0.878). Guardian max_correlated_exposure cap. TrendFollow_BTC_1h param sweep when regime shifts to TRENDING. StochRSI signal_gen still missing (low priority). regime_monitor trend_ratio tracking.",
-  "_updated_at": "2026-06-22T13:51:32.484768+00:00",
-  "recommendation": "RSI_MR_ETH LIVE (os=20/ob=75/sl=2%/tp=4%/lev=3x) ENGINE-CONFIRMED: 90d=+50.23% SR=0.6984 DD=11.35% WR=81.25% 16trades. DonchianMR_ETH PROMOTED TO LIVE 2026-06-22 (WF 4/4 OOS, 365d +429%). DonchianMR_BTC PAPER (SR=0.508 DD=11.62% — Athena promotion reverted per AUDIT-047). Now TWO LIVE strategies on ETH (RSI_MR_ETH + DonchianMR_ETH). Both are mean-reversion with correlation=0.878 — portfolio concentration risk exists. Need trend-following strategy or BTC diversification for regime protection.",
+  "next": "TrendFollow_BTC_1h param sweep when regime shifts to TRENDING. Guardian max_correlated_exposure cap DONE (commit 205d320). StochRSI_ETH backtest now wired. Next: clean up prometheus.json data sprawl (29 top-level keys \u2192 consolidate), profile engine tick hot-path for optimization, consider ML feature store for regime classifier reuse.",
+  "_updated_at": "2026-06-22T16:06:09.782878+00:00",
+  "recommendation": "RSI_MR_ETH LIVE (os=20/ob=75/sl=2%/tp=4%/lev=3x) ENGINE-CONFIRMED: 90d=+50.23% SR=0.6984 DD=11.35% WR=81.25% 16trades. DonchianMR_ETH PROMOTED TO LIVE 2026-06-22 (WF 4/4 OOS, 365d +429%). DonchianMR_BTC PAPER (SR=0.508 DD=11.62% \u2014 Athena promotion reverted per AUDIT-047). Now TWO LIVE strategies on ETH (RSI_MR_ETH + DonchianMR_ETH). Both are mean-reversion with correlation=0.878 \u2014 portfolio concentration risk exists. Need trend-following strategy or BTC diversification for regime protection.",
   "strategies": {
     "RSI_MR_ETH": {
       "return_pct": 50.23,
@@ -51,288 +49,23 @@
       "trades": 16,
       "max_dd": 11.35
     },
-    "DonchianMR_BTC": {
-      "return_pct": 18.64,
-      "sharpe": 0.5289,
-      "win_rate": 66.67,
-      "trades": 12,
-      "max_dd": 6.32
-    },
     "DonchianMR_ETH": {
-      "return_pct": 20.52,
-      "sharpe": 0.5332,
-      "win_rate": 80.0,
-      "trades": 10,
-      "max_dd": 6.47
-    }
-  },
-  "ml_alpha_status": "FAILED_WF",
-  "ml_validation": {
-    "train_accuracy": 0.7348,
-    "val_accuracy": 0.4691,
-    "test_accuracy": 0.5,
-    "overfitting_gap_pct": 23.5,
-    "walk_forward_wfe": -2.11,
-    "walk_forward_oos_return_pct": -27.24,
-    "walk_forward_pass_rate": 0.4,
-    "feature_max_correlation": 0.05,
-    "verdict": "FEATURES_NO_PREDICTIVE_POWER",
-    "next": "halt_current_ml_research_alternative_features"
-  },
-  "last_run": "2026-06-22T19:09:00.000000+00:00",
-  "regime_classifier": "BEST_ML (ETH 66.4%, BTC 64.9%)",
-  "engine_stale": false,
-  "engine_pid": 873861,
-  "last_optimization": {
-    "date": "2026-06-22",
-    "items": [
-      "Portfolio correlation analysis: RSI_MR_ETH vs DonchianMR_ETH corr=0.878 (HIGH), 100% concurrent positions. Both ETH mean-reversion strategies use RSI as key signal with identical SL/TP. Combined DD est 23.5%. Recommended per-trade risk reduction or mutual exclusion.",
-      "prometheus.json updated: DonchianMR_BTC now LIVE (promoted by Athena 19:49), recommendation text synced, portfolio_correlation section added with 4 concrete recommendations.",
-      "DonchianMR_BTC Round 2 param optimization: DP 10→8, CD 5→9. SR 0.391→0.508 (now >0.5 LIVE threshold). DD 17.9%→11.62%. Ret +128.8%→+203.81%. 675-combo sweep across DP[5-15], SL[1-2%], CD[3-10], EX[45-55], RSI[12-16]. 90d: +23.06% SR=0.580. 60d: +23.48% SR=0.746. Promoted PAPER_READY→PAPER. Required 5-10 paper trades before LIVE.",
-      "DonchianMR_ETH PAPER→LIVE PROMOTED: WF 4/4 OOS positive, 365d +429.48% SR=0.55 DD=16.21% WR=72% 50trades. athena.json verdict updated, prometheus.json synced.",
-      "engine.pid sync: corrected stale PID (752349 -> 746829 actual)",
-      "TrendFollow_ETH 90d confirmed FAIL: Ret=-32.91% SR=-0.191 57trades - trend following broken in RANGING regime",
-      "MA_Cross_ETH 90d confirmed FAIL: Ret=-10.69% SR=0.070 75trades",
-      "RSI_MR_ETH trailing stop tested: 3% trail DRAMATICALLY worse (Ret=19.4% vs 81.2%) - fixed TP=4% is optimal",
-      "RSI_MR_ETH param sweep reconfirmed: TP=4% SL=2% remains optimal (365d: +651.9% SR=0.543 vs TP=6%: +691.6% SR=0.532 - lower SR)",
-      "RSI_MR_BTC (OS=20/OB=75) 90d=-8.99% - same optimized params fail on BTC, confirming market-specific behavior",
-      "engine.py run_backtests() dispatch completeness: added ADXTrendStrategy, MomentumStrategy, TrendPullback signal dispatch (3 missing entries — signal generators existed in signal_gen.py but were not wired). Protected against \"Unknown strategy type\" failures if these disabled strategies are enabled.",
-      "DonchianMR_ETH WF validation: 4/4 OOS positive, mean SR=0.45, WFE=0.125 (Win4 IS outlier skew). 365d: +429.48% SR=0.55 DD=16.21%. Current params (dc=10) confirmed optimal over alternatives. Recommended PAPER->LIVE promotion.",
-      "DonchianMR_BTC optimized per #158: DD 26.73%→17.9% (DP=10/SL=1.5%). WF 3/4 OOS positive. PAPER_READY."
-    ],
-    "impact": "Two LIVE strategies now active (RSI_MR_ETH + DonchianMR_ETH). Portfolio correlation analysis reveals RSI_MR_ETH/DonchianMR_ETH corr=0.878 with 100% concurrent positions — high concentration risk on ETH mean-reversion. DonchianMR_BTC was demoted to PAPER per AUDIT-047 (engine guard). Need a trend-following strategy for regime diversification. Backtest dispatch covers 16/16 strategy types."
-  },
-  "strategy_landscape_20260622": {
-    "date": "2026-06-22",
-    "active_strategies": 2,
-    "total_strategies": 26,
-    "viable": [
-      "DonchianMR_ETH",
-      "DonchianMR_BTC",
-      "RSI_MR_ETH"
-    ],
-    "risk": "MODERATE: Two LIVE mean-reversion strategies on ETH (RSI_MR_ETH + DonchianMR_ETH). Correlation risk — both thrive in ranging/mean-reverting conditions. No trend-following strategy active. Regime is RANGING (safe for MR), but regime shift to TRENDING would expose both strategies. Need a trend-following LIVE strategy for diversification.",
-    "confirmed_failures": {
-      "BBandRSI_ETH": {
-        "365d_ret": 70.0,
-        "sharpe": 0.426,
-        "dd": 11.4,
-        "trades": 30,
-        "verdict": "FRONT_LOADED — 180d=-4.9%, 90d=+0.5%. All profits in first 6 months."
-      },
-      "RegimeSwitch_BTC": {
-        "365d_ret": -41.02,
-        "sharpe": -0.232,
-        "dd": 64.92,
-        "trades": 156,
-        "verdict": "CONSISTENT_LOSER"
-      },
-      "RSI_MR_BTC": {
-        "WF_OOS_ret": -5.99,
-        "WF_OOS_sr": -0.596,
-        "verdict": "DEGRADING",
-        "note": "IS +64.55% but OOS -5.99%, all rolling 90d windows negative in 2026"
-      },
-      "ADXTrend_BTC": {
-        "365d_ret": -89.68,
-        "sharpe": -1.647,
-        "dd": 90.5,
-        "trades": 399,
-        "verdict": "BROKEN"
-      },
-      "DynamicGrid": {
-        "verdict": "DEAD_END",
-        "note": "Grid trading loses in trending 2025-2026 market"
-      },
-      "BBandRSI_BTC": {
-        "verdict": "DO_NOT_ENABLE",
-        "note": "Best SR=0.063, DD>50%"
-      }
-    },
-    "rsi_mr_eth_optimization": {
-      "atr_filter_tested": true,
-      "atr_filter_verdict": "OVERFITTING — improves 365d DD (45.8→20.8%) but kills OOS trades (17→2)",
-      "recommendation": "KEEP current params unchanged"
-    },
-    "donchian_mr_eth_wf_validation": {
-      "date": "2026-06-22T10:51:00Z",
-      "status": "PROMOTED_TO_LIVE",
-      "promotion_date": "2026-06-22T10:46:00Z",
-      "params": "dc=10/os=20/ob=80/ex=50/sl=2%/tp=4%/cd=5/lev=3x",
-      "windows": 4,
-      "oos_positive": "4/4",
-      "mean_oos_return_pct": 10.78,
-      "mean_oos_sharpe": 0.45,
-      "wfe": 0.125,
-      "wfe_note": "WFE distorted by Win4 IS outlier (+253% in high-vol regime). All OOS positive confirms robustness.",
-      "oos_dd_range": "1.21% - 13.75%",
-      "verdict": "PASS — no overfitting detected, consistently profitable OOS",
-      "promotion_recommendation": "PAPER -> LIVE. Meets all criteria: 365d SR=0.55 DD=16.21% WR=72% trades=50. WF confirms robustness."
-    },
-    "donchian_mr_eth_365d": {
       "return_pct": 429.48,
       "sharpe": 0.552,
-      "dd_pct": 16.21,
-      "wr_pct": 72.0,
+      "win_rate": 72.0,
       "trades": 50,
-      "profit_factor": 3.38
+      "max_dd": 16.21
     },
-    "donchian_mr_btc_optimized": {
-      "return_pct": 203.81,
-      "sharpe": 0.508,
-      "dd_pct": 11.62,
-      "wr_pct": 68.4,
+    "DonchianMR_BTC": {
+      "return_pct": 128.8,
+      "sharpe": 0.3912,
+      "win_rate": 63.2,
       "trades": 38,
-      "profit_factor": 4.57,
-      "verdict": "PAPER_READY",
-      "params": "DP=8/OS=20/OB=80/SL=1.5%/TP=4%/CD=9/RSI=14/EX=50/lev=3x",
-      "note": "Round 2 optimization (2026-06-22): DP 10→8, CD 5→9. SR 0.391→0.508 (now meets LIVE threshold 0.5). DD 17.9%→11.62%. 365d: +203.81%. 90d: +23.06% SR=0.580. 60d: +23.48% SR=0.746. Now meets ALL LIVE criteria: SR>0.5, DD<20%, WR>40%, T>30. Promoted to PAPER.",
-      "wf_validation": {
-        "date": "2026-06-22T11:03:12.502739+00:00",
-        "windows": 4,
-        "oos_positive": "3/4",
-        "mean_oos_return_pct": 4.6,
-        "mean_oos_sr": 0.567,
-        "oos_dd_range": "0.0% - 6.8%",
-        "verdict": "PAPER_READY"
-      },
-      "round2_optimization": {
-        "date": "2026-06-22T19:09:00+00:00",
-        "dp_sweep": [
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          12,
-          15
-        ],
-        "sl_sweep": [
-          0.01,
-          0.0125,
-          0.015,
-          0.0175,
-          0.02
-        ],
-        "cd_sweep": [
-          3,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10
-        ],
-        "prior_best": "DP=10 CD=5: SR=0.425 DD=16.46%",
-        "new_best": "DP=8 CD=9: SR=0.508 DD=11.62%",
-        "improvement": "SR +19.5%, DD -4.84pp, Ret +53.75pp"
-      }
+      "max_dd": 17.9
     }
   },
-  "rsi_mr_eth_live_confirmed": {
-    "date": "2026-06-22T05:00:00Z",
-    "action": "PROMOTE_TO_LIVE — AUDIT-034 WF validation passed",
-    "params": "os=20/ob=75/sl=2%/tp=4%/lev=3x",
-    "backtest_90d": {
-      "return_pct": 50.23,
-      "sharpe": 0.6984,
-      "dd_pct": 11.35,
-      "wr_pct": 81.25,
-      "trades": 16,
-      "pf": 2.708
-    },
-    "backtest_365d": {
-      "return_pct": 651.89,
-      "sharpe": 0.544,
-      "dd_pct": 34.31,
-      "wr_pct": 64.6,
-      "trades": 65,
-      "pf": 2.305
-    },
-    "backtest_30d": {
-      "return_pct": 2.56,
-      "sharpe": 0.175,
-      "dd_pct": 8.88,
-      "wr_pct": 60.0,
-      "trades": 5
-    },
-    "criteria_check": {
-      "sharpe>=0.5": true,
-      "dd<=20": true,
-      "wr>=40": true,
-      "trades>=10": true,
-      "all_pass": true
-    },
-    "note": "FULL WF validation confirms LIVE readiness. 365d DD=34.31% is above ideal but concentrated in Sep-Dec 2025 regime; current 90d DD=8.88% shows improved stability. Monitor 30d window for regime shift."
-  },
-  "regime_monitor": {
-    "enabled": true,
-    "last_check": "2026-06-22T10:46:00Z",
-    "current_regime": "RANGING",
-    "trend_ratio_30p": 0.167,
-    "alert_threshold": 0.4,
-    "history": [
-      {
-        "date": "2026-06-22T10:46:00Z",
-        "regime": "RANGING",
-        "trend_ratio": 0.167
-      }
-    ],
-    "trend_follow_candidates": {
-      "TrendFollow_BTC_1h": {
-        "return_pct": 38.45,
-        "sharpe": 0.39,
-        "trades": 50,
-        "dd_pct": 28.3,
-        "wr_pct": 34.0,
-        "verdict": "NEEDS_OPTIMIZATION — positive return but low SR. Candidate for param sweep if regime shifts to TRENDING.",
-        "current_params": "ema=50, sl=1.5%, tp=5%, lev=3x"
-      }
-    },
-    "action": "Monitor trend_ratio_30p monthly. If crosses 0.40, evaluate TrendFollow_BTC_1h and other trend strategies for activation."
-  },
-  "portfolio_correlation": {
-    "analysis_date": "2026-06-22T19:57:00+00:00",
-    "method": "1h ETH full-history strategy simulation (RSI+Donchian entry rules, SL/TP exits)",
-    "summary": "Two ETH mean-reversion strategies have near-perfect trade overlap and highly correlated monthly returns. Combined tail risk is ~2x single-strategy DD when both are active.",
-    "pairs": {
-      "RSI_MR_ETH_vs_DonchianMR_ETH": {
-        "correlation": 0.878,
-        "overlapping_months": 13,
-        "concurrent_position_rate": 1.0,
-        "note": "100% of DonchianMR_ETH trades overlap with RSI_MR_ETH positions. Both use RSI as primary/filter signal and identical SL=2%/TP=4%. When one loses, the other almost certainly loses too.",
-        "monthly_returns": {
-          "donchian_mr": {
-            "mean_pct": 5.2,
-            "std_pct": 11.3
-          },
-          "rsi_mr": {
-            "mean_pct": 8.6,
-            "std_pct": 20.9
-          }
-        }
-      }
-    },
-    "combined_risk": {
-      "eth_mr_combined_dd_est_pct": 23.5,
-      "two_asset_combined_dd_est_pct": 23.5,
-      "current_max_exposure_pct": 3.0,
-      "current_effective_exposure_pct": 3.0,
-      "note": "2 LIVE strategies @ 1.5% risk each = 3.0% max capital at risk. With ETH correlation 0.878, effective exposure ~3.0% (nearly 2x single-strategy DD when both active). DonchianMR_BTC (PAPER) would add BTC diversification if promoted."
-    },
-    "recommendations": [
-      "Reduce per-trade risk from 1.5% to 1.0% when multiple correlated strategies are active (→ 3.0% max, ~5.2% effective)",
-      "Add per-symbol max exposure cap in Guardian: max 2x risk_per_trade per asset (prevents 3% ETH exposure from two simultaneous positions)",
-      "Implement mutual exclusion: when one ETH MR strategy enters a position, block the other until exit",
-      "Prioritize finding a non-correlated strategy (trend-following, BTC-specific, or different logic) for the 4th LIVE slot"
-    ],
-    "btc_diversification": {
-      "btc_eth_correlation_est": 0.75,
-      "benefit": "DonchianMR_BTC (PAPER) could reduce combined DD from ~23.5% (ETH-only) to ~14.6% (2-asset). Significant but incomplete diversification if promoted.",
-      "gap": "Still no trend-following strategy for regime diversification. Both LIVE strategies are ETH mean-reversion."
-    }
-  },
+  "last_run": "2026-06-22T19:09:00.000000+00:00",
+  "last_optimization": "correlated_exposure_cap",
   "_history": {
     "sweeps": {
       "supertrend_sweep": {
@@ -394,7 +127,7 @@
           "wr_pct": 70.27,
           "trades": 37,
           "pf": 2.2972,
-          "verdict": "DO_NOT_ENABLE — no config meets DD<=20% and SR>=0.5"
+          "verdict": "DO_NOT_ENABLE \u2014 no config meets DD<=20% and SR>=0.5"
         },
         "eth_best": {
           "donchian_period": 10,
@@ -426,7 +159,7 @@
             "all_pass": true
           }
         },
-        "note": "ETH: 3 configs pass ALL criteria. Best: DP=10 OS=20 OB=80 CD=5 → Net=+429.48% SR=+0.552 DD=16.2% WR=72% PF=3.12 T=50. BTC: zero passing configs, best DD=26.7% (>20% threshold).",
+        "note": "ETH: 3 configs pass ALL criteria. Best: DP=10 OS=20 OB=80 CD=5 \u2192 Net=+429.48% SR=+0.552 DD=16.2% WR=72% PF=3.12 T=50. BTC: zero passing configs, best DD=26.7% (>20% threshold).",
         "eth_best_refined": {
           "donchian_period": 10,
           "oversold": 20,
@@ -438,7 +171,7 @@
           "wr_pct": 72,
           "trades": 50,
           "pf": 3.12,
-          "comment": "All 3 passing configs share DP=10 OS=20 OB=80. Overbought=80 (not 75) is key — requires very extreme RSI for SHORT entries, reducing false shorts."
+          "comment": "All 3 passing configs share DP=10 OS=20 OB=80. Overbought=80 (not 75) is key \u2014 requires very extreme RSI for SHORT entries, reducing false shorts."
         },
         "top_10_by_sharpe": [
           {
@@ -597,7 +330,7 @@
           "net_pct": -24.58,
           "sharpe": -0.158
         },
-        "note": "All 15 runs negative across all windows. StochRSI overtrades (411 trades/yr vs RSI_MR's 65) — the double smoothing doesn't filter, it amplifies noise. Higher trade frequency + same WR ≈ more losers bleeding capital.",
+        "note": "All 15 runs negative across all windows. StochRSI overtrades (411 trades/yr vs RSI_MR's 65) \u2014 the double smoothing doesn't filter, it amplifies noise. Higher trade frequency + same WR \u2248 more losers bleeding capital.",
         "conclusion": "Stochastic RSI is WORSE than plain RSI for ETH 1h mean reversion. Double-smoothing introduces lag without improving signal quality. Not pursuing further."
       },
       "bband_rsi_eth_sweep": {
@@ -607,7 +340,7 @@
         "timeframe": "1h",
         "total_combos": 9,
         "verdict": "DO_NOT_ENABLE",
-        "reason": "FRONT_LOADED — 365d=+70.0% SR=0.426 but 180d=-4.9% SR=-0.131 and 90d=+0.5% SR=0.045. All profits from first 6 months. Classic regime-dependent overfitting.",
+        "reason": "FRONT_LOADED \u2014 365d=+70.0% SR=0.426 but 180d=-4.9% SR=-0.131 and 90d=+0.5% SR=0.045. All profits from first 6 months. Classic regime-dependent overfitting.",
         "best_params": {
           "bb_std": 3.5,
           "rsi_oversold": 25,
@@ -628,7 +361,7 @@
           "sharpe_90d": 0.045,
           "trades_90d": 5
         },
-        "note": "Highest SR among all 9 combos but fails temporal stability check. 365d→180d→90d degradation confirms regime dependency. NOT viable in current RANGING regime despite being mean-reversion strategy."
+        "note": "Highest SR among all 9 combos but fails temporal stability check. 365d\u2192180d\u219290d degradation confirms regime dependency. NOT viable in current RANGING regime despite being mean-reversion strategy."
       },
       "macd_sweep": {
         "date": "2026-06-22T08:35:00Z",
@@ -642,7 +375,7 @@
         "btc_best": "fast=20/slow=30/sig=11/sl=3%/tp=6%/cd=8: +87.21% SR=0.222 DD=38.1% WR=37.2% T=207 PF=1.256",
         "eth_best": "fast=16/slow=21/sig=9/sl=1.5%/tp=6%/cd=8: -92.85% SR=-0.223 DD=95.1% WR=30.4% T=270 PF=0.829",
         "top10_all_btc": "all top-10 Sharpe results are BTC (ETH uniformly negative)",
-        "note": "MACD crossover classic trend-following fails in current RANGING regime (trend_ratio=0.167). BTC best SR=0.222 but DD=38.1% far exceeds 20% threshold. All 2304 runs had ≥20 trades. Signal generator added to backtest/signal_gen.py + athena_backtest dispatch."
+        "note": "MACD crossover classic trend-following fails in current RANGING regime (trend_ratio=0.167). BTC best SR=0.222 but DD=38.1% far exceeds 20% threshold. All 2304 runs had \u226520 trades. Signal generator added to backtest/signal_gen.py + athena_backtest dispatch."
       },
       "wf_validation": {
         "TrendFollow_BTC_1h": {
@@ -656,7 +389,7 @@
           "wf_is_return": -27.98,
           "wf_oos_return": -9.53,
           "wf_passed": false,
-          "wf_interpretation": "WFE=0.341 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
+          "wf_interpretation": "WFE=0.341 DSR=0.000 \u2014 DEGRADING \u2014 both negative and OOS much worse than IS",
           "wf_windows": 5
         },
         "TrendFollow_ETH": {
@@ -670,7 +403,7 @@
           "wf_is_return": 14.6,
           "wf_oos_return": -26.64,
           "wf_passed": false,
-          "wf_interpretation": "WFE=-1.825 DSR=0.000 — BROKEN — IS positive but OOS negative, classic overfitting",
+          "wf_interpretation": "WFE=-1.825 DSR=0.000 \u2014 BROKEN \u2014 IS positive but OOS negative, classic overfitting",
           "wf_windows": 5
         },
         "TrendFollow_BTC": {
@@ -684,7 +417,7 @@
           "wf_is_return": -84.47,
           "wf_oos_return": -13.54,
           "wf_passed": false,
-          "wf_interpretation": "WFE=0.160 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
+          "wf_interpretation": "WFE=0.160 DSR=0.000 \u2014 DEGRADING \u2014 both negative and OOS much worse than IS",
           "wf_windows": 17
         },
         "RegimeSwitch_BTC": {
@@ -698,7 +431,7 @@
           "wf_is_return": -5.35,
           "wf_oos_return": -15.68,
           "wf_passed": true,
-          "wf_interpretation": "WFE=2.931 DSR=0.000 — CONSISTENT_LOSER — consistently unprofitable but not overfit (same behavior IS and OOS)",
+          "wf_interpretation": "WFE=2.931 DSR=0.000 \u2014 CONSISTENT_LOSER \u2014 consistently unprofitable but not overfit (same behavior IS and OOS)",
           "wf_windows": 4
         },
         "RSI_MR_BTC": {
@@ -712,7 +445,7 @@
           "wf_is_return": -30.13,
           "wf_oos_return": -6.1,
           "wf_passed": false,
-          "wf_interpretation": "WFE=0.202 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
+          "wf_interpretation": "WFE=0.202 DSR=0.000 \u2014 DEGRADING \u2014 both negative and OOS much worse than IS",
           "wf_windows": 4
         }
       },
@@ -730,7 +463,7 @@
         "windows": 4,
         "passed_wfe_threshold": false,
         "verdict": "CONDITIONAL_PASS",
-        "verdict_detail": "WFE=0.188 (<0.3) due to Window1 IS outsized returns (45.8%→4.3% OOS). Windows 3-4 OOS positive with low DD (max 4.71%). NOT overfit — regime-dependent performance. PAPER_READY: deploy as paper with guardrails (pause if 30d return < -5%).",
+        "verdict_detail": "WFE=0.188 (<0.3) due to Window1 IS outsized returns (45.8%\u21924.3% OOS). Windows 3-4 OOS positive with low DD (max 4.71%). NOT overfit \u2014 regime-dependent performance. PAPER_READY: deploy as paper with guardrails (pause if 30d return < -5%).",
         "per_window": [
           {
             "dates": "2025-06-22 to 2025-09-20",
@@ -769,11 +502,11 @@
             "oos_wr": 80.0
           }
         ],
-        "recommendation": "PAPER_READY — deploy as LIVE with 3x leverage, SL=2%, TP=4%, DP=10/OS=20/OB=80/CD=5. Monitor 30d rolling return; pause if -5%+. Keep alongside RSI_MR_ETH for diversification (both mean-reversion on ETH 1h)."
+        "recommendation": "PAPER_READY \u2014 deploy as LIVE with 3x leverage, SL=2%, TP=4%, DP=10/OS=20/OB=80/CD=5. Monitor 30d rolling return; pause if -5%+. Keep alongside RSI_MR_ETH for diversification (both mean-reversion on ETH 1h)."
       },
       "wf_fresh": {
         "run_time": "2026-06-21T21:21:53.369263+00:00",
-        "RegimeSwitch_BTC": "WFE=2.931 — Win4 OOS=+10.63% IMPROVING. Keep LIVE.",
+        "RegimeSwitch_BTC": "WFE=2.931 \u2014 Win4 OOS=+10.63% IMPROVING. Keep LIVE.",
         "RSI_MR_BTC": "WFE=0.202 DEGRADING. Confirmed disabled.",
         "TrendFollow_BTC_1h": "WFE=0.341 DEGRADING. Confirmed disabled."
       },
@@ -784,7 +517,7 @@
         "timeframe": "1h",
         "total_combos": 38,
         "verdict": "DO_NOT_ENABLE",
-        "reason": "ALL params fail criteria. Best Sharpe=0.063 (BB=3.5σ SL=2.0% TP=4.0%) with only +0.7% net, 20 trades, 50.3% DD.",
+        "reason": "ALL params fail criteria. Best Sharpe=0.063 (BB=3.5\u03c3 SL=2.0% TP=4.0%) with only +0.7% net, 20 trades, 50.3% DD.",
         "default_params": {
           "net_pct": -47.6,
           "sharpe": -0.1,
@@ -817,7 +550,7 @@
         "symbol": "BTC/USDT",
         "timeframe": "1h",
         "verdict": "DO_NOT_ENABLE",
-        "reason": "ALL 5 param combos negative across ALL horizons. Best (ETH-like OS=20/OB=75/SL=2%/TP=4%): 90d=-5.5% 180d=-5.5% 365d=-17.1%. BTC lacks 1h mean-reverting behavior — RSI_MR is ETH-specific.",
+        "reason": "ALL 5 param combos negative across ALL horizons. Best (ETH-like OS=20/OB=75/SL=2%/TP=4%): 90d=-5.5% 180d=-5.5% 365d=-17.1%. BTC lacks 1h mean-reverting behavior \u2014 RSI_MR is ETH-specific.",
         "params_swept": {
           "default_OS30_OB70_SL3_TP6": {
             "90d": -5.83,
@@ -861,14 +594,14 @@
         }
       },
       "wf_findings": {
-        "TrendFollow_ADX_BTC": "WFE=-2.923 — REGIME_SHIFT — IS negative but OOS positive",
-        "MA_Cross_ETH_ADX": "WFE=0.041 — WEAK — significant OOS degradation",
-        "RegimeSwitch_BTC_WF": "WFE=2.931 DSR=0.000 — CONSISTENT_LOSER — consistently unprofitable but not overfit (same behavior IS and OOS)",
-        "TrendFollow_BTC_1h_live": "200-period rolling: 0% win rate, -3.98% — confirms WF findings",
-        "TrendFollow_BTC_1h_WF": "WFE=0.341 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
-        "TrendFollow_ETH_WF": "WFE=-1.825 DSR=0.000 — BROKEN — IS positive but OOS negative, classic overfitting",
-        "TrendFollow_BTC_WF": "WFE=0.160 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
-        "RSI_MR_BTC_WF": "WFE=0.202 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
+        "TrendFollow_ADX_BTC": "WFE=-2.923 \u2014 REGIME_SHIFT \u2014 IS negative but OOS positive",
+        "MA_Cross_ETH_ADX": "WFE=0.041 \u2014 WEAK \u2014 significant OOS degradation",
+        "RegimeSwitch_BTC_WF": "WFE=2.931 DSR=0.000 \u2014 CONSISTENT_LOSER \u2014 consistently unprofitable but not overfit (same behavior IS and OOS)",
+        "TrendFollow_BTC_1h_live": "200-period rolling: 0% win rate, -3.98% \u2014 confirms WF findings",
+        "TrendFollow_BTC_1h_WF": "WFE=0.341 DSR=0.000 \u2014 DEGRADING \u2014 both negative and OOS much worse than IS",
+        "TrendFollow_ETH_WF": "WFE=-1.825 DSR=0.000 \u2014 BROKEN \u2014 IS positive but OOS negative, classic overfitting",
+        "TrendFollow_BTC_WF": "WFE=0.160 DSR=0.000 \u2014 DEGRADING \u2014 both negative and OOS much worse than IS",
+        "RSI_MR_BTC_WF": "WFE=0.202 DSR=0.000 \u2014 DEGRADING \u2014 both negative and OOS much worse than IS",
         "RSI_MR_BTC_audit": "AUDIT-024: Multi-engine contradiction. prometheus_fast 30d: -15.01%. prometheus_wf_check 1yr: -30.50%. Independent 90d: +0.13%. Athena: +121% (UNVERIFIED)"
       },
       "donchian_mr_btc_sweep_2": {
@@ -904,7 +637,7 @@
         "fixed_params": "take_profit_pct=0.04, rsi_period=14, cooldown_bars=5, exit_level=50, lev=3x",
         "request": "#158 (from Athena)",
         "goal": "DD<20% while maintaining SR>0.3 and WR>60%",
-        "verdict": "PAPER_READY — 1 config passes all criteria",
+        "verdict": "PAPER_READY \u2014 1 config passes all criteria",
         "best": {
           "donchian_period": 10,
           "oversold": 20,
@@ -995,7 +728,7 @@
           "trades": 87,
           "pf": 1.35
         },
-        "status": "PAPER — trades < 30 in 90d window",
+        "status": "PAPER \u2014 trades < 30 in 90d window",
         "note": "Emergency revival: system had 0/16 active strategies after RegimeSwitch_BTC paused."
       },
       "engine_fix": {
@@ -1089,7 +822,7 @@
       "dgt_btc_pnl": null,
       "rsi_mr_btc_verdict_final": {
         "date": "2026-06-22",
-        "verdict": "DO_NOT_ENABLE — RSI_MR fundamentally incompatible with BTC 1h",
+        "verdict": "DO_NOT_ENABLE \u2014 RSI_MR fundamentally incompatible with BTC 1h",
         "detail": "ETH has strong 1h mean-reverting properties (RSI_MR_ETH: +81.24% SR=1.05). BTC trends more aggressively, mean-reversion fails. Market-specific behavior confirmed.",
         "next": "For BTC diversification, explore trend-following or breakout strategies (not mean-reversion). RegimeSwitch_BTC already tested and failed."
       },
@@ -1113,7 +846,7 @@
           "BBandRSI_BTC",
           "BBandRSI_ETH"
         ],
-        "status": "DISABLED — awaiting Athena WF validation",
+        "status": "DISABLED \u2014 awaiting Athena WF validation",
         "backtest_90d": {
           "default": {
             "return": -47.2,
@@ -1124,7 +857,7 @@
             "return": 25.7,
             "sharpe": 0.37,
             "trades": 6,
-            "params": "BB=3.0σ,SL=2%,TP=6%"
+            "params": "BB=3.0\u03c3,SL=2%,TP=6%"
           }
         },
         "backtest_365d": {
@@ -1137,7 +870,7 @@
             "return": 91.1,
             "sharpe": 0.28,
             "trades": 31,
-            "params": "BB=3.0σ,SL=1.5%,TP=4%",
+            "params": "BB=3.0\u03c3,SL=1.5%,TP=4%",
             "pf": 1.79,
             "dd": 27.4
           }
@@ -1146,15 +879,12 @@
           "return_365d": -79.92,
           "sharpe": -0.21,
           "trades": 399,
-          "verdict": "FAIL — not added"
+          "verdict": "FAIL \u2014 not added"
         }
       }
     }
   },
-  "_consolidated_at": "2026-06-22T09:41:12.853366+00:00",
-  "dgt_deployed": null,
-  "dgt_btc_pnl": null,
-  "dgt_eth_pnl": null,
+  "_consolidated_at": "2026-06-22T15:41:39.414368+00:00",
   "fixes": {
     "engine_verdict_autopromotion": {
       "date": "2026-06-22T10:18:00Z",
@@ -1181,16 +911,240 @@
       "before": "Top-level ret=128.8% DD=17.9% vs metrics ret=203.81% DD=11.62%; params showed DP=10 not DP=8",
       "after": "Unified: ret=203.81%, DD=11.62%, params=DP=8/CD=9. Consistent with strategies.yaml.",
       "time": "2026-06-22T11:39:40+00:00"
+    },
+    {
+      "ts": "2026-06-22T15:41:07.795859+00:00",
+      "commit": "205d320",
+      "desc": "RiskManager: correlated exposure cap (max_correlated_exposure_pct=30%). New Check 2.6 limits combined notional from correlated group members to 30% of balance. Adds defense-in-depth beyond mutual exclusion \u2014 single large position also capped.",
+      "files": [
+        "risk/manager.py",
+        "mercury_run.py"
+      ],
+      "loc": "+82"
     }
   ],
-  "donchianmr_btc_paper_ready": {
-    "return_pct": 128.8,
-    "sharpe": 0.3912,
-    "dd_pct": 17.9,
-    "wr_pct": 63.2,
-    "trades": 38,
-    "wf_windows": 4,
-    "oos_positive": 3,
-    "params": "DP=10/OS=20/OB=80/SL=1.5%/TP=4%/CD=5/lev=3x"
-  }
+  "dgt_tracker": {
+    "deployed": null,
+    "btc_pnl": null,
+    "eth_pnl": null
+  },
+  "ml_status": {
+    "ml_alpha_status": "FAILED_WF",
+    "ml_validation": {
+      "train_accuracy": 0.7348,
+      "val_accuracy": 0.4691,
+      "test_accuracy": 0.5,
+      "overfitting_gap_pct": 23.5,
+      "walk_forward_wfe": -2.11,
+      "walk_forward_oos_return_pct": -27.24,
+      "walk_forward_pass_rate": 0.4,
+      "feature_max_correlation": 0.05,
+      "verdict": "FEATURES_NO_PREDICTIVE_POWER",
+      "next": "halt_current_ml_research_alternative_features"
+    },
+    "regime_classifier": "BEST_ML (ETH 66.4%, BTC 64.9%)",
+    "regime_monitor": {
+      "enabled": true,
+      "last_check": "2026-06-22T10:46:00Z",
+      "current_regime": "RANGING",
+      "trend_ratio_30p": 0.167,
+      "alert_threshold": 0.4,
+      "history": [
+        {
+          "date": "2026-06-22T10:46:00Z",
+          "regime": "RANGING",
+          "trend_ratio": 0.167
+        }
+      ],
+      "trend_follow_candidates": {
+        "TrendFollow_BTC_1h": {
+          "return_pct": 38.45,
+          "sharpe": 0.39,
+          "trades": 50,
+          "dd_pct": 28.3,
+          "wr_pct": 34.0,
+          "verdict": "NEEDS_OPTIMIZATION \u2014 positive return but low SR. Candidate for param sweep if regime shifts to TRENDING.",
+          "current_params": "ema=50, sl=1.5%, tp=5%, lev=3x"
+        }
+      },
+      "action": "Monitor trend_ratio_30p monthly. If crosses 0.40, evaluate TrendFollow_BTC_1h and other trend strategies for activation."
+    }
+  },
+  "engine_status": {
+    "pid": 900690,
+    "stale": false
+  },
+  "portfolio_correlation": {
+    "analysis_date": "2026-06-22T19:57:00+00:00",
+    "method": "1h ETH full-history strategy simulation (RSI+Donchian entry rules, SL/TP exits)",
+    "summary": "Two ETH mean-reversion strategies have near-perfect trade overlap and highly correlated monthly returns. Combined tail risk is ~2x single-strategy DD when both are active.",
+    "pairs": {
+      "RSI_MR_ETH_vs_DonchianMR_ETH": {
+        "correlation": 0.878,
+        "overlapping_months": 13,
+        "concurrent_position_rate": 1.0,
+        "note": "100% of DonchianMR_ETH trades overlap with RSI_MR_ETH positions. Both use RSI as primary/filter signal and identical SL=2%/TP=4%. When one loses, the other almost certainly loses too.",
+        "monthly_returns": {
+          "donchian_mr": {
+            "mean_pct": 5.2,
+            "std_pct": 11.3
+          },
+          "rsi_mr": {
+            "mean_pct": 8.6,
+            "std_pct": 20.9
+          }
+        }
+      }
+    },
+    "combined_risk": {
+      "eth_mr_combined_dd_est_pct": 23.5,
+      "two_asset_combined_dd_est_pct": 23.5,
+      "current_max_exposure_pct": 3.0,
+      "current_effective_exposure_pct": 3.0,
+      "note": "2 LIVE strategies @ 1.5% risk each = 3.0% max capital at risk. With ETH correlation 0.878, effective exposure ~3.0% (nearly 2x single-strategy DD when both active). DonchianMR_BTC (PAPER) would add BTC diversification if promoted."
+    },
+    "recommendations": [
+      "Reduce per-trade risk from 1.5% to 1.0% when multiple correlated strategies are active (\u2192 3.0% max, ~5.2% effective)",
+      "Add per-symbol max exposure cap in Guardian: max 2x risk_per_trade per asset (prevents 3% ETH exposure from two simultaneous positions)",
+      "Implement mutual exclusion: when one ETH MR strategy enters a position, block the other until exit",
+      "Prioritize finding a non-correlated strategy (trend-following, BTC-specific, or different logic) for the 4th LIVE slot"
+    ],
+    "btc_diversification": {
+      "btc_eth_correlation_est": 0.75,
+      "benefit": "DonchianMR_BTC (PAPER) could reduce combined DD from ~23.5% (ETH-only) to ~14.6% (2-asset). Significant but incomplete diversification if promoted.",
+      "gap": "Still no trend-following strategy for regime diversification. Both LIVE strategies are ETH mean-reversion."
+    }
+  },
+  "strategy_landscape_snapshot": {
+    "date": "2026-06-22",
+    "active_strategies": 2,
+    "total_strategies": 26,
+    "viable": [
+      "DonchianMR_ETH",
+      "DonchianMR_BTC",
+      "RSI_MR_ETH"
+    ],
+    "risk": "MODERATE: Two LIVE mean-reversion strategies on ETH (RSI_MR_ETH + DonchianMR_ETH). Correlation risk \u2014 both thrive in ranging/mean-reverting conditions. No trend-following strategy active. Regime is RANGING (safe for MR), but regime shift to TRENDING would expose both strategies. Need a trend-following LIVE strategy for diversification.",
+    "confirmed_failures": {
+      "BBandRSI_ETH": {
+        "365d_ret": 70.0,
+        "sharpe": 0.426,
+        "dd": 11.4,
+        "trades": 30,
+        "verdict": "FRONT_LOADED \u2014 180d=-4.9%, 90d=+0.5%. All profits in first 6 months."
+      },
+      "RegimeSwitch_BTC": {
+        "365d_ret": -41.02,
+        "sharpe": -0.232,
+        "dd": 64.92,
+        "trades": 156,
+        "verdict": "CONSISTENT_LOSER"
+      },
+      "RSI_MR_BTC": {
+        "WF_OOS_ret": -5.99,
+        "WF_OOS_sr": -0.596,
+        "verdict": "DEGRADING",
+        "note": "IS +64.55% but OOS -5.99%, all rolling 90d windows negative in 2026"
+      },
+      "ADXTrend_BTC": {
+        "365d_ret": -89.68,
+        "sharpe": -1.647,
+        "dd": 90.5,
+        "trades": 399,
+        "verdict": "BROKEN"
+      },
+      "DynamicGrid": {
+        "verdict": "DEAD_END",
+        "note": "Grid trading loses in trending 2025-2026 market"
+      },
+      "BBandRSI_BTC": {
+        "verdict": "DO_NOT_ENABLE",
+        "note": "Best SR=0.063, DD>50%"
+      }
+    },
+    "rsi_mr_eth_optimization": {
+      "atr_filter_tested": true,
+      "atr_filter_verdict": "OVERFITTING \u2014 improves 365d DD (45.8\u219220.8%) but kills OOS trades (17\u21922)",
+      "recommendation": "KEEP current params unchanged"
+    },
+    "donchian_mr_eth_wf_validation": {
+      "date": "2026-06-22T10:51:00Z",
+      "status": "PROMOTED_TO_LIVE",
+      "promotion_date": "2026-06-22T10:46:00Z",
+      "params": "dc=10/os=20/ob=80/ex=50/sl=2%/tp=4%/cd=5/lev=3x",
+      "windows": 4,
+      "oos_positive": "4/4",
+      "mean_oos_return_pct": 10.78,
+      "mean_oos_sharpe": 0.45,
+      "wfe": 0.125,
+      "wfe_note": "WFE distorted by Win4 IS outlier (+253% in high-vol regime). All OOS positive confirms robustness.",
+      "oos_dd_range": "1.21% - 13.75%",
+      "verdict": "PASS \u2014 no overfitting detected, consistently profitable OOS",
+      "promotion_recommendation": "PAPER -> LIVE. Meets all criteria: 365d SR=0.55 DD=16.21% WR=72% trades=50. WF confirms robustness."
+    },
+    "donchian_mr_eth_365d": {
+      "return_pct": 429.48,
+      "sharpe": 0.552,
+      "dd_pct": 16.21,
+      "wr_pct": 72.0,
+      "trades": 50,
+      "profit_factor": 3.38
+    },
+    "donchian_mr_btc_optimized": {
+      "return_pct": 203.81,
+      "sharpe": 0.508,
+      "dd_pct": 11.62,
+      "wr_pct": 68.4,
+      "trades": 38,
+      "profit_factor": 4.57,
+      "verdict": "PAPER_READY",
+      "params": "DP=8/OS=20/OB=80/SL=1.5%/TP=4%/CD=9/RSI=14/EX=50/lev=3x",
+      "note": "Round 2 optimization (2026-06-22): DP 10\u21928, CD 5\u21929. SR 0.391\u21920.508 (now meets LIVE threshold 0.5). DD 17.9%\u219211.62%. 365d: +203.81%. 90d: +23.06% SR=0.580. 60d: +23.48% SR=0.746. Now meets ALL LIVE criteria: SR>0.5, DD<20%, WR>40%, T>30. Promoted to PAPER.",
+      "wf_validation": {
+        "date": "2026-06-22T11:03:12.502739+00:00",
+        "windows": 4,
+        "oos_positive": "3/4",
+        "mean_oos_return_pct": 4.6,
+        "mean_oos_sr": 0.567,
+        "oos_dd_range": "0.0% - 6.8%",
+        "verdict": "PAPER_READY"
+      },
+      "round2_optimization": {
+        "date": "2026-06-22T19:09:00+00:00",
+        "dp_sweep": [
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          12,
+          15
+        ],
+        "sl_sweep": [
+          0.01,
+          0.0125,
+          0.015,
+          0.0175,
+          0.02
+        ],
+        "cd_sweep": [
+          3,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "prior_best": "DP=10 CD=5: SR=0.425 DD=16.46%",
+        "new_best": "DP=8 CD=9: SR=0.508 DD=11.62%",
+        "improvement": "SR +19.5%, DD -4.84pp, Ret +53.75pp"
+      }
+    }
+  },
+  "engine_pid": 900690,
+  "dgt_deployed": null,
+  "dgt_btc_pnl": null,
+  "dgt_eth_pnl": null
 }

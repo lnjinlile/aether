@@ -147,6 +147,7 @@ def run():
             # ── Touch oracle.json freshness (prevents AUDIT-005 stale state regressions) ──
             try:
                 _now_iso = datetime.now(timezone.utc).isoformat()
+                _data_stats = {}  # safety default
                 # Compute latest kline timestamp + total count from DB
                 _conn = storage._get_conn()
                 try:
@@ -155,6 +156,25 @@ def run():
                     ).fetchone()
                     _last_klines_ts = _row[0]
                     _klines_count = _row[1]
+                    # ── Refresh data_stats (per-symbol/timeframe) ──
+                    for _sym in SYMBOLS:
+                        for _tf in TIMEFRAMES:
+                            _sr = _conn.execute(
+                                "SELECT COUNT(*), MAX(open_time) FROM klines WHERE symbol=? AND timeframe=?",
+                                (_sym, _tf)
+                            ).fetchone()
+                            _data_stats[f"{_sym}_{_tf}"] = {
+                                "count": _sr[0],
+                                "latest_ts": _sr[1],
+                                "latest": datetime.fromtimestamp(_sr[1]/1000).strftime("%Y-%m-%dT%H:%M:%S") if _sr[1] else "N/A"
+                            }
+                    # Add auxiliary table row counts
+                    for _tbl in ["funding_rates", "open_interest", "orderbook_snapshots", "order_flow", "trades_log"]:
+                        try:
+                            _cnt = _conn.execute(f"SELECT COUNT(*) FROM {_tbl}").fetchone()[0]
+                            _data_stats[f"table_{_tbl}"] = {"count": _cnt}
+                        except Exception:
+                            pass
                 finally:
                     _conn.close()
                 _my_pid = os.getpid()  # actual python process PID, not the bash wrapper
@@ -162,6 +182,7 @@ def run():
                 # Prevents drift between .aether/oracle.json and .aether/state/oracle.json
                 _synced_enabled = None
                 _synced_disabled = None
+                _cross_file_warnings = []  # AUDIT-051: track PAPER→enabled violations
                 try:
                     import yaml
                     _yaml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "strategies.yaml")
@@ -170,6 +191,25 @@ def run():
                     _strats = _yaml_cfg.get("strategies", [])
                     _synced_enabled = [s["name"] for s in _strats if s.get("enabled", False)]
                     _synced_disabled = len([s for s in _strats if not s.get("enabled", False)])
+                    # AUDIT-051 guard: cross-check strategies.yaml enabled vs athena.json verdicts
+                    # PAPER/DO_NOT_ENABLE/RETIRED strategies must not be in strategies_enabled
+                    try:
+                        _athena_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state", "athena.json")
+                        with open(_athena_path) as _af:
+                            _athena = json.load(_af)
+                        _athena_strats = _athena.get("strategies", {})
+                        _filtered = []
+                        for _name in _synced_enabled:
+                            _as = _athena_strats.get(_name, {})
+                            _verdict = _as.get("verdict", "NOT_EVALUATED")
+                            if _verdict in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED"):
+                                _cross_file_warnings.append(f"{_name} enabled=True in YAML but verdict={_verdict} in athena.json → EXCLUDED")
+                                _synced_disabled += 1
+                            else:
+                                _filtered.append(_name)
+                        _synced_enabled = _filtered
+                    except Exception:
+                        pass  # best-effort cross-check
                 except Exception:
                     pass  # best-effort
                 # Update both state/oracle.json AND main oracle.json
@@ -188,14 +228,21 @@ def run():
                     oracle["klines_count"] = _klines_count
                     oracle["pipeline_pid"] = _my_pid
                     oracle["_updated_at"] = _now_iso
+                    if _data_stats:
+                        oracle["data_stats"] = _data_stats
                     if _synced_enabled is not None:
                         oracle["strategies_enabled"] = _synced_enabled
                         oracle["strategies_disabled"] = _synced_disabled
+                    if _cross_file_warnings:
+                        oracle["_cross_file_warnings"] = _cross_file_warnings
                     with open(oracle_path, "w") as f:
                         json.dump(oracle, f, indent=2, ensure_ascii=False)
             except Exception:
                 pass  # best-effort, don't block pipeline tick
 
+            if _cross_file_warnings:
+                for _w in _cross_file_warnings:
+                    logger.warning("AUDIT-051 guard: %s", _w)
             if errors:
                 logger.warning("Tick: %s — %d feed(s) failed", stats, len(errors))
             else:

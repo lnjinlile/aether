@@ -924,6 +924,26 @@ def sync_agent_states():
                 for _pk, _pv in _prom_data.items():
                     if _pk in _prom_special_map and isinstance(_pv, dict) and _pv.get("trades"):
                         _prom_strategies[_prom_special_map[_pk]] = _pv
+                # AUDIT-053 v4: Guardian.json fallback — when prometheus.json strategies
+                # are degraded (e.g. engine 90d overwrite before v4 fix), Guardian retains
+                # the authoritative 365d metrics synced from athena.json.
+                _gd_path = os.path.join(STATE_DIR, "guardian.json")
+                _gd_data = load_json(_gd_path)
+                if _gd_data:
+                    _gd_live = _gd_data.get("live_strategy_metrics", {})
+                    for _gn, _gv in _gd_live.items():
+                        if not isinstance(_gv, dict):
+                            continue
+                        _g_trades = _gv.get("trades") or 0
+                        _p_trades_existing = (_prom_strategies.get(_gn, {}) or {}).get("trades") or 0
+                        if _g_trades > _p_trades_existing:
+                            _prom_strategies[_gn] = {
+                                "return_pct": _gv.get("return_pct", 0),
+                                "sharpe": _gv.get("sharpe", 0),
+                                "win_rate": _gv.get("win_rate", 0),
+                                "trades": _g_trades,
+                                "max_dd": _gv.get("max_dd", 0),
+                            }
                 # Inject prometheus data into bt when prom has MORE trades
                 _bt_strategies = bt.get("strategies", {})
                 for _name, _pdata in _prom_strategies.items():
@@ -948,6 +968,9 @@ def sync_agent_states():
                         for k, v in _injected.items():
                             if v is not None:
                                 _bt_entry[k] = v
+                                # Also inject into nested metrics dict (used by strat_summary L965-974)
+                                _bt_metrics = _bt_entry.setdefault("metrics", {})
+                                _bt_metrics[k] = v
                         _bt_strategies[_name] = _bt_entry
                         logger.info(
                             "AUDIT-053 v3 INJECTED: %s metrics from prometheus.json "
@@ -1087,18 +1110,23 @@ def sync_agent_states():
         sig = load_json(os.path.join(STATE_DIR, "signals.json"))
         merge_state("mercury", {"status": "ok", "signals_active": len(sig.get("signals",{})), "signals": sig.get("signals",{})})
 
-        # Prometheus: pull real backtest metrics, never hardcode PnL
+        # Prometheus: pull real backtest metrics from strat_summary (which has
+        # AUDIT-053 athena.json preservation applied at L1000-1017), NOT raw
+        # s["metrics"] which contains engine's 90d short backtest that may have
+        # fewer trades than Prometheus-authoritative 365d sweeps.
+        # AUDIT-053 v4: This was the missing link — strat_summary already has
+        # the correct preserved metrics but prometheus.json write was bypassing it.
         prom_state = {"status": "active", "strategies": {}, "engine_pid": os.getpid()}
-        for name, s in bt.get("strategies", {}).items():
-            if "metrics" not in s:
+        for name, ss_entry in strat_summary.items():
+            # Only include strategies that exist in bt and have meaningful data
+            if ss_entry.get("trades", 0) <= 0:
                 continue
-            m = s["metrics"]
             prom_state["strategies"][name] = {
-                "return_pct": m.get("total_return_pct", 0),
-                "sharpe": m.get("sharpe_ratio", 0),
-                "win_rate": m.get("win_rate", 0),
-                "trades": m.get("total_trades", 0),
-                "max_dd": m.get("max_drawdown_pct", 0),
+                "return_pct": ss_entry.get("return_pct", 0),
+                "sharpe": ss_entry.get("sharpe", 0),
+                "win_rate": ss_entry.get("win_rate", 0),
+                "trades": ss_entry.get("trades", 0),
+                "max_dd": ss_entry.get("max_dd", 0),
             }
         # Preserve Prometheus-specific metadata fields from already-loaded _prom_data
         for key in ("dsr_implemented", "walk_forward_implemented", "anti_overfitting_run", "wf_findings", "next",
