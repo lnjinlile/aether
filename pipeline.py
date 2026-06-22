@@ -3,8 +3,12 @@
 import sys, os, time, json, logging
 from datetime import datetime, timezone
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from dotenv import load_dotenv; load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+# PERF-009: Module-level base directory — eliminates 6 redundant
+# os.path.dirname(os.path.abspath(__file__)) evaluations per cycle.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+sys.path.insert(0, BASE_DIR)
+from dotenv import load_dotenv; load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [DATA] %(message)s")
 logger = logging.getLogger("pipeline")
@@ -15,7 +19,7 @@ INTERVAL = 300  # 5 minutes
 HISTORICAL_DAYS = 365
 # FUNDING_INTERVAL removed — funding rates now collected exclusively by data_ext.py
 
-STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state", "pipeline.json")
+STATE_FILE = os.path.join(BASE_DIR, ".aether", "state", "pipeline.json")
 
 
 def _min_expected_bars(timeframe: str, days: int = HISTORICAL_DAYS) -> int:
@@ -185,7 +189,7 @@ def run():
                 _cross_file_warnings = []  # AUDIT-051: track PAPER→enabled violations
                 try:
                     import yaml
-                    _yaml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "strategies.yaml")
+                    _yaml_path = os.path.join(BASE_DIR, "config", "strategies.yaml")
                     with open(_yaml_path) as _yf:
                         _yaml_cfg = yaml.safe_load(_yf)
                     _strats = _yaml_cfg.get("strategies", [])
@@ -194,7 +198,7 @@ def run():
                     # AUDIT-051 guard: cross-check strategies.yaml enabled vs athena.json verdicts
                     # PAPER/DO_NOT_ENABLE/RETIRED strategies must not be in strategies_enabled
                     try:
-                        _athena_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state", "athena.json")
+                        _athena_path = os.path.join(BASE_DIR, ".aether", "state", "athena.json")
                         with open(_athena_path) as _af:
                             _athena = json.load(_af)
                         _athena_strats = _athena.get("strategies", {})
@@ -214,8 +218,8 @@ def run():
                     pass  # best-effort
                 # Update both state/oracle.json AND main oracle.json
                 for oracle_path in [
-                    os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state", "oracle.json"),
-                    os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "oracle.json"),
+                    os.path.join(BASE_DIR, ".aether", "state", "oracle.json"),
+                    os.path.join(BASE_DIR, ".aether", "oracle.json"),
                 ]:
                     if os.path.exists(oracle_path):
                         with open(oracle_path, "r") as f:
