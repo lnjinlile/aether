@@ -911,9 +911,9 @@ def sync_agent_states():
         # was in place, this injection ensures athena.json (and downstream consumers)
         # still get the correct Prometheus-authoritative data.
         _prom_bt_path = os.path.join(STATE_DIR, "prometheus.json")
-        if os.path.exists(_prom_bt_path):
+        _prom_data = load_json(_prom_bt_path)  # returns {} if missing/corrupt — reused below
+        if _prom_data:
             try:
-                _prom_data = load_json(_prom_bt_path)
                 _prom_strategies = _prom_data.get("strategies", {})
                 # Map special prometheus.json keys to strategy names
                 _prom_special_map = {
@@ -993,15 +993,10 @@ def sync_agent_states():
         # If athena says LIVE but backtest_results (Prometheus authority) says non-LIVE,
         # downgrade to the backtest_results verdict.
         existing_athena = load_json(os.path.join(STATE_DIR, "athena.json"))
+        # Build verdict map from already-loaded bt (avoids redundant file read)
         _bt_results_v2 = {}
-        _bt2_path = os.path.join(STATE_DIR, "backtest_results.json")
-        if os.path.exists(_bt2_path):
-            try:
-                _bt2_data = load_json(_bt2_path)
-                for _bn, _bv in _bt2_data.get("strategies", {}).items():
-                    _bt_results_v2[_bn] = _bv.get("verdict", "")
-            except Exception:
-                pass
+        for _bn, _bv in bt.get("strategies", {}).items():
+            _bt_results_v2[_bn] = _bv.get("verdict", "")
         # AUDIT-053 FIX: Preserve quantitative metrics from existing athena.json
         # when the existing data has MORE trades (from longer/better backtests like
         # Prometheus 365d sweep). Engine's 90d backtest must not overwrite authoritative
@@ -1105,16 +1100,15 @@ def sync_agent_states():
                 "trades": m.get("total_trades", 0),
                 "max_dd": m.get("max_drawdown_pct", 0),
             }
-        # Preserve Prometheus-specific metadata fields from existing state
-        existing_prom = load_json(os.path.join(STATE_DIR, "prometheus.json"))
+        # Preserve Prometheus-specific metadata fields from already-loaded _prom_data
         for key in ("dsr_implemented", "walk_forward_implemented", "anti_overfitting_run", "wf_findings", "next",
                      "recommendation", "live_validation", "ml_alpha_status", "ml_validation",
                      "regime_model", "regime_monitor", "regime_classifier", "last_optimization",
                      "strategy_landscape_20260622", "rsi_mr_eth_live_confirmed",
                      "donchian_mr_eth_wf_validation", "donchian_mr_eth_365d",
                      "donchian_mr_btc_optimized", "portfolio_correlation"):
-            if key in existing_prom:
-                prom_state[key] = existing_prom[key]
+            if key in _prom_data:
+                prom_state[key] = _prom_data[key]
         # NOTE: strategies metrics are ENGINE-DERIVED (from backtest_results.json).
         # Prometheus-generated metrics live in rsi_mr_eth_live_confirmed etc., NOT
         # in the strategies section which is overwritten by every engine tick.
