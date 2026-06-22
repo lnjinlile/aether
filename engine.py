@@ -159,9 +159,25 @@ def run_backtests():
             tf = p.get("timeframes", [None])[0]
             strategy_type = s["class"].split(".")[-1]
 
-            # Skip disabled strategies — preserve any existing backtest metrics
+            # Skip disabled strategies — preserve existing metrics but enforce correct verdict
+            # AUDIT-040: Don't blindly preserve "LIVE" verdict for disabled strategies.
+            # Use performance data from existing results to determine correct verdict.
             if not enabled:
                 existing = existing_results.get(name, {})
+                # Derive verdict from actual performance data, not from stale cached verdict
+                existing_verdict = existing.get("verdict", "NOT_EVALUATED")
+                existing_return = existing.get("total_return_pct", None)
+                existing_sharpe = existing.get("sharpe_ratio", None)
+                existing_wr = existing.get("win_rate", None)
+                # If strategy is disabled and has performance data, override stale LIVE verdict
+                if existing_verdict == "LIVE" and existing_return is not None:
+                    ret = existing_return
+                    sr = existing_sharpe or 0
+                    wr = existing_wr or 0
+                    if ret <= 0 or sr <= 0.3 or wr <= 40:
+                        existing_verdict = "RETIRED"
+                    elif sr <= 0.5:
+                        existing_verdict = "PAUSED"
                 results[name] = {
                     "status": "disabled",
                     "enabled": False,
@@ -174,7 +190,7 @@ def run_backtests():
                     "win_rate": existing.get("win_rate", None),
                     "total_trades": existing.get("total_trades", 0),
                     "backtest_period": existing.get("backtest_period", "pending"),
-                    "verdict": existing.get("verdict", "NOT_EVALUATED"),
+                    "verdict": existing_verdict,
                     "retired_reason": existing.get("retired_reason", None),
                 }
                 continue
@@ -368,6 +384,20 @@ def run_backtests():
         # Summary log
         ok_count = sum(1 for r in results.values() if r.get("status") == "ok")
         logger.info("Backtests: %d/%d strategies evaluated with real metrics", ok_count, len(results))
+
+        # ═══ AUDIT-040: Cross-file consistency guard ═══
+        # Verify no disabled strategy leaked through with verdict=LIVE.
+        # This catches engine.py bugs and stale cache poisoning at write time.
+        leaked = []
+        for name, r in results.items():
+            if not r.get("enabled", False) and r.get("verdict") == "LIVE":
+                leaked.append(name)
+        if leaked:
+            logger.error("AUDIT-040 CONSISTENCY VIOLATION: %d disabled strategies have verdict=LIVE: %s",
+                         len(leaked), ", ".join(leaked))
+        else:
+            live_count = sum(1 for r in results.values() if r.get("verdict") == "LIVE")
+            logger.info("AUDIT-040 guard: %d LIVE strategies, 0 leaked — consistency OK", live_count)
     except Exception as e:
         logger.error("Backtest error: %s", e)
         write_json("backtest_results.json", {"error": str(e), "status": "error"})
