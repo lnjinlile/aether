@@ -568,20 +568,16 @@ class RegimeSwitchStrategy(BaseStrategy):
                         timestamp=df.index[-1],
                     )
 
-            # Standard SL/TP checks on ATR
-            atr = float(ind["atr"].iloc[-1]) if not pd.isna(ind["atr"].iloc[-1]) else 0
-            sl_mult = p["trend_sl_pct"] * entry / max(atr, 1e-9) if atr > 0 else 1.0
-            tp_mult = p["trend_tp_pct"] * entry / max(atr, 1e-9) if atr > 0 else 1.0
-
+            # Standard SL/TP checks (percentage-based, same for all regimes)
             if pos["side"] == "LONG":
-                if atr > 0 and price <= entry - max(atr * sl_mult, entry * p["trend_sl_pct"]):
+                if price <= entry * (1 - p["trend_sl_pct"]):
                     return Signal(
                         SignalType.CLOSE_LONG, symbol, price=price,
                         reason=f"SL -{p['trend_sl_pct']*100:.1f}%",
                         strategy_name=self.name,
                         timestamp=df.index[-1],
                     )
-                if atr > 0 and price >= entry + max(atr * tp_mult, entry * p["trend_tp_pct"]):
+                if price >= entry * (1 + p["trend_tp_pct"]):
                     return Signal(
                         SignalType.CLOSE_LONG, symbol, price=price,
                         reason=f"TP +{p['trend_tp_pct']*100:.1f}%",
@@ -589,14 +585,14 @@ class RegimeSwitchStrategy(BaseStrategy):
                         timestamp=df.index[-1],
                     )
             else:
-                if atr > 0 and price >= entry + max(atr * sl_mult, entry * p["trend_sl_pct"]):
+                if price >= entry * (1 + p["trend_sl_pct"]):
                     return Signal(
                         SignalType.CLOSE_SHORT, symbol, price=price,
                         reason=f"SL -{p['trend_sl_pct']*100:.1f}%",
                         strategy_name=self.name,
                         timestamp=df.index[-1],
                     )
-                if atr > 0 and price <= entry - max(atr * tp_mult, entry * p["trend_tp_pct"]):
+                if price <= entry * (1 - p["trend_tp_pct"]):
                     return Signal(
                         SignalType.CLOSE_SHORT, symbol, price=price,
                         reason=f"TP +{p['trend_tp_pct']*100:.1f}%",

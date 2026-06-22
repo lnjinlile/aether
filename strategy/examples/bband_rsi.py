@@ -1,11 +1,11 @@
-"""
-Bollinger Band + RSI 均值回归策略 — 专为盘整市设计
+""""
+Bollinger Band + RSI 均值回归策略 — 专为盘整市设计 (v2: TP/SL-only exits)
 
 逻辑:
 - 价格触及布林带下轨 + RSI < 35 → 做多 (超卖反弹)
 - 价格触及布林带上轨 + RSI > 65 → 做空 (超买回落)  
-- 价格回归中轨 或 RSI回50 → 平仓
-- 固定止损2%, 止盈4%
+- 仅由 TP/SL 平仓，不再中途 RSI/SMA 提前退出
+- 固定止损2%, 止盈5% (1:2.5 R:R)
 """
 from typing import List, Optional
 import pandas as pd
@@ -22,12 +22,12 @@ class BBandMeanReversion(BaseStrategy):
         symbols: Optional[List[str]] = None,
         timeframes: Optional[List[str]] = None,
         bb_period: int = 20,
-        bb_std: float = 2.0,
+        bb_std: float = 2.5,
         rsi_period: int = 14,
-        rsi_oversold: float = 35,
-        rsi_overbought: float = 65,
+        rsi_oversold: float = 30,
+        rsi_overbought: float = 70,
         stop_loss_pct: float = 0.02,
-        take_profit_pct: float = 0.04,
+        take_profit_pct: float = 0.05,
         cooldown_bars: int = 3,
     ):
         super().__init__(name, symbols or ["BTC/USDT"], timeframes or ["15m"])
@@ -114,21 +114,8 @@ class BBandMeanReversion(BaseStrategy):
                               reason="Stop loss -%.0f%%" % (p["stop_loss_pct"]*100),
                               strategy_name=self.name)
 
-            # RSI回归50 → 平仓
-            if pos["side"] == "LONG" and rsi > 55:
-                return Signal(SignalType.CLOSE_LONG, symbol, price=price,
-                              reason="RSI=%.0f returned to mean" % rsi, strategy_name=self.name)
-            if pos["side"] == "SHORT" and rsi < 45:
-                return Signal(SignalType.CLOSE_SHORT, symbol, price=price,
-                              reason="RSI=%.0f returned to mean" % rsi, strategy_name=self.name)
-
-            # 价格回归中轨
-            if pos["side"] == "LONG" and float(latest["above_sma"]):
-                return Signal(SignalType.CLOSE_LONG, symbol, price=price,
-                              reason="Price back above SMA", strategy_name=self.name)
-            if pos["side"] == "SHORT" and float(latest["below_sma"]):
-                return Signal(SignalType.CLOSE_SHORT, symbol, price=price,
-                              reason="Price back below SMA", strategy_name=self.name)
+            # RSI/SMA 退出已移除 — 保留给 TP/SL 完成完整风险收益比
+            # 62% WR with 1:2 R:R needs trades to actually reach TP, not exit prematurely
 
             return Signal(SignalType.HOLD, symbol, reason="Holding", strategy_name=self.name)
 

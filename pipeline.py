@@ -13,7 +13,7 @@ SYMBOLS = ["BTC/USDT", "ETH/USDT"]
 TIMEFRAMES = ["15m", "1h", "4h", "1d"]
 INTERVAL = 300  # 5 minutes
 HISTORICAL_DAYS = 365
-FUNDING_INTERVAL = 3600  # 1 hour (funding rates change every 8h)
+# FUNDING_INTERVAL removed — funding rates now collected exclusively by data_ext.py
 
 STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state", "pipeline.json")
 
@@ -84,8 +84,6 @@ def run():
     # ── First boot: backfill 365 days of historical data ──
     _backfill_all(collector, storage)
 
-    last_funding_fetch = 0  # unix timestamp of last funding rate collection
-
     while True:
         try:
             stats = {}
@@ -107,27 +105,31 @@ def run():
                                 errors.append({"feed": f"{sym}_{tf}", "error": str(e)[:200]})
                                 logger.error("%s %s: %s", sym, tf, e)
 
-            # ── Orderbook: every tick (5 min) ──
-            for sym in SYMBOLS:
-                try:
-                    ob = collector.fetch_orderbook(sym, 20)
-                    storage.save_orderbook(sym, ob)
-                    stats[f"{sym}_orderbook"] = "ok"
-                except Exception as e:
-                    logger.error("Orderbook %s: %s", sym, e)
+            # ── Orderbook / Funding rates: handled by data_ext.py (single source of truth) ──
+            # REMOVED: orderbook + funding_rate now collected exclusively by data_ext.py
+            # This avoids dual-write to funding_rates table and dead orderbook table.
+            # data_ext.py uses "BTCUSDT" symbol format, consistent with ml_alpha consumers.
 
-            # ── Funding rate: every 1 hour ──
-            now_ts = time.time()
-            if now_ts - last_funding_fetch >= FUNDING_INTERVAL:
-                for sym in SYMBOLS:
-                    try:
-                        fr = collector.fetch_funding_rate(sym, 100)
-                        storage.save_funding_rates(sym, fr)
-                        stats[f"{sym}_funding"] = len(fr)
-                        logger.info("Funding rate %s: %d records saved", sym, len(fr))
-                    except Exception as e:
-                        logger.error("Funding rate %s: %s", sym, e)
-                last_funding_fetch = now_ts
+            # ── Periodic ANALYZE (every 6 hours) ──
+            if int(time.time()) % 21600 < INTERVAL:
+                try:
+                    storage._get_conn().execute("ANALYZE")
+                    logger.info("ANALYZE complete — query planner stats refreshed")
+                except Exception:
+                    pass
+
+            # ── Periodic data quality check (every hour) ──
+            if int(time.time()) % 3600 < INTERVAL:
+                try:
+                    from data.quality import DataQualityCheck
+                    qc = DataQualityCheck()
+                    results = qc.run_all(SYMBOLS, TIMEFRAMES)
+                    if results["health"] != "ok":
+                        logger.warning("Quality check DEGRADED: %d issues", len(results["issues"]))
+                        for iss in results["issues"][:3]:
+                            logger.warning("  [%s] %s", iss["type"], iss["msg"])
+                except Exception as e:
+                    logger.warning("Quality check failed: %s", e)
 
             # Write health status
             os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
@@ -141,6 +143,30 @@ def run():
                     "latest": stats,
                     "errors": errors,
                 }, f, indent=2)
+
+            # ── Touch oracle.json freshness (prevents AUDIT-005 stale state regressions) ──
+            try:
+                _now_iso = datetime.now(timezone.utc).isoformat()
+                # Compute latest kline timestamp from DB
+                _last_klines_ts = storage.db.execute("SELECT MAX(open_time) FROM klines").fetchone()[0]
+                # Update both state/oracle.json AND main oracle.json
+                for oracle_path in [
+                    os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state", "oracle.json"),
+                    os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "oracle.json"),
+                ]:
+                    if os.path.exists(oracle_path):
+                        with open(oracle_path, "r") as f:
+                            oracle = json.load(f)
+                    else:
+                        oracle = {}
+                    oracle["last_pipeline"] = _now_iso
+                    oracle["data_fresh"] = True
+                    oracle["last_klines_ts"] = _last_klines_ts
+                    oracle["_updated_at"] = _now_iso
+                    with open(oracle_path, "w") as f:
+                        json.dump(oracle, f, indent=2, ensure_ascii=False)
+            except Exception:
+                pass  # best-effort, don't block pipeline tick
 
             if errors:
                 logger.warning("Tick: %s — %d feed(s) failed", stats, len(errors))

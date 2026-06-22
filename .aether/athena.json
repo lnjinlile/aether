@@ -1,6 +1,6 @@
 {
-  "run_time": "2026-06-21T19:53:18.667597+00:00",
-  "data_range_days": 30,
+  "run_time": "2026-06-22T03:57:00.465936+00:00",
+  "data_range_days": 90,
   "db_total_klines": 92710,
   "strategies": [
     {
@@ -10,21 +10,21 @@
       "tf": "15m",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -39.61,
-        "sharpe_ratio": -0.9088,
-        "max_drawdown_pct": 41.7,
-        "win_rate": 41.8,
-        "profit_factor": 0.602,
-        "total_trades": 244,
-        "avg_win_pct": 0.72,
-        "avg_loss_pct": 0.86
+        "total_return_pct": -70.13,
+        "sharpe_ratio": -1.0687,
+        "max_drawdown_pct": 71.04,
+        "win_rate": 40.18,
+        "profit_factor": 0.5001,
+        "total_trades": 560,
+        "avg_win_pct": 0.53,
+        "avg_loss_pct": 0.71
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.909)",
-        "\u26a0\ufe0f LARGE LOSS (-39.61%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (41.7%)"
+        "\u26a0\ufe0f NEGATIVE SHARPE (-1.069)",
+        "\u26a0\ufe0f LARGE LOSS (-70.13%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (71.0%)"
       ],
-      "bars": 2881
+      "bars": 8641
     },
     {
       "name": "DynamicGrid_ETH",
@@ -33,21 +33,21 @@
       "tf": "15m",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -31.79,
-        "sharpe_ratio": -0.428,
-        "max_drawdown_pct": 34.09,
-        "win_rate": 47.6,
-        "profit_factor": 0.7677,
-        "total_trades": 229,
-        "avg_win_pct": 1.04,
-        "avg_loss_pct": 1.23
+        "total_return_pct": -72.92,
+        "sharpe_ratio": -0.7203,
+        "max_drawdown_pct": 73.56,
+        "win_rate": 46.81,
+        "profit_factor": 0.605,
+        "total_trades": 564,
+        "avg_win_pct": 0.72,
+        "avg_loss_pct": 1.05
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.428)",
-        "\u26a0\ufe0f LARGE LOSS (-31.79%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (34.1%)"
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.720)",
+        "\u26a0\ufe0f LARGE LOSS (-72.92%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (73.6%)"
       ],
-      "bars": 2881
+      "bars": 8641
     },
     {
       "name": "MLAlpha_BTC",
@@ -66,7 +66,7 @@
         "avg_loss_pct": 0.0
       },
       "flags": [],
-      "bars": 721
+      "bars": 2161
     },
     {
       "name": "MA_Cross_BTC",
@@ -75,22 +75,21 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -34.15,
-        "sharpe_ratio": -1.2743,
-        "max_drawdown_pct": 40.13,
-        "win_rate": 6.67,
-        "profit_factor": 0.2519,
-        "total_trades": 15,
-        "avg_win_pct": 13.24,
-        "avg_loss_pct": 3.76
+        "total_return_pct": -8.89,
+        "sharpe_ratio": 0.0112,
+        "max_drawdown_pct": 41.23,
+        "win_rate": 29.51,
+        "profit_factor": 1.0089,
+        "total_trades": 61,
+        "avg_win_pct": 7.97,
+        "avg_loss_pct": 3.31
       },
       "flags": [
-        "\u26a0\ufe0f LOW WINRATE (7% < 30%)",
-        "\u26a0\ufe0f NEGATIVE SHARPE (-1.274)",
-        "\u26a0\ufe0f LARGE LOSS (-34.15%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (40.1%)"
+        "\u26a0\ufe0f LOW WINRATE (30% < 30%)",
+        "\u26a0\ufe0f LARGE LOSS (-8.89%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (41.2%)"
       ],
-      "bars": 721
+      "bars": 2161
     },
     {
       "name": "MA_Cross_ETH",
@@ -99,22 +98,21 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -27.61,
-        "sharpe_ratio": -0.4112,
-        "max_drawdown_pct": 48.42,
-        "win_rate": 21.74,
-        "profit_factor": 0.7119,
-        "total_trades": 23,
-        "avg_win_pct": 11.95,
-        "avg_loss_pct": 4.66
+        "total_return_pct": -8.68,
+        "sharpe_ratio": 0.0824,
+        "max_drawdown_pct": 50.14,
+        "win_rate": 29.33,
+        "profit_factor": 1.0648,
+        "total_trades": 75,
+        "avg_win_pct": 10.49,
+        "avg_loss_pct": 4.09
       },
       "flags": [
-        "\u26a0\ufe0f LOW WINRATE (22% < 30%)",
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.411)",
-        "\u26a0\ufe0f LARGE LOSS (-27.61%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (48.4%)"
+        "\u26a0\ufe0f LOW WINRATE (29% < 30%)",
+        "\u26a0\ufe0f LARGE LOSS (-8.68%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (50.1%)"
       ],
-      "bars": 721
+      "bars": 2161
     },
     {
       "name": "TrendFollow_BTC",
@@ -123,19 +121,19 @@
       "tf": "15m",
       "status": "OK",
       "metrics": {
-        "total_return_pct": 76.25,
-        "sharpe_ratio": 0.7319,
-        "max_drawdown_pct": 17.25,
-        "win_rate": 41.03,
-        "profit_factor": 1.7743,
-        "total_trades": 78,
-        "avg_win_pct": 4.37,
-        "avg_loss_pct": 1.71
+        "total_return_pct": -1.89,
+        "sharpe_ratio": 0.0351,
+        "max_drawdown_pct": 55.46,
+        "win_rate": 30.22,
+        "profit_factor": 1.0289,
+        "total_trades": 225,
+        "avg_win_pct": 3.89,
+        "avg_loss_pct": 1.64
       },
       "flags": [
-        "\u26a0\ufe0f HIGH DRAWDOWN (17.2%)"
+        "\u26a0\ufe0f HIGH DRAWDOWN (55.5%)"
       ],
-      "bars": 2881
+      "bars": 8641
     },
     {
       "name": "TrendFollow_ETH",
@@ -144,17 +142,22 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": 99.31,
-        "sharpe_ratio": 1.2689,
-        "max_drawdown_pct": 8.19,
-        "win_rate": 53.33,
-        "profit_factor": 4.9393,
-        "total_trades": 15,
-        "avg_win_pct": 12.13,
-        "avg_loss_pct": 2.81
+        "total_return_pct": -32.03,
+        "sharpe_ratio": -0.1825,
+        "max_drawdown_pct": 65.24,
+        "win_rate": 26.32,
+        "profit_factor": 0.8397,
+        "total_trades": 57,
+        "avg_win_pct": 8.54,
+        "avg_loss_pct": 3.63
       },
-      "flags": [],
-      "bars": 721
+      "flags": [
+        "\u26a0\ufe0f LOW WINRATE (26% < 30%)",
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.182)",
+        "\u26a0\ufe0f LARGE LOSS (-32.03%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (65.2%)"
+      ],
+      "bars": 2161
     },
     {
       "name": "TrendFollow_BTC_1h",
@@ -163,17 +166,19 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": 82.24,
-        "sharpe_ratio": 1.4278,
-        "max_drawdown_pct": 3.14,
-        "win_rate": 50.0,
-        "profit_factor": 7.7572,
-        "total_trades": 16,
-        "avg_win_pct": 9.29,
-        "avg_loss_pct": 1.2
+        "total_return_pct": 40.88,
+        "sharpe_ratio": 0.4076,
+        "max_drawdown_pct": 27.02,
+        "win_rate": 34.0,
+        "profit_factor": 1.5343,
+        "total_trades": 50,
+        "avg_win_pct": 7.27,
+        "avg_loss_pct": 2.44
       },
-      "flags": [],
-      "bars": 721
+      "flags": [
+        "\u26a0\ufe0f HIGH DRAWDOWN (27.0%)"
+      ],
+      "bars": 2161
     },
     {
       "name": "RSI_MR_BTC",
@@ -182,44 +187,40 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -15.01,
-        "sharpe_ratio": -0.483,
+        "total_return_pct": 1.82,
+        "sharpe_ratio": 0.0868,
         "max_drawdown_pct": 26.2,
-        "win_rate": 55.56,
-        "profit_factor": 0.5768,
-        "total_trades": 9,
-        "avg_win_pct": 3.82,
-        "avg_loss_pct": 8.28
+        "win_rate": 65.62,
+        "profit_factor": 1.1028,
+        "total_trades": 32,
+        "avg_win_pct": 3.02,
+        "avg_loss_pct": 5.23
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.483)",
-        "\u26a0\ufe0f LARGE LOSS (-15.01%)",
         "\u26a0\ufe0f HIGH DRAWDOWN (26.2%)"
       ],
-      "bars": 721
+      "bars": 2161
     },
     {
       "name": "RSI_MR_ETH",
-      "enabled": false,
+      "enabled": true,
       "symbol": "ETH/USDT",
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -8.54,
-        "sharpe_ratio": -0.5296,
-        "max_drawdown_pct": 13.26,
-        "win_rate": 33.33,
-        "profit_factor": 0.3962,
-        "total_trades": 3,
-        "avg_win_pct": 5.44,
-        "avg_loss_pct": 6.86
+        "total_return_pct": 17.16,
+        "sharpe_ratio": 0.397,
+        "max_drawdown_pct": 15.48,
+        "win_rate": 71.43,
+        "profit_factor": 1.6003,
+        "total_trades": 21,
+        "avg_win_pct": 3.1,
+        "avg_loss_pct": 4.85
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.530)",
-        "\u26a0\ufe0f LARGE LOSS (-8.54%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (13.3%)"
+        "\u26a0\ufe0f HIGH DRAWDOWN (15.5%)"
       ],
-      "bars": 721
+      "bars": 2161
     },
     {
       "name": "MLEnsemble_BTC",
@@ -228,19 +229,21 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": 0.92,
-        "sharpe_ratio": 0.1008,
-        "max_drawdown_pct": 10.46,
-        "win_rate": 50.0,
-        "profit_factor": 1.1164,
-        "total_trades": 12,
-        "avg_win_pct": 2.21,
-        "avg_loss_pct": 1.98
+        "total_return_pct": -19.31,
+        "sharpe_ratio": -0.3846,
+        "max_drawdown_pct": 32.34,
+        "win_rate": 40.0,
+        "profit_factor": 0.4861,
+        "total_trades": 10,
+        "avg_win_pct": 4.56,
+        "avg_loss_pct": 6.25
       },
       "flags": [
-        "\u26a0\ufe0f HIGH DRAWDOWN (10.5%)"
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.385)",
+        "\u26a0\ufe0f LARGE LOSS (-19.31%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (32.3%)"
       ],
-      "bars": 721
+      "bars": 2161
     },
     {
       "name": "MLEnsemble_ETH",
@@ -249,19 +252,68 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -1.03,
-        "sharpe_ratio": -0.0036,
-        "max_drawdown_pct": 9.76,
-        "win_rate": 50.0,
-        "profit_factor": 0.9971,
-        "total_trades": 20,
-        "avg_win_pct": 2.4,
-        "avg_loss_pct": 2.41
+        "total_return_pct": -8.49,
+        "sharpe_ratio": -0.0885,
+        "max_drawdown_pct": 15.35,
+        "win_rate": 51.85,
+        "profit_factor": 0.898,
+        "total_trades": 27,
+        "avg_win_pct": 3.48,
+        "avg_loss_pct": 4.17
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.004)"
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.088)",
+        "\u26a0\ufe0f LARGE LOSS (-8.49%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (15.3%)"
       ],
-      "bars": 721
+      "bars": 2161
+    },
+    {
+      "name": "BBandRSI_BTC",
+      "enabled": false,
+      "symbol": "BTC/USDT",
+      "tf": "1h",
+      "status": "OK",
+      "metrics": {
+        "total_return_pct": -47.2,
+        "sharpe_ratio": -0.7264,
+        "max_drawdown_pct": 47.2,
+        "win_rate": 13.33,
+        "profit_factor": 0.3456,
+        "total_trades": 15,
+        "avg_win_pct": 15.43,
+        "avg_loss_pct": 6.87
+      },
+      "flags": [
+        "\u26a0\ufe0f LOW WINRATE (13% < 30%)",
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.726)",
+        "\u26a0\ufe0f LARGE LOSS (-47.20%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (47.2%)"
+      ],
+      "bars": 2161
+    },
+    {
+      "name": "BBandRSI_ETH",
+      "enabled": false,
+      "symbol": "ETH/USDT",
+      "tf": "1h",
+      "status": "OK",
+      "metrics": {
+        "total_return_pct": -20.68,
+        "sharpe_ratio": -0.0956,
+        "max_drawdown_pct": 41.05,
+        "win_rate": 31.25,
+        "profit_factor": 0.8817,
+        "total_trades": 16,
+        "avg_win_pct": 17.05,
+        "avg_loss_pct": 8.79
+      },
+      "flags": [
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.096)",
+        "\u26a0\ufe0f LARGE LOSS (-20.68%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (41.0%)"
+      ],
+      "bars": 2161
     },
     {
       "name": "RegimeSwitch_BTC",
@@ -270,17 +322,21 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": 15.83,
-        "sharpe_ratio": 0.8896,
-        "max_drawdown_pct": 2.87,
-        "win_rate": 52.94,
-        "profit_factor": 3.4166,
-        "total_trades": 17,
-        "avg_win_pct": 2.42,
-        "avg_loss_pct": 0.8
+        "total_return_pct": -25.37,
+        "sharpe_ratio": -0.3035,
+        "max_drawdown_pct": 29.3,
+        "win_rate": 42.86,
+        "profit_factor": 0.7636,
+        "total_trades": 42,
+        "avg_win_pct": 4.32,
+        "avg_loss_pct": 4.24
       },
-      "flags": [],
-      "bars": 721
+      "flags": [
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.303)",
+        "\u26a0\ufe0f LARGE LOSS (-25.37%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (29.3%)"
+      ],
+      "bars": 2161
     },
     {
       "name": "RegimeSwitch_ETH",
@@ -289,92 +345,116 @@
       "tf": "1h",
       "status": "OK",
       "metrics": {
-        "total_return_pct": -14.83,
-        "sharpe_ratio": -0.7826,
-        "max_drawdown_pct": 18.09,
-        "win_rate": 45.45,
-        "profit_factor": 0.3814,
-        "total_trades": 11,
-        "avg_win_pct": 1.86,
-        "avg_loss_pct": 4.06
+        "total_return_pct": -40.72,
+        "sharpe_ratio": -0.5555,
+        "max_drawdown_pct": 47.89,
+        "win_rate": 37.5,
+        "profit_factor": 0.5322,
+        "total_trades": 24,
+        "avg_win_pct": 5.86,
+        "avg_loss_pct": 6.6
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.783)",
-        "\u26a0\ufe0f LARGE LOSS (-14.83%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (18.1%)"
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.555)",
+        "\u26a0\ufe0f LARGE LOSS (-40.72%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (47.9%)"
       ],
-      "bars": 721
+      "bars": 2161
+    },
+    {
+      "name": "ADXTrend_BTC",
+      "enabled": false,
+      "symbol": "BTC/USDT",
+      "tf": "1h",
+      "status": "OK",
+      "metrics": {
+        "total_return_pct": -13.92,
+        "sharpe_ratio": -0.3521,
+        "max_drawdown_pct": 16.67,
+        "win_rate": 25.96,
+        "profit_factor": 0.7607,
+        "total_trades": 104,
+        "avg_win_pct": 1.62,
+        "avg_loss_pct": 0.75
+      },
+      "flags": [
+        "\u26a0\ufe0f LOW WINRATE (26% < 30%)",
+        "\u26a0\ufe0f NEGATIVE SHARPE (-0.352)",
+        "\u26a0\ufe0f LARGE LOSS (-13.92%)",
+        "\u26a0\ufe0f HIGH DRAWDOWN (16.7%)"
+      ],
+      "bars": 2161
     }
   ],
   "ma_cross_sweep_top5": [
     {
-      "symbol": "BTC/USDT",
-      "fast": 12,
-      "slow": 26,
-      "atr_sl": 2.0,
-      "atr_tp": 4.0,
-      "net": 34.66,
-      "sharpe": 0.8197,
-      "dd": 13.34,
-      "wr": 62.5,
-      "pf": 2.7597,
-      "trades": 8
-    },
-    {
-      "symbol": "BTC/USDT",
-      "fast": 12,
-      "slow": 26,
-      "atr_sl": 2.5,
-      "atr_tp": 4.0,
-      "net": 34.66,
-      "sharpe": 0.8197,
-      "dd": 13.34,
-      "wr": 62.5,
-      "pf": 2.7597,
-      "trades": 8
-    },
-    {
-      "symbol": "BTC/USDT",
+      "symbol": "ETH/USDT",
       "fast": 10,
       "slow": 30,
-      "atr_sl": 2.0,
-      "atr_tp": 4.0,
-      "net": 33.36,
-      "sharpe": 0.7741,
-      "dd": 13.34,
-      "wr": 50.0,
-      "pf": 2.6243,
-      "trades": 8
-    },
-    {
-      "symbol": "BTC/USDT",
-      "fast": 10,
-      "slow": 30,
-      "atr_sl": 2.5,
-      "atr_tp": 4.0,
-      "net": 33.36,
-      "sharpe": 0.7741,
-      "dd": 13.34,
-      "wr": 50.0,
-      "pf": 2.6243,
-      "trades": 8
-    },
-    {
-      "symbol": "BTC/USDT",
-      "fast": 12,
-      "slow": 26,
       "atr_sl": 2.0,
       "atr_tp": 3.0,
-      "net": 24.98,
-      "sharpe": 0.6858,
-      "dd": 13.34,
-      "wr": 60.0,
-      "pf": 2.0075,
-      "trades": 10
+      "net": 43.82,
+      "sharpe": 0.3586,
+      "dd": 44.17,
+      "wr": 37.84,
+      "pf": 1.4219,
+      "trades": 37
+    },
+    {
+      "symbol": "ETH/USDT",
+      "fast": 10,
+      "slow": 30,
+      "atr_sl": 1.5,
+      "atr_tp": 3.0,
+      "net": 16.07,
+      "sharpe": 0.2185,
+      "dd": 42.07,
+      "wr": 35.9,
+      "pf": 1.2303,
+      "trades": 39
+    },
+    {
+      "symbol": "BTC/USDT",
+      "fast": 12,
+      "slow": 26,
+      "atr_sl": 1.5,
+      "atr_tp": 3.0,
+      "net": 4.97,
+      "sharpe": 0.1328,
+      "dd": 28.53,
+      "wr": 39.53,
+      "pf": 1.1205,
+      "trades": 43
+    },
+    {
+      "symbol": "BTC/USDT",
+      "fast": 10,
+      "slow": 30,
+      "atr_sl": 2.0,
+      "atr_tp": 4.0,
+      "net": 4.4,
+      "sharpe": 0.1316,
+      "dd": 34.39,
+      "wr": 33.33,
+      "pf": 1.1435,
+      "trades": 33
+    },
+    {
+      "symbol": "BTC/USDT",
+      "fast": 12,
+      "slow": 26,
+      "atr_sl": 2.0,
+      "atr_tp": 4.0,
+      "net": 2.34,
+      "sharpe": 0.1154,
+      "dd": 36.82,
+      "wr": 34.21,
+      "pf": 1.1175,
+      "trades": 38
     }
   ],
   "recommendations": [
-    "\ud83d\udca1 CONSIDER MA_Cross on BTC 1h: fast=12 slow=26 slm=2.0x tpm=4.0x \u2192 net=+34.66% sharpe=+0.82"
+    "\u2713 KEEP RSI_MR_ETH: Sharpe=+0.40 WR=71% Net=+17.16%"
   ],
-  "timestamp": "2026-06-21 19:53 UTC"
+  "timestamp": "2026-06-22 03:57 UTC"
 }

@@ -38,7 +38,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.ma_cross.MACrossoverStrategy
-  enabled: false
+  enabled: true
   name: MA_Cross_BTC
   params:
     atr_period: 14
@@ -53,7 +53,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.ma_cross.MACrossoverStrategy
-  enabled: false
+  enabled: true
   name: MA_Cross_ETH
   params:
     atr_period: 14
@@ -68,7 +68,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.trend_follow.TrendFollow
-  enabled: false
+  enabled: true
   name: TrendFollow_BTC
   params:
     cooldown_bars: 10
@@ -81,7 +81,7 @@ strategies:
     timeframes:
     - 15m
 - class: strategy.examples.trend_follow.TrendFollow
-  enabled: false
+  enabled: true
   name: TrendFollow_ETH
   params:
     cooldown_bars: 8
@@ -123,13 +123,13 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
-  enabled: false
+  enabled: true
   name: RSI_MR_ETH
   params:
     cooldown_bars: 5
     exit_rsi: 50
     leverage: 3
-    overbought: 80
+    overbought: 75
     oversold: 20
     rsi_period: 14
     stop_loss_pct: 0.02
@@ -174,18 +174,52 @@ strategies:
     - ETH/USDT
     timeframes:
     - 1h
-- class: strategy.examples.regime_switch.RegimeSwitchStrategy
+- class: strategy.examples.bband_rsi.BBandMeanReversion
   enabled: false
+  name: BBandRSI_BTC
+  params:
+    bb_period: 20
+    bb_std: 2.5
+    cooldown_bars: 3
+    leverage: 3
+    rsi_overbought: 70
+    rsi_oversold: 30
+    rsi_period: 14
+    stop_loss_pct: 0.02
+    symbols:
+    - BTC/USDT
+    take_profit_pct: 0.05
+    timeframes:
+    - 1h
+- class: strategy.examples.bband_rsi.BBandMeanReversion
+  enabled: false
+  name: BBandRSI_ETH
+  params:
+    bb_period: 20
+    bb_std: 2.5
+    cooldown_bars: 3
+    leverage: 3
+    rsi_overbought: 70
+    rsi_oversold: 30
+    rsi_period: 14
+    stop_loss_pct: 0.02
+    symbols:
+    - ETH/USDT
+    take_profit_pct: 0.05
+    timeframes:
+    - 1h
+- class: strategy.examples.regime_switch.RegimeSwitchStrategy
+  enabled: true
   name: RegimeSwitch_BTC
   params:
     cooldown_bars: 5
     high_vol_capital_pct: 0.25
     leverage: 3
-    mr_overbought: 70
+    mr_overbought: 65
     mr_oversold: 30
     mr_rsi_period: 14
-    mr_sl_pct: 0.02
-    mr_tp_pct: 0.04
+    mr_sl_pct: 0.01
+    mr_tp_pct: 0.05
     regime_change_cooldown: 3
     regime_lookback: 100
     retrain_regime_every: 50
@@ -193,13 +227,13 @@ strategies:
     - BTC/USDT
     timeframes:
     - 1h
-    trend_ema_period: 50
-    trend_sl_pct: 0.02
-    trend_tp_pct: 0.05
+    trend_ema_period: 60
+    trend_sl_pct: 0.01
+    trend_tp_pct: 0.07
     trend_window: 50
     vol_window: 20
 - class: strategy.examples.regime_switch.RegimeSwitchStrategy
-  enabled: false
+  enabled: true
   name: RegimeSwitch_ETH
   params:
     cooldown_bars: 5
@@ -222,3 +256,48 @@ strategies:
     trend_tp_pct: 0.06
     trend_window: 50
     vol_window: 20
+- class: strategy.examples.adx_trend.ADXTrendStrategy
+  enabled: false
+  name: ADXTrend_BTC
+  params:
+    adx_exit: 20
+    adx_period: 14
+    adx_threshold: 25
+    atr_period: 14
+    atr_sl_mult: 2.0
+    atr_tp_mult: 4.0
+    cooldown_bars: 3
+    ema_period: 50
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+- class: strategy.examples.momentum.MomentumStrategy
+  enabled: false
+  name: Momentum_ETH
+  params:
+    atr_period: 14
+    atr_sl_mult: 2.0
+    atr_tp_mult: 3.5
+    fast_ema: 12
+    leverage: 3
+    signal_period: 9
+    slow_ema: 26
+    symbols:
+    - ETH/USDT
+    timeframes:
+    - 1h
+- class: strategy.examples.trend_pullback.TrendPullback
+  enabled: false
+  name: TrendPullback_ETH
+  params:
+    atr_period: 14
+    atr_sl_mult: 1.5
+    atr_tp_mult: 3.0
+    cooldown_bars: 5
+    ema_period: 100
+    leverage: 3
+    symbols:
+    - ETH/USDT
+    timeframes:
+    - 1h

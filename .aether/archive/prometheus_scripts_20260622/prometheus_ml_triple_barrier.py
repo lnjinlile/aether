@@ -345,6 +345,25 @@ prom_data = {
     ],
 }
 
+# Write to state/prometheus.json (merge ML results)
+state_dir = '.aether/state'
+os.makedirs(state_dir, exist_ok=True)
+state_path = os.path.join(state_dir, 'prometheus.json')
+existing = {}
+if os.path.exists(state_path):
+    try:
+        with open(state_path) as f:
+            existing = json.load(f)
+    except (json.JSONDecodeError, IOError):
+        pass
+existing['triple_barrier'] = prom_data
+existing['triple_barrier_verdict'] = f"DEAD_END ({test_acc_f*100:.1f}% test acc)"
+existing['_updated_at'] = datetime.now(timezone.utc).isoformat()
+with open(state_path, 'w') as f:
+    json.dump(existing, f, indent=2, default=str)
+
+# Also write legacy file for backward compat
+os.makedirs('.aether', exist_ok=True)
 with open('.aether/prometheus.json', 'w') as f:
     json.dump(prom_data, f, indent=2, default=str)
 

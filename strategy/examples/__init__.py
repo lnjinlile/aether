@@ -3,6 +3,8 @@ from .rsi_mean_reversion import RSIMeanReversionStrategy
 from .dynamic_grid import DynamicGridStrategy
 from .ml_ensemble import MLEnsembleStrategy
 from .regime_switch import RegimeSwitchStrategy
+from .momentum import MomentumStrategy
+from .trend_pullback import TrendPullback
 
 __all__ = [
     "MACrossoverStrategy",
@@ -10,4 +12,6 @@ __all__ = [
     "DynamicGridStrategy",
     "MLEnsembleStrategy",
     "RegimeSwitchStrategy",
+    "MomentumStrategy",
+    "TrendPullback",
 ]

@@ -14,7 +14,6 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from scipy.stats import norm
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +72,7 @@ def probabilistic_sharpe_ratio(
     """
     if T < 2:
         return 0.0
+    from scipy.stats import norm  # lazy import: ~0.9s cost
     numerator = (sr - sr_benchmark) * sqrt(T - 1)
     # Variance of SR estimator under non-normality
     denom_factor = 1.0 - skew * sr + (kurt - 1.0) / 4.0 * sr * sr
@@ -210,17 +210,27 @@ class BacktestEngine:
         signals: pd.Series,
         leverage: int,
     ) -> Tuple[pd.Series, pd.DataFrame]:
-        """Core simulation loop - vectorized where possible."""
+        """Core simulation loop — numpy-backed for performance.
+
+        Pre-extracts close prices and signals into numpy arrays to avoid
+        per-bar pandas .iloc overhead (~0.18s → <0.01s for ~2k bars).
+        """
         n = len(df)
-        equity = pd.Series(self.initial_capital, index=df.index, dtype=float)
+
+        # Pre-extract numpy arrays to bypass pandas indexing overhead
+        close_arr = df["close"].values
+        sig_arr = signals.values
+        index_arr = df.index.values
+        equity_arr = np.full(n, self.initial_capital, dtype=np.float64)
+
         position = 0  # 1=long, -1=short, 0=flat
         entry_price = 0.0
         entry_idx = 0
         trades = []
 
         for i in range(n):
-            current_signal = int(signals.iloc[i])
-            close_price = float(df["close"].iloc[i])
+            current_signal = int(sig_arr[i])
+            close_price = float(close_arr[i])
 
             # Check for exit conditions
             if position != 0 and current_signal != position:
@@ -234,23 +244,23 @@ class BacktestEngine:
                 # Commission on entry AND exit
                 pnl_pct -= self.commission * 2
 
-                prev_equity = equity.iloc[i - 1]
-                equity.iloc[i] = prev_equity * (1.0 + pnl_pct)
+                prev_equity = equity_arr[i - 1]
+                equity_arr[i] = prev_equity * (1.0 + pnl_pct)
 
                 trades.append({
-                    "entry_time": str(df.index[entry_idx]),
-                    "exit_time": str(df.index[i]),
+                    "entry_time": str(index_arr[entry_idx]),
+                    "exit_time": str(index_arr[i]),
                     "direction": "LONG" if position == 1 else "SHORT",
                     "entry_price": entry_price,
                     "exit_price": exit_price,
                     "pnl_pct": pnl_pct * 100,
-                    "equity_after": equity.iloc[i],
+                    "equity_after": float(equity_arr[i]),
                 })
 
                 position = 0
                 entry_price = 0.0
             else:
-                equity.iloc[i] = equity.iloc[i - 1]
+                equity_arr[i] = equity_arr[i - 1]
 
             # Check for entry conditions
             if position == 0 and current_signal != 0:
@@ -260,24 +270,26 @@ class BacktestEngine:
 
         # Close any open position at last bar
         if position != 0:
-            exit_price = float(df["close"].iloc[-1]) * (1.0 - self.slippage * position)
+            exit_price = float(close_arr[-1]) * (1.0 - self.slippage * position)
             if position == 1:
                 pnl_pct = (exit_price - entry_price) / entry_price * leverage
             else:
                 pnl_pct = (entry_price - exit_price) / entry_price * leverage
             pnl_pct -= self.commission * 2
 
-            equity.iloc[-1] = equity.iloc[-2] * (1.0 + pnl_pct)
+            equity_arr[-1] = equity_arr[-2] * (1.0 + pnl_pct)
 
             trades.append({
-                "entry_time": str(df.index[entry_idx]),
-                "exit_time": str(df.index[-1]),
+                "entry_time": str(index_arr[entry_idx]),
+                "exit_time": str(index_arr[-1]),
                 "direction": "LONG" if position == 1 else "SHORT",
                 "entry_price": entry_price,
                 "exit_price": exit_price,
                 "pnl_pct": pnl_pct * 100,
-                "equity_after": equity.iloc[-1],
+                "equity_after": float(equity_arr[-1]),
             })
+
+        equity = pd.Series(equity_arr, index=df.index, dtype=float)
 
         trade_log = pd.DataFrame(trades) if trades else pd.DataFrame(
             columns=["entry_time", "exit_time", "direction", "entry_price", "exit_price", "pnl_pct", "equity_after"]

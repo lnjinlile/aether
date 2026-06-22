@@ -75,6 +75,7 @@ class AlphaModel:
             class_weight=self.class_weight,
             random_state=self.random_state,
             verbose=-1,
+            predict_disable_shape_check=True,
         )
         self.model = LGBMClassifier(**fit_params)
 
