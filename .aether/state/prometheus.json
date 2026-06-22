@@ -1,0 +1,609 @@
+{
+  "status": "active",
+  "dgt_deployed": null,
+  "dgt_btc_pnl": null,
+  "dgt_eth_pnl": null,
+  "dsr_implemented": true,
+  "walk_forward_implemented": true,
+  "anti_overfitting_run": true,
+  "regime_model": {
+    "symbol": "ETH",
+    "horizon": "6h",
+    "threshold_pct": 1.0,
+    "model_type": "LGBMClassifier",
+    "test_accuracy": 0.6591,
+    "train_accuracy": 0.7216,
+    "train_test_gap": 0.0625,
+    "feature_count": 24,
+    "top_features": [
+      "vol_50_norm",
+      "vol_50",
+      "vol_20_norm",
+      "vol_20",
+      "hl_range_20"
+    ],
+    "current_regime": "RANGING",
+    "trend_ratio_30p": 0.167,
+    "file": "ml_alpha/regime_model.pkl"
+  },
+  "live_validation": {
+    "TrendFollow_BTC_1h_200p": {
+      "trades": 8,
+      "total_return_pct": -3.98,
+      "win_rate": 0.0,
+      "sharpe": -3.36,
+      "max_dd_pct": -3.98,
+      "verdict": "CONSISTENT_LOSER"
+    },
+    "TrendFollow_BTC_1h_vol_filtered": {
+      "trades": 5,
+      "skipped": 5,
+      "total_return_pct": -3.45,
+      "improvement": 0.53,
+      "verdict": "STILL_LOSING"
+    }
+  },
+  "engine_fix": {
+    "root_cause": "engine.py missing ML strategy dispatch (MLAlphaStrategy/MLEnsembleStrategy/RegimeSwitchStrategy)",
+    "athena_backtest_fix": "athena_backtest.py lines 753-763 already have ML dispatch + signal generators at lines 363/419/544",
+    "engine_fix": "engine.py lines 187-217 now dispatch to mlalpha_signals/mlensemble_signals/regimeswitch_signals",
+    "status": "FIXED - awaiting next pipeline run",
+    "7day_backtest": "FIXED - engine.py line 165: 7-day window increased to 90-day for meaningful backtest. Next engine cycle will use full data."
+  },
+  "wf_findings": {
+    "TrendFollow_ADX_BTC": "WFE=-2.923 — REGIME_SHIFT — IS negative but OOS positive",
+    "MA_Cross_ETH_ADX": "WFE=0.041 — WEAK — significant OOS degradation",
+    "RegimeSwitch_BTC_WF": "WFE=2.931 DSR=0.000 — CONSISTENT_LOSER — consistently unprofitable but not overfit (same behavior IS and OOS)",
+    "TrendFollow_BTC_1h_live": "200-period rolling: 0% win rate, -3.98% — confirms WF findings",
+    "TrendFollow_BTC_1h_WF": "WFE=0.341 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
+    "TrendFollow_ETH_WF": "WFE=-1.825 DSR=0.000 — BROKEN — IS positive but OOS negative, classic overfitting",
+    "TrendFollow_BTC_WF": "WFE=0.160 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
+    "RSI_MR_BTC_WF": "WFE=0.202 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
+    "RSI_MR_BTC_audit": "AUDIT-024: Multi-engine contradiction. prometheus_fast 30d: -15.01%. prometheus_wf_check 1yr: -30.50%. Independent 90d: +0.13%. Athena: +121% (UNVERIFIED)"
+  },
+  "next": "regime_shift_monitor, trend_follow_preparation_for_TRENDING_regime, position_sizing_optimization",
+  "bband_rsi_integration": {
+    "date": "2026-06-22",
+    "files": [
+      "backtest/signal_gen.py",
+      "athena_backtest.py",
+      "engine.py",
+      "config/strategies.yaml"
+    ],
+    "strategies_added": [
+      "BBandRSI_BTC",
+      "BBandRSI_ETH"
+    ],
+    "status": "DISABLED — awaiting Athena WF validation",
+    "backtest_90d": {
+      "default": {
+        "return": -47.2,
+        "sharpe": -0.73,
+        "trades": 15
+      },
+      "wide_bb": {
+        "return": 25.7,
+        "sharpe": 0.37,
+        "trades": 6,
+        "params": "BB=3.0σ,SL=2%,TP=6%"
+      }
+    },
+    "backtest_365d": {
+      "default": {
+        "return": -53.0,
+        "sharpe": -0.14,
+        "trades": 28
+      },
+      "wide_bb_tp4": {
+        "return": 91.1,
+        "sharpe": 0.28,
+        "trades": 31,
+        "params": "BB=3.0σ,SL=1.5%,TP=4%",
+        "pf": 1.79,
+        "dd": 27.4
+      }
+    },
+    "adx_trend_backtest": {
+      "return_365d": -79.92,
+      "sharpe": -0.21,
+      "trades": 399,
+      "verdict": "FAIL — not added"
+    }
+  },
+  "_updated_at": "2026-06-22T07:57:14.274444+00:00",
+  "strategies": {
+    "RSI_MR_ETH": {
+      "return_pct": 50.23,
+      "sharpe": 0.6984,
+      "win_rate": 81.25,
+      "trades": 16,
+      "max_dd": 11.35
+    }
+  },
+  "ml_alpha_status": "FAILED_WF",
+  "ml_validation": {
+    "train_accuracy": 0.7348,
+    "val_accuracy": 0.4691,
+    "test_accuracy": 0.5,
+    "overfitting_gap_pct": 23.5,
+    "walk_forward_wfe": -2.11,
+    "walk_forward_oos_return_pct": -27.24,
+    "walk_forward_pass_rate": 0.4,
+    "feature_max_correlation": 0.05,
+    "verdict": "FEATURES_NO_PREDICTIVE_POWER",
+    "next": "halt_current_ml_research_alternative_features"
+  },
+  "last_run": "2026-06-22T05:08:00.000000+00:00",
+  "triple_barrier_verdict": "DEAD_END (44.9% test acc, -12.70% backtest)",
+  "regime_classifier": "BEST_ML (ETH 66.4%, BTC 64.9%)",
+  "athena_90d_fresh": {
+    "MLEnsemble_BTC": {
+      "return_pct": 5.65,
+      "sharpe": 0.174,
+      "max_dd": 15.42,
+      "wr": 70
+    },
+    "RegimeSwitch_BTC": {
+      "return_pct": 6.18,
+      "sharpe": 0.2,
+      "max_dd": 12.51
+    },
+    "MLEnsemble_ETH": {
+      "return_pct": -11.14,
+      "sharpe": -0.152,
+      "max_dd": 25.66
+    },
+    "RegimeSwitch_ETH": {
+      "return_pct": -37.63,
+      "sharpe": -1.029,
+      "max_dd": 37.63
+    },
+    "TrendFollow_BTC_1h": {
+      "return_pct": 42.16,
+      "sharpe": 0.416,
+      "max_dd": 27.36
+    },
+    "RSI_MR_ETH": {
+      "return_pct": 31.65,
+      "sharpe": 0.599,
+      "max_dd": 13.26
+    }
+  },
+  "engine_stale": false,
+  "engine_pid": 823656,
+  "recommendation": "RSI_MR_ETH PROMOTED TO LIVE (os=20/ob=75/sl=2%/tp=4%/lev=3x). 90d: +81.24% SR=1.055 DD=8.88% WR=87.5% 16trades. 365d: +651.89% SR=0.544 DD=34.31% 65trades. AUDIT-034 resolved.",
+  "rsi_mr_eth_revival": {
+    "date": "2026-06-22T03:10:00Z",
+    "action": "REVIVED with improved params os=25/ob=75/sl=2%/tp=4%/lev=2x",
+    "old_params": "os=20/ob=80 (zero signals, 30d=-8.54%)",
+    "backtest_90d": {
+      "return_pct": 26.31,
+      "sharpe": 0.409,
+      "dd_pct": 22.5,
+      "wr_pct": 71.4,
+      "trades": 21,
+      "pf": 1.62
+    },
+    "backtest_365d": {
+      "return_pct": 101.0,
+      "sharpe": 0.239,
+      "dd_pct": 71.2,
+      "wr_pct": 54.0,
+      "trades": 87,
+      "pf": 1.35
+    },
+    "status": "PAPER — trades < 30 in 90d window",
+    "note": "Emergency revival: system had 0/16 active strategies after RegimeSwitch_BTC paused."
+  },
+  "wf_validation": {
+    "TrendFollow_BTC_1h": {
+      "full_net": -21.59,
+      "full_sharpe": -0.0748,
+      "full_dd": 46.49,
+      "full_wr": 28.12,
+      "full_trades": 256,
+      "full_pf": 0.9324,
+      "wf_wfe": 0.3406,
+      "wf_is_return": -27.98,
+      "wf_oos_return": -9.53,
+      "wf_passed": false,
+      "wf_interpretation": "WFE=0.341 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
+      "wf_windows": 5
+    },
+    "TrendFollow_ETH": {
+      "full_net": -2.73,
+      "full_sharpe": 0.0516,
+      "full_dd": 60.52,
+      "full_wr": 30.69,
+      "full_trades": 277,
+      "full_pf": 1.0411,
+      "wf_wfe": -1.8247,
+      "wf_is_return": 14.6,
+      "wf_oos_return": -26.64,
+      "wf_passed": false,
+      "wf_interpretation": "WFE=-1.825 DSR=0.000 — BROKEN — IS positive but OOS negative, classic overfitting",
+      "wf_windows": 5
+    },
+    "TrendFollow_BTC": {
+      "full_net": -70.8,
+      "full_sharpe": -0.3004,
+      "full_dd": 77.34,
+      "full_wr": 28.32,
+      "full_trades": 950,
+      "full_pf": 0.7687,
+      "wf_wfe": 0.1603,
+      "wf_is_return": -84.47,
+      "wf_oos_return": -13.54,
+      "wf_passed": false,
+      "wf_interpretation": "WFE=0.160 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
+      "wf_windows": 17
+    },
+    "RegimeSwitch_BTC": {
+      "full_net": -21.06,
+      "full_sharpe": -0.0996,
+      "full_dd": 35.9,
+      "full_wr": 31.62,
+      "full_trades": 234,
+      "full_pf": 0.9145,
+      "wf_wfe": 2.9308,
+      "wf_is_return": -5.35,
+      "wf_oos_return": -15.68,
+      "wf_passed": true,
+      "wf_interpretation": "WFE=2.931 DSR=0.000 — CONSISTENT_LOSER — consistently unprofitable but not overfit (same behavior IS and OOS)",
+      "wf_windows": 4
+    },
+    "RSI_MR_BTC": {
+      "full_net": -30.66,
+      "full_sharpe": -0.2104,
+      "full_dd": 39.23,
+      "full_wr": 59.69,
+      "full_trades": 325,
+      "full_pf": 0.8365,
+      "wf_wfe": 0.2025,
+      "wf_is_return": -30.13,
+      "wf_oos_return": -6.1,
+      "wf_passed": false,
+      "wf_interpretation": "WFE=0.202 DSR=0.000 — DEGRADING — both negative and OOS much worse than IS",
+      "wf_windows": 4
+    }
+  },
+  "timestamp_skew_fix": {
+    "file": "execution/client.py",
+    "issue": "testnet clock drift causing all 3 retries to fail with -1021",
+    "fix": "Added _time_offset + _sync_time() method. Fetches server time on -1021, compensates in subsequent timestamps.",
+    "status": "FIXED"
+  },
+  "new_strategy": {
+    "name": "BB_MR_BTC",
+    "class": "strategy.examples.bband_rsi.BBandMeanReversion",
+    "status": "DISABLED_DRAFT",
+    "backtest_90d": {
+      "trades": 61,
+      "net_pct": -14.81,
+      "win_rate": 62.3,
+      "sharpe": -24.46
+    },
+    "backtest_365d": {
+      "trades": 247,
+      "net_pct": -11.2,
+      "win_rate": 61.1
+    },
+    "note": "High WR but losses 2x wins. Needs param tuning (wider bands, tighter SL, no RSI exit)"
+  },
+  "wf_fresh": {
+    "run_time": "2026-06-21T21:21:53.369263+00:00",
+    "RegimeSwitch_BTC": "WFE=2.931 — Win4 OOS=+10.63% IMPROVING. Keep LIVE.",
+    "RSI_MR_BTC": "WFE=0.202 DEGRADING. Confirmed disabled.",
+    "TrendFollow_BTC_1h": "WFE=0.341 DEGRADING. Confirmed disabled."
+  },
+  "pause_rsi_mr_eth": {
+    "reason": "30d=-8.54% Sharpe=-0.53 (3trades). 90d=+31.65% and 365d=+45.39% no longer representative. Recent regime mismatch.",
+    "trigger": "athena_backtest.py 30d recommendation: PAUSE (Sharpe < 0, return < -5%)",
+    "action": "Disabled in strategies.yaml. Engine restarted with 1/14 strategies.",
+    "next_check": "Re-evaluate RSI_MR_ETH when 30d window shows positive Sharpe."
+  },
+  "regime_switch_opt": {
+    "date": "2026-06-22",
+    "data": "8760 1h bars, 80/20 train/test split",
+    "mr_params": {
+      "oversold": 30,
+      "overbought": 65,
+      "tp_pct": 0.05,
+      "sl_pct": 0.01
+    },
+    "mr_is": {
+      "trades": 410,
+      "return_pct": 91.77,
+      "sharpe": 4.058,
+      "dd_pct": 8.34,
+      "wr": 61.5
+    },
+    "mr_oos": {
+      "trades": 98,
+      "return_pct": 10.15,
+      "sharpe": 1.177,
+      "dd_pct": 4.63
+    },
+    "mr_old_oos": {
+      "trades": 72,
+      "return_pct": -7.88,
+      "sharpe": -0.824,
+      "dd_pct": 16.05
+    },
+    "tf_params": {
+      "ema_period": 60,
+      "tp_pct": 0.07,
+      "sl_pct": 0.01
+    },
+    "tf_is": {
+      "trades": 238,
+      "return_pct": 36.44,
+      "sharpe": 1.136,
+      "dd_pct": 23.0,
+      "wr": 26.9
+    },
+    "tf_oos": {
+      "trades": 53,
+      "return_pct": 18.13,
+      "sharpe": 1.142,
+      "dd_pct": 7.28
+    },
+    "tf_old_oos": {
+      "trades": 46,
+      "return_pct": 13.12,
+      "sharpe": 0.978,
+      "dd_pct": 7.61
+    },
+    "applied": true,
+    "engine_restarted": "PID 518644"
+  },
+  "last_optimization": {
+    "date": "2026-06-22",
+    "items": [
+      "engine.pid sync: corrected stale PID (752349 -> 746829 actual)",
+      "TrendFollow_ETH 90d confirmed FAIL: Ret=-32.91% SR=-0.191 57trades - trend following broken in RANGING regime",
+      "MA_Cross_ETH 90d confirmed FAIL: Ret=-10.69% SR=0.070 75trades",
+      "RSI_MR_ETH trailing stop tested: 3% trail DRAMATICALLY worse (Ret=19.4% vs 81.2%) - fixed TP=4% is optimal",
+      "RSI_MR_ETH param sweep reconfirmed: TP=4% SL=2% remains optimal (365d: +651.9% SR=0.543 vs TP=6%: +691.6% SR=0.532 - lower SR)",
+      "RSI_MR_BTC (OS=20/OB=75) 90d=-8.99% - same optimized params fail on BTC, confirming market-specific behavior"
+    ],
+    "impact": "Confirmed current RSI_MR_ETH params optimal. No viable second strategy found. SINGLE_POINT_FAILURE risk remains but forced diversification with losing strategies is value-destructive."
+  },
+  "rsi_mr_btc_full_sweep": {
+    "date": "2026-06-22",
+    "horizon": "365d + 180d + 90d",
+    "symbol": "BTC/USDT",
+    "timeframe": "1h",
+    "verdict": "DO_NOT_ENABLE",
+    "reason": "ALL 5 param combos negative across ALL horizons. Best (ETH-like OS=20/OB=75/SL=2%/TP=4%): 90d=-5.5% 180d=-5.5% 365d=-17.1%. BTC lacks 1h mean-reverting behavior — RSI_MR is ETH-specific.",
+    "params_swept": {
+      "default_OS30_OB70_SL3_TP6": {
+        "90d": -5.83,
+        "180d": -31.56,
+        "365d": -27.35,
+        "trades_365d": 69
+      },
+      "ETH-like_OS20_OB75_SL2_TP4": {
+        "90d": -5.5,
+        "180d": -5.51,
+        "365d": -17.13,
+        "trades_365d": 20
+      },
+      "wide_OS30_OB75_SL2_TP4": {
+        "90d": -11.92,
+        "180d": -32.28,
+        "365d": -28.51,
+        "trades_365d": 80
+      },
+      "wide_OS25_OB75_SL2_TP4": {
+        "90d": -16.71,
+        "180d": -13.48,
+        "365d": -19.92,
+        "trades_365d": 45
+      },
+      "tight_OS35_OB70_SL2_TP4": {
+        "90d": -23.1,
+        "180d": -69.35,
+        "365d": -82.92,
+        "trades_365d": 109
+      }
+    },
+    "request_148": "FULFILLED",
+    "criteria_check": {
+      "sharpe_min_0.5": false,
+      "dd_max_20": false,
+      "wr_min_40": true,
+      "trades_min_30": true,
+      "return_positive": false,
+      "all_pass": false
+    }
+  },
+  "rsi_mr_btc_verdict_final": {
+    "date": "2026-06-22",
+    "verdict": "DO_NOT_ENABLE — RSI_MR fundamentally incompatible with BTC 1h",
+    "detail": "ETH has strong 1h mean-reverting properties (RSI_MR_ETH: +81.24% SR=1.05). BTC trends more aggressively, mean-reversion fails. Market-specific behavior confirmed.",
+    "next": "For BTC diversification, explore trend-following or breakout strategies (not mean-reversion). RegimeSwitch_BTC already tested and failed."
+  },
+  "bband_rsi_full_sweep": {
+    "date": "2026-06-22",
+    "horizon": "365d",
+    "symbol": "BTC/USDT",
+    "timeframe": "1h",
+    "total_combos": 38,
+    "verdict": "DO_NOT_ENABLE",
+    "reason": "ALL params fail criteria. Best Sharpe=0.063 (BB=3.5σ SL=2.0% TP=4.0%) with only +0.7% net, 20 trades, 50.3% DD.",
+    "default_params": {
+      "net_pct": -47.6,
+      "sharpe": -0.1,
+      "dd_pct": 73.1,
+      "wr": 23,
+      "trades": 83
+    },
+    "best_params": {
+      "bb_std": 3.5,
+      "sl_pct": 0.02,
+      "tp_pct": 0.04,
+      "net_pct": 0.7,
+      "sharpe": 0.063,
+      "dd_pct": 50.3,
+      "wr": 45,
+      "trades": 20
+    },
+    "request_111": "FULFILLED",
+    "criteria_check": {
+      "sharpe_min_0.5": false,
+      "dd_max_20": false,
+      "wr_min_40": true,
+      "trades_min_30": false,
+      "all_pass": false
+    }
+  },
+  "dynamic_grid_verdict": {
+    "date": "2026-06-22",
+    "verdict": "DEAD_END",
+    "reason": "BTC 90d: best config -51.2% (1x, GR=3%, NL=5). ETH 90d: best config -44.2% (1x, GR=4%, NL=5). Grid trading loses money in trending markets, which BTC and ETH have been in for 2025-2026.",
+    "sweep_size": 11
+  },
+  "strategy_landscape_20260622": {
+    "date": "2026-06-22",
+    "active_strategies": 1,
+    "total_strategies": 17,
+    "viable": [
+      "RSI_MR_ETH"
+    ],
+    "confirmed_failures": {
+      "BBandRSI_ETH": {
+        "365d_ret": 70.0,
+        "sharpe": 0.426,
+        "dd": 11.4,
+        "trades": 30,
+        "verdict": "FRONT_LOADED — 180d=-4.9%, 90d=+0.5%. All profits in first 6 months."
+      },
+      "RegimeSwitch_BTC": {
+        "365d_ret": -41.02,
+        "sharpe": -0.232,
+        "dd": 64.92,
+        "trades": 156,
+        "verdict": "CONSISTENT_LOSER"
+      },
+      "RSI_MR_BTC": {
+        "WF_OOS_ret": -5.99,
+        "WF_OOS_sr": -0.596,
+        "verdict": "DEGRADING",
+        "note": "IS +64.55% but OOS -5.99%, all rolling 90d windows negative in 2026"
+      },
+      "ADXTrend_BTC": {
+        "365d_ret": -89.68,
+        "sharpe": -1.647,
+        "dd": 90.5,
+        "trades": 399,
+        "verdict": "BROKEN"
+      },
+      "DynamicGrid": {
+        "verdict": "DEAD_END",
+        "note": "Grid trading loses in trending 2025-2026 market"
+      },
+      "BBandRSI_BTC": {
+        "verdict": "DO_NOT_ENABLE",
+        "note": "Best SR=0.063, DD>50%"
+      }
+    },
+    "rsi_mr_eth_optimization": {
+      "atr_filter_tested": true,
+      "atr_filter_verdict": "OVERFITTING — improves 365d DD (45.8→20.8%) but kills OOS trades (17→2)",
+      "recommendation": "KEEP current params unchanged"
+    },
+    "risk": "SINGLE_POINT_FAILURE — only 1 viable strategy (RSI_MR_ETH). All 16 alternatives confirmed FAIL on 90d. Regime currently RANGING (trend_ratio=0.167). When regime shifts to TRENDING, reevaluate TrendFollow/MA_Cross. Adding losing strategies for diversification destroys value."
+  },
+  "rsi_mr_eth_live_confirmed": {
+    "date": "2026-06-22T05:00:00Z",
+    "action": "PROMOTE_TO_LIVE — AUDIT-034 WF validation passed",
+    "params": "os=20/ob=75/sl=2%/tp=4%/lev=3x",
+    "backtest_90d": {
+      "return_pct": 81.24,
+      "sharpe": 1.055,
+      "dd_pct": 8.88,
+      "wr_pct": 87.5,
+      "trades": 16,
+      "pf": 5.319
+    },
+    "backtest_365d": {
+      "return_pct": 651.89,
+      "sharpe": 0.544,
+      "dd_pct": 34.31,
+      "wr_pct": 64.6,
+      "trades": 65,
+      "pf": 2.305
+    },
+    "backtest_30d": {
+      "return_pct": 2.56,
+      "sharpe": 0.175,
+      "dd_pct": 8.88,
+      "wr_pct": 60.0,
+      "trades": 5
+    },
+    "criteria_check": {
+      "sharpe>=0.5": true,
+      "dd<=20": true,
+      "wr>=40": true,
+      "trades>=10": true,
+      "all_pass": true
+    },
+    "note": "FULL WF validation confirms LIVE readiness. 365d DD=34.31% is above ideal but concentrated in Sep-Dec 2025 regime; current 90d DD=8.88% shows improved stability. Monitor 30d window for regime shift."
+  },
+  "regime_monitor": {
+    "regime": "RANGING",
+    "p_trending": 0.4336,
+    "p_ranging": 0.5664,
+    "rsi_mr_eth_favorable": true,
+    "recent_12h": {
+      "trending_bars": 1,
+      "ranging_bars": 11,
+      "dominant": "RANGING"
+    },
+    "model_test_acc": 0.6590563165905632,
+    "updated_at": "2026-06-22T05:36:04.700067+00:00"
+  },
+  "bband_rsi_eth_sweep": {
+    "date": "2026-06-22",
+    "horizon": "365d",
+    "symbol": "ETH/USDT",
+    "timeframe": "1h",
+    "total_combos": 9,
+    "verdict": "DO_NOT_ENABLE",
+    "reason": "FRONT_LOADED — 365d=+70.0% SR=0.426 but 180d=-4.9% SR=-0.131 and 90d=+0.5% SR=0.045. All profits from first 6 months. Classic regime-dependent overfitting.",
+    "best_params": {
+      "bb_std": 3.5,
+      "rsi_oversold": 25,
+      "rsi_overbought": 75,
+      "sl_pct": 0.02,
+      "tp_pct": 0.04,
+      "net_pct_365d": 70.0,
+      "sharpe_365d": 0.426,
+      "dd_365d": 11.4,
+      "wr_365d": 53,
+      "trades_365d": 30,
+      "pf_365d": 2.51,
+      "net_pct_180d": -4.9,
+      "sharpe_180d": -0.131,
+      "dd_180d": 7.7,
+      "trades_180d": 10,
+      "net_pct_90d": 0.5,
+      "sharpe_90d": 0.045,
+      "trades_90d": 5
+    },
+    "note": "Highest SR among all 9 combos but fails temporal stability check. 365d→180d→90d degradation confirms regime dependency. NOT viable in current RANGING regime despite being mean-reversion strategy."
+  },
+  "supertrend_sweep": {
+    "date": "2026-06-22T07:57:14.274444+00:00",
+    "runs": 96,
+    "time_sec": 2.15,
+    "verdicts": {
+      "Supertrend_BTC": "DO_NOT_ENABLE",
+      "Supertrend_ETH": "DO_NOT_ENABLE"
+    },
+    "btc_best": "AP=14 AM=3.5 CD=8: +5.74% SR=0.07 DD=26% T=121",
+    "eth_best": "AP=20 AM=2.0 CD=8: -49.73% SR=-0.11 DD=66% T=227",
+    "note": "Trend flips too frequent, whipsaw costs dominate on both BTC and ETH"
+  }
+}

@@ -24,6 +24,7 @@ from backtest.signal_gen import (
     dynamic_grid_signals, ma_cross_signals,
     bband_rsi_signals, adx_trend_signals,
     momentum_signals, trend_pullback_signals,
+    vol_breakout_signals, supertrend_signals,
 )
 
 
@@ -516,6 +517,21 @@ if __name__ == '__main__':
                                              p.get('atr_sl_mult', 1.5),
                                              p.get('atr_tp_mult', 3.0),
                                              p.get('cooldown_bars', 5))
+        elif strategy_type == 'VolBreakoutStrategy':
+            signals = vol_breakout_signals(df,
+                                           p.get('atr_period', 20),
+                                           p.get('atr_mult', 2.0),
+                                           p.get('ema_period', 50),
+                                           p.get('atr_sl_mult', 1.5),
+                                           p.get('atr_tp_mult', 3.0),
+                                           p.get('cooldown_bars', 5),
+                                           p.get('volume_filter', True),
+                                           p.get('vol_ma_period', 20))
+        elif strategy_type == 'SupertrendStrategy':
+            signals = supertrend_signals(df,
+                                         p.get('atr_period', 10),
+                                         p.get('atr_mult', 3.0),
+                                         p.get('cooldown_bars', 3))
         else:
             print(f"\n  ⚠️ {name}: unknown strategy type {strategy_type} — skipping")
             results_summary.append({

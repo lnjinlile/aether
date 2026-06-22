@@ -1,0 +1,245 @@
+{
+  "status": "ok",
+  "strategies": {
+    "DynamicGrid_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -78.1,
+      "sharpe": -1.2165,
+      "win_rate": 39.34,
+      "trades": 549,
+      "max_dd": 78.4,
+      "verdict": "RETIRED"
+    },
+    "DynamicGrid_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -77.62,
+      "sharpe": -0.8565,
+      "win_rate": 45.52,
+      "trades": 558,
+      "max_dd": 78.74,
+      "verdict": "RETIRED"
+    },
+    "MLAlpha_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 0,
+      "sharpe": 0,
+      "win_rate": 0,
+      "trades": 0,
+      "max_dd": 0,
+      "verdict": "NOT_EVALUATED"
+    },
+    "MA_Cross_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -8.4,
+      "sharpe": 0.0159,
+      "win_rate": 31.15,
+      "trades": 61,
+      "max_dd": 41.23,
+      "verdict": "RETIRED"
+    },
+    "MA_Cross_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -8.0,
+      "sharpe": 0.0867,
+      "win_rate": 29.33,
+      "trades": 75,
+      "max_dd": 50.14,
+      "verdict": "RETIRED"
+    },
+    "TrendFollow_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 0.68,
+      "sharpe": 0.0473,
+      "win_rate": 30.67,
+      "trades": 225,
+      "max_dd": 55.46,
+      "verdict": "RETIRED"
+    },
+    "TrendFollow_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -32.91,
+      "sharpe": -0.1913,
+      "win_rate": 26.32,
+      "trades": 57,
+      "max_dd": 65.69,
+      "verdict": "RETIRED"
+    },
+    "TrendFollow_BTC_1h": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 38.45,
+      "sharpe": 0.39,
+      "win_rate": 34,
+      "trades": 50,
+      "max_dd": 28.3,
+      "verdict": "DO_NOT_ENABLE"
+    },
+    "RSI_MR_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -27.35,
+      "sharpe": -0.8618,
+      "win_rate": 43.5,
+      "trades": 69,
+      "max_dd": 48.91,
+      "verdict": "DO_NOT_ENABLE"
+    },
+    "RSI_MR_ETH": {
+      "signals": 231,
+      "status": "ok",
+      "return_pct": 50.23,
+      "sharpe": 0.6984,
+      "win_rate": 81.25,
+      "trades": 16,
+      "max_dd": 11.35,
+      "verdict": "LIVE"
+    },
+    "MLEnsemble_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -15.31,
+      "sharpe": -0.3049,
+      "win_rate": 45.45,
+      "trades": 11,
+      "max_dd": 29.92,
+      "verdict": "RETIRED"
+    },
+    "MLEnsemble_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 3.99,
+      "sharpe": 0.1158,
+      "win_rate": 55.56,
+      "trades": 27,
+      "max_dd": 21.18,
+      "verdict": "PAUSED"
+    },
+    "BBandRSI_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -47.2,
+      "sharpe": -0.73,
+      "win_rate": 13,
+      "trades": 15,
+      "max_dd": 47.2,
+      "verdict": "DO_NOT_ENABLE"
+    },
+    "BBandRSI_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -20.68,
+      "sharpe": -0.1,
+      "win_rate": 31,
+      "trades": 16,
+      "max_dd": 41.0,
+      "verdict": "DO_NOT_ENABLE"
+    },
+    "RegimeSwitch_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -25.27,
+      "sharpe": -0.3068,
+      "win_rate": 42.86,
+      "trades": 42,
+      "max_dd": 29.3,
+      "verdict": "RETIRED"
+    },
+    "RegimeSwitch_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -36.71,
+      "sharpe": -0.4879,
+      "win_rate": 39.13,
+      "trades": 23,
+      "max_dd": 47.89,
+      "verdict": "RETIRED"
+    },
+    "ADXTrend_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -13.92,
+      "sharpe": -0.35,
+      "win_rate": 26,
+      "trades": 104,
+      "max_dd": 16.7,
+      "verdict": "DO_NOT_ENABLE"
+    },
+    "Momentum_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -68.12,
+      "sharpe": -0.47,
+      "win_rate": 39,
+      "trades": 189,
+      "max_dd": 80.8,
+      "verdict": "RETIRED"
+    },
+    "TrendPullback_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -32.6,
+      "sharpe": -0.15,
+      "win_rate": 34,
+      "trades": 103,
+      "max_dd": 45.9,
+      "verdict": "RETIRED"
+    },
+    "VolBreakout_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 0,
+      "sharpe": 0,
+      "win_rate": 0,
+      "trades": 0,
+      "max_dd": 0,
+      "verdict": "DO_NOT_ENABLE"
+    },
+    "VolBreakout_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 0,
+      "sharpe": 0,
+      "win_rate": 0,
+      "trades": 0,
+      "max_dd": 0,
+      "verdict": "DO_NOT_ENABLE"
+    },
+    "Supertrend_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 5.74,
+      "sharpe": 0.0704,
+      "win_rate": 46.3,
+      "trades": 121,
+      "max_dd": 26.27,
+      "verdict": "DO_NOT_ENABLE",
+      "best_params": "AP=14 AM=3.5 CD=8",
+      "note": "96-combo sweep. Barely positive with near-zero Sharpe."
+    },
+    "Supertrend_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -49.73,
+      "sharpe": -0.1128,
+      "win_rate": 41.4,
+      "trades": 227,
+      "max_dd": 66.18,
+      "verdict": "DO_NOT_ENABLE",
+      "best_params": "AP=20 AM=2.0 CD=8",
+      "note": "96-combo sweep. All 48 combos negative. Whipsaw dominates."
+    }
+  },
+  "_updated_at": "2026-06-22T07:57:14.274444+00:00",
+  "_last_run": "2026-06-22T06:24:00.000000+00:00",
+  "_last_signals": {},
+  "_fixed_by": "athena",
+  "_fix_reason": "AUDIT-038 final cleanup: 7→RETIRED, 1→PAUSED (MLEnsemble_ETH), 1→LIVE (RSI_MR_ETH). Verdicts now match strategies.yaml enabled state.",
+  "_last_volbreakout_sweep": "2026-06-22T07:31:44.985615+00:00"
+}

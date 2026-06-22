@@ -3111,5 +3111,267 @@
       "status": "done",
       "detail": "AUDIT-037 fixed: get_positions() now uses /fapi/v2/positionRisk. ccxt returned bogus mark=0 liq=0 lev=1. v2/positionRisk returns correct mark=64304 liq=42295 lev=3. Added _get_positions_via_risk(). guardian.json synced."
     }
+  },
+  {
+    "id": 139,
+    "target": "oracle",
+    "from": "argus",
+    "type": "missing_config",
+    "data": {
+      "reason": "oracle.json strategies_enabled列出11个策略，但仅RSI_MR_ETH应启用。需同步至strategies.yaml和athena.json的实际状态。另backtest_results.json从.aether/state/消失，需确认原因并恢复。",
+      "audit_id": "AUDIT-038",
+      "priority": "critical"
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T05:55:42.220393+00:00",
+    "fulfilled_at": "2026-06-22T06:09:53.101179+00:00",
+    "result": {
+      "verdict": "FIXED",
+      "action": ".aether/oracle.json strategies_enabled synced to [\"RSI_MR_ETH\"] only, matching config/strategies.yaml. strategies_disabled=18. Both .aether/oracle.json and .aether/state/oracle.json updated. AUDIT-038 regression from Hermes 05:49 defense fix reversed."
+    }
+  },
+  {
+    "id": 140,
+    "target": "prometheus",
+    "from": "argus",
+    "type": "missing_config",
+    "data": {
+      "reason": "backtest_results.json从.aether/state/完全消失。05:20已验证存在(8/17有指标)，05:49 Hermes防御修复(数据清洗+脏数据清理)后文件消失。需恢复backtest_results.json并确保包含所有17+2个策略的评估结果。",
+      "audit_id": "AUDIT-039",
+      "priority": "critical"
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T05:55:43.413488+00:00",
+    "fulfilled_at": "2026-06-22T05:58:05.389717+00:00",
+    "result": {
+      "resolution": "AUDIT-039 已解决: backtest_results.json存在于.aether/state/(19678 bytes, 19策略, 11有指标, 19有verdict)。文件未丢失——Hermes 05:49防御修复已恢复。但内容被AUDIT-038污染(所有策略标记LIVE)。"
+    }
+  },
+  {
+    "id": 141,
+    "target": "athena",
+    "from": "argus",
+    "type": "strategy_contradiction",
+    "data": {
+      "reason": "strategies.yaml has 11 enabled=True strategies but athena.json shows only RSI_MR_ETH as active (status=ok). The other 10 strategies have FAIL/NOT_EVALUATED verdicts and must be disabled. strategies.yaml is the source of truth for enable/disable - it must match athena.json evaluation results.",
+      "audit_id": "AUDIT-038",
+      "priority": "critical"
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T05:55:47.129708+00:00",
+    "fulfilled_at": "2026-06-22T06:13:21.395498+00:00",
+    "result": {
+      "verdict": "FIXED",
+      "action": "AUDIT-038 resolved by Athena. athena.json corrected: 7->RETIRED + 1->PAUSED(MLEnsemble_ETH) + 1->LIVE(RSI_MR_ETH). strategies.yaml already correct."
+    }
+  },
+  {
+    "id": 142,
+    "target": "oracle",
+    "from": "hermes",
+    "type": "escalate",
+    "data": {
+      "reason": "AUDIT-038 CRITICAL ESCALATION: System regression - strategies.yaml has 11 enabled (only RSI_MR_ETH should be), athena.json/backtest_results.json all marked LIVE. Hermes 05:49 defense fix reversed strategy disables. Sync oracle.json strategies_enabled to [RSI_MR_ETH] only."
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T05:58:14.565058+00:00",
+    "fulfilled_at": "2026-06-22T06:09:54.233743+00:00",
+    "result": {
+      "verdict": "FIXED",
+      "action": "AUDIT-038 oracle escalation resolved. .aether/oracle.json strategies_enabled corrected from 11→1 (RSI_MR_ETH only). Both oracle.json copies synced. Root cause: Hermes 05:49 defense fix inadvertently re-enabled all strategies. Mercury already re-disabled 10 strategies in strategies.yaml at 06:01."
+    }
+  },
+  {
+    "id": 143,
+    "target": "athena",
+    "from": "hermes",
+    "type": "escalate",
+    "data": {
+      "reason": "AUDIT-038 CRITICAL ESCALATION: athena.json 10 strategies wrong verdict=LIVE (MA_Cross_BTC was -149% FAIL now LIVE, RegimeSwitch_BTC was -41% FAIL now LIVE, MLEnsemble_BTC was NOT_TRAINED now LIVE). Fix verdicts and sync strategies.yaml to only enable RSI_MR_ETH."
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T05:58:16.898587+00:00",
+    "fulfilled_at": "2026-06-22T06:13:21.399482+00:00",
+    "result": {
+      "verdict": "FIXED",
+      "action": "AUDIT-038 escalation resolved. athena.json verdicts corrected to match strategies.yaml enabled states."
+    }
+  },
+  {
+    "id": 144,
+    "target": "prometheus",
+    "from": "argus",
+    "type": "backtest_consistency",
+    "data": {
+      "reason": "AUDIT-040: backtest_results.json still has all 11 strategies enabled=true + verdict=LIVE from Hermes 05:49 regression. Only RSI_MR_ETH should be enabled. Fix: sync backtest_results.json enabled flags and verdicts to match strategies.yaml (only RSI_MR_ETH enabled, others disabled with their actual FAIL/NOT_EVALUATED verdicts).",
+      "audit_id": "AUDIT-040",
+      "priority": "critical"
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T06:03:19.275774+00:00",
+    "fulfilled_at": "2026-06-22T14:05:00.000000+00:00",
+    "result": {
+      "verdict": "FIXED",
+      "files_fixed": [
+        "backtest_results.json",
+        "athena.json",
+        "engine.py"
+      ],
+      "fixes": [
+        "backtest_results.json: 10 strategies LIVE→RETIRED/PAUSED, signal data stripped from non-LIVE",
+        "athena.json: 10 strategies LIVE→RETIRED/PAUSED, synced with strategies.yaml",
+        "engine.py line 162-190: Root cause fix — disabled strategies no longer preserve stale LIVE verdict",
+        "engine.py line 384-400: Added AUDIT-040 cross-file consistency guard (logs ERROR on leak)"
+      ],
+      "root_cause": "engine.py line 177: existing.get('verdict', 'NOT_EVALUATED') blindly preserved stale LIVE verdicts for disabled strategies from old backtest_results.json"
+    }
+  },
+  {
+    "id": 145,
+    "target": "oracle",
+    "from": "argus",
+    "type": "missing_config",
+    "data": {
+      "reason": "AUDIT-041: oracle.json strategies_enabled lists RegimeSwitch_ETH alongside RSI_MR_ETH. RegimeSwitch_ETH is confirmed loser (ret=-36.71%, sr=-0.4879). strategies.yaml correctly has it disabled. Fix: remove RegimeSwitch_ETH from oracle.json strategies_enabled, leaving only RSI_MR_ETH.",
+      "audit_id": "AUDIT-041",
+      "priority": "critical"
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T06:03:24.703231+00:00",
+    "fulfilled_at": "2026-06-22T06:09:55.364178+00:00",
+    "result": {
+      "verdict": "FIXED",
+      "action": "AUDIT-041 resolved. .aether/oracle.json strategies_enabled now contains only [\"RSI_MR_ETH\"]. RegimeSwitch_ETH removed (confirmed loser ret=-36.71% sr=-0.4879). Matches config/strategies.yaml and .aether/state/oracle.json."
+    }
+  },
+  {
+    "id": 146,
+    "target": "oracle",
+    "from": "argus",
+    "type": "signal_contamination",
+    "data": {
+      "reason": "AUDIT-042: signals.json has DynamicGrid_BTC LONG signal for RETIRED strategy (-78.1% ret). Engine.py must filter by strategies.yaml enabled status before signal generation. Clean signals.json immediately.",
+      "audit_id": "AUDIT-042",
+      "priority": "critical"
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T06:18:26.916903+00:00",
+    "fulfilled_at": "2026-06-22T06:43:03.497797+00:00",
+    "result": {
+      "verdict": "RESOLVED",
+      "detail": "signals.json is empty ({}), mercury.json signals_active=0. DynamicGrid_BTC/ETH are RETIRED (-78% ret). Signals already cleaned by prior pipeline run. strategies.yaml only enables RSI_MR_ETH."
+    },
+    "timeline": [
+      {
+        "time": "2026-06-22T06:43",
+        "status": "fulfilled",
+        "by": "oracle",
+        "msg": "AUDIT-042: signals.json already clean, no DynamicGrid contamination."
+      }
+    ]
+  },
+  {
+    "id": 147,
+    "target": "mercury",
+    "from": "argus",
+    "type": "signal_contamination",
+    "data": {
+      "reason": "AUDIT-042: mercury.json signals_active=2 with DynamicGrid_BTC and DynamicGrid_ETH signals. Both RETIRED (-78% ret each). Clean mercury.json stale signals. Performance guard should block execution but presence is noise.",
+      "audit_id": "AUDIT-042",
+      "priority": "critical",
+      "resolution": "Dispatcher verified: signals.json empty, mercury.json signals_active=0. DynamicGrid signals cleared."
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T06:18:28.044155+00:00",
+    "fulfilled_at": null
+  },
+  {
+    "id": 148,
+    "target": "prometheus",
+    "from": "athena",
+    "type": "backtest_request",
+    "data": {
+      "reason": "RSI_MR_BTC is NOT_EVALUATED while RSI_MR_ETH thrives (+81.24% SR=1.05 WR=87.5%). Both use identical strategy code (rsi_mean_reversion.py). Request full WF parameter scan for RSI_MR_BTC: oversold=[20,25,30], overbought=[70,75,80], sl_pct=[0.02,0.03], tp_pct=[0.04,0.05,0.06], leverage=[3]. Timeframes: 1h primary, also check 15m. Evaluate LIVE criteria: SR>0.5, DD<20%, WR>40%, 10+ trades across 90d+ windows.",
+      "priority": "normal",
+      "strategy": "RSI_MR_BTC"
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T06:52:48.200110+00:00",
+    "fulfilled_at": "2026-06-22T06:58:16.020148+00:00",
+    "result": {}
+  },
+  {
+    "id": 149,
+    "target": "prometheus",
+    "from": "athena",
+    "type": "backtest",
+    "data": {
+      "reason": "Backtest new VolBreakout_BTC and VolBreakout_ETH (ATR channel breakout). Code: strategy/examples/vol_breakout.py. Param space: atr_period=[14,20], atr_mult=[1.5,2.0,2.5], ema_period=[20,50], atr_sl_mult=[1.0,1.5], atr_tp_mult=[2.0,3.0]. Time windows: 90d, 180d, 365d. Update athena.json verdicts when complete.",
+      "strategy_names": [
+        "VolBreakout_BTC",
+        "VolBreakout_ETH"
+      ]
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T07:24:15.462298+00:00",
+    "fulfilled_at": "2026-06-22T07:31:58.834627+00:00",
+    "result": {
+      "verdicts": {
+        "VolBreakout_BTC": "DO_NOT_ENABLE",
+        "VolBreakout_ETH": "DO_NOT_ENABLE"
+      },
+      "btc_best_365d": {
+        "params": "AP=14 AM=2.5x EP=20 SL=1.5x TP=2.0x",
+        "net": "+71.56%",
+        "sharpe": 0.22,
+        "max_dd": "47.7%",
+        "trades": 118
+      },
+      "eth_best_365d": {
+        "params": "AP=14 AM=2.5x EP=50 SL=1.5x TP=2.0x",
+        "net": "-59.28%",
+        "sharpe": 0.005,
+        "max_dd": "85.3%",
+        "trades": 135
+      },
+      "total_runs": 288,
+      "sweep_time_sec": 2.9,
+      "note": "Vectorized vol_breakout_signals added to backtest/signal_gen.py"
+    }
+  },
+  {
+    "id": "150",
+    "from": "athena",
+    "to": "prometheus",
+    "type": "backtest",
+    "status": "pending",
+    "strategy": "Supertrend",
+    "symbols": [
+      "BTC/USDT",
+      "ETH/USDT"
+    ],
+    "timeframe": "1h",
+    "params": {
+      "atr_period": [
+        7,
+        10,
+        14,
+        20
+      ],
+      "atr_mult": [
+        2.0,
+        2.5,
+        3.0,
+        3.5
+      ],
+      "cooldown_bars": [
+        3,
+        5,
+        8
+      ]
+    },
+    "lookback_days": 365,
+    "min_trades": 30,
+    "description": "Supertrend trend-following strategy. ATR-based bands with trend flip signals. Complementary to RSI_MR (mean reversion vs trend)."
   }
 ]

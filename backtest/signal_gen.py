@@ -592,6 +592,120 @@ def momentum_signals(df: pd.DataFrame,
     return pd.Series(signals, index=df.index)
 
 
+def vol_breakout_signals(
+    df: pd.DataFrame,
+    atr_period: int = 20,
+    atr_mult: float = 2.0,
+    ema_period: int = 50,
+    atr_sl_mult: float = 1.5,
+    atr_tp_mult: float = 3.0,
+    cooldown_bars: int = 5,
+    volume_filter: bool = True,
+    vol_ma_period: int = 20,
+) -> pd.Series:
+    """Vectorized VolBreakout — signals: 1=LONG, -1=SHORT, 0=FLAT.
+
+    Mirrors strategy/examples/vol_breakout.py logic:
+    - Price breaks above EMA + N*ATR → LONG
+    - Price breaks below EMA - N*ATR → SHORT
+    - Price crosses back through EMA → exit
+    - ATR trailing stop while in position
+    """
+    close = df["close"].values.astype(float)
+    high = df["high"].values.astype(float)
+    low = df["low"].values.astype(float)
+    volume = df.get("volume", pd.Series(1.0, index=df.index)).values.astype(float)
+    n = len(close)
+    min_bars = max(ema_period, atr_period) * 2 + 10
+    if n < min_bars:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # ATR
+    tr1 = high - low
+    tr2 = np.abs(high - np.roll(close, 1))
+    tr3 = np.abs(low - np.roll(close, 1))
+    tr2[0] = tr3[0] = 0.0
+    tr = np.maximum(np.maximum(tr1, tr2), tr3)
+    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+
+    # EMA
+    ema = pd.Series(close).ewm(span=ema_period, adjust=False).mean().values
+
+    # Upper/Lower channel
+    upper = ema + atr * atr_mult
+    lower = ema - atr * atr_mult
+
+    # Break signals (using prev bar's channel)
+    prev_close = np.roll(close, 1)
+    prev_upper = np.roll(upper, 1)
+    prev_lower = np.roll(lower, 1)
+    break_up = (close > prev_upper) & (prev_close <= prev_upper)
+    break_down = (close < prev_lower) & (prev_close >= prev_lower)
+
+    # Cross EMA signals
+    prev_ema = np.roll(ema, 1)
+    cross_below_ema = (close < ema) & (np.roll(close, 1) >= prev_ema)
+    cross_above_ema = (close > ema) & (np.roll(close, 1) <= prev_ema)
+
+    # Volume ratio
+    if volume_filter:
+        vol_ma = pd.Series(volume).rolling(vol_ma_period).mean().values
+        vol_ratio = np.where(vol_ma > 0, volume / vol_ma, 1.0)
+    else:
+        vol_ratio = np.ones(n)
+
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    trailing_stop = 0.0
+    bars_since_trade = cooldown_bars + 1
+
+    for i in range(min_bars, n):
+        bars_since_trade += 1
+        price = close[i]
+        _atr = atr[i]
+        if np.isnan(_atr) or _atr <= 0:
+            continue
+
+        # --- Exit logic ---
+        if pos == 1:
+            if cross_below_ema[i]:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+            new_trail = max(trailing_stop, price - _atr * atr_sl_mult)
+            trailing_stop = new_trail
+            if price <= trailing_stop:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+        elif pos == -1:
+            if cross_above_ema[i]:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+            new_trail = min(trailing_stop, price + _atr * atr_sl_mult)
+            trailing_stop = new_trail
+            if price >= trailing_stop:
+                signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+
+        if pos != 0:
+            signals[i] = pos
+            continue
+
+        # --- Entry logic ---
+        if bars_since_trade <= cooldown_bars:
+            continue
+        if volume_filter and vol_ratio[i] < 1.0:
+            continue
+
+        if break_up[i]:
+            pos = 1
+            trailing_stop = price - _atr * atr_sl_mult
+            signals[i] = 1
+            bars_since_trade = 0
+        elif break_down[i]:
+            pos = -1
+            trailing_stop = price + _atr * atr_sl_mult
+            signals[i] = -1
+            bars_since_trade = 0
+
+    return pd.Series(signals, index=df.index)
+
+
 def trend_pullback_signals(df: pd.DataFrame,
                             ema_period: int = 100, atr_period: int = 14,
                             atr_sl_mult: float = 1.5, atr_tp_mult: float = 3.0,
@@ -693,5 +807,113 @@ def trend_pullback_signals(df: pd.DataFrame,
             entry_price = price
             signals[i] = -1
             bars_since_trade = 0
+
+    return pd.Series(signals, index=df.index)
+
+
+def supertrend_signals(
+    df: pd.DataFrame,
+    atr_period: int = 10,
+    atr_mult: float = 3.0,
+    cooldown_bars: int = 3,
+) -> pd.Series:
+    """Vectorized Supertrend — signals: 1=LONG, -1=SHORT, 0=FLAT.
+
+    Mirrors strategy/examples/supertrend.py logic:
+    - Compute ATR and Supertrend bands (upper/lower)
+    - Trend flip UP (close crosses above previous lower band) → LONG
+    - Trend flip DOWN (close crosses below previous upper band) → SHORT
+    - Trend reversal → exit current position
+    - Cooldown bars after each trade exit
+    """
+    close = df["close"].values.astype(float)
+    high = df["high"].values.astype(float)
+    low = df["low"].values.astype(float)
+    n = len(close)
+    min_bars = atr_period * 2 + 10
+    if n < min_bars:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    # ATR (via ewm)
+    tr1 = high - low
+    tr2 = np.abs(high - np.roll(close, 1))
+    tr3 = np.abs(low - np.roll(close, 1))
+    tr2[0] = tr3[0] = 0.0
+    tr = np.maximum(np.maximum(tr1, tr2), tr3)
+    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+
+    # Basic bands
+    hl2 = (high + low) / 2
+    basic_upper = hl2 + atr_mult * atr
+    basic_lower = hl2 - atr_mult * atr
+
+    # Final bands and trend (loop required for Supertrend propagation)
+    final_upper = np.full(n, np.nan)
+    final_lower = np.full(n, np.nan)
+    trend = np.zeros(n, dtype=int)
+
+    # Find first valid bar
+    first_valid = atr_period
+    for i in range(atr_period, n):
+        if not np.isnan(atr[i]):
+            first_valid = i
+            break
+    else:
+        return pd.Series(np.zeros(n, dtype=int), index=df.index)
+
+    final_upper[first_valid] = basic_upper[first_valid]
+    final_lower[first_valid] = basic_lower[first_valid]
+
+    for i in range(first_valid + 1, n):
+        # Final Upper Band
+        if basic_upper[i] < final_upper[i-1] or close[i-1] > final_upper[i-1]:
+            final_upper[i] = basic_upper[i]
+        else:
+            final_upper[i] = final_upper[i-1]
+        # Final Lower Band
+        if basic_lower[i] > final_lower[i-1] or close[i-1] < final_lower[i-1]:
+            final_lower[i] = basic_lower[i]
+        else:
+            final_lower[i] = final_lower[i-1]
+        # Trend
+        prev_lower = final_lower[i-1]
+        prev_upper = final_upper[i-1]
+        if np.isnan(prev_lower):
+            trend[i] = 0
+        elif close[i] > prev_lower:
+            trend[i] = 1  # Uptrend
+        elif close[i] < prev_upper:
+            trend[i] = -1  # Downtrend
+        else:
+            trend[i] = trend[i-1]
+
+    # Signal generation with position tracking and cooldown
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    bars_since_trade = cooldown_bars + 1
+
+    for i in range(first_valid + 1, n):
+        bars_since_trade += 1
+
+        # Exit on trend reversal
+        if pos == 1 and trend[i] == -1:
+            signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+        if pos == -1 and trend[i] == 1:
+            signals[i] = 0; pos = 0; bars_since_trade = 0; continue
+
+        if pos != 0:
+            signals[i] = pos
+            continue
+
+        # Entry with cooldown
+        if bars_since_trade <= cooldown_bars:
+            continue
+
+        # Bull flip: -1 → 1
+        if trend[i] == 1 and trend[i-1] == -1:
+            pos = 1; signals[i] = 1; bars_since_trade = 0; continue
+        # Bear flip: 1 → -1
+        if trend[i] == -1 and trend[i-1] == 1:
+            pos = -1; signals[i] = -1; bars_since_trade = 0; continue
 
     return pd.Series(signals, index=df.index)
