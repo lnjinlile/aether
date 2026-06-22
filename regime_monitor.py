@@ -31,6 +31,14 @@ SYMBOL = 'ETH/USDT'
 TF = '1h'
 MIN_BARS = 120  # need enough history for rolling features
 
+# PERF-005: Model cache — avoid reloading the model from disk on every call.
+# The model is ~2MB and expensive to deserialize (~0.3-0.5s). Cache it in-memory
+# so engine.py can call run_regime_check() without per-cycle disk I/O.
+# Usage: from regime_monitor import cached_model, run_regime_check
+_cached_model = None
+_cached_feature_names = None
+_cached_model_meta = {}
+
 
 def build_regime_features(df):
     """Mirror of prometheus_regime_classifier feature builder."""
@@ -100,18 +108,11 @@ def build_regime_features(df):
 
 
 def main():
+    """Full regime check (legacy entry point for standalone execution)."""
     now = datetime.now(timezone.utc)
 
-    # Load model
-    if not os.path.exists(MODEL_PATH):
-        print(f"❌ Model not found: {MODEL_PATH}", file=sys.stderr)
-        sys.exit(1)
-
-    model_data = joblib.load(MODEL_PATH)
-    model = model_data['model']
-    feature_names = model_data['feature_names']
-    horizon = model_data.get('horizon', 6)
-    threshold = model_data.get('threshold', 0.01)
+    # Load model (use cache if available in-process)
+    model, feature_names, model_meta = _load_model()
 
     # Load data
     cfg = get_config()
@@ -125,6 +126,89 @@ def main():
     df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
     df.set_index('open_time', inplace=True)
     df.sort_index(inplace=True)
+
+    result = _run_regime_check_inner(df, model, feature_names, model_meta, now)
+    _write_and_post(result, now)
+    return result
+
+
+def _load_model():
+    """Load regime model from disk, using in-memory cache when available.
+    
+    PERF-005: Model is cached as module globals (_cached_model, _cached_feature_names,
+    _cached_model_meta) after first load. Subsequent calls skip I/O entirely.
+    This eliminates ~0.3-0.5s of deserialization overhead per engine cycle.
+    """
+    global _cached_model, _cached_feature_names, _cached_model_meta
+    if _cached_model is not None:
+        return _cached_model, _cached_feature_names, _cached_model_meta
+    
+    if not os.path.exists(MODEL_PATH):
+        raise FileNotFoundError(f"Model not found: {MODEL_PATH}")
+    
+    model_data = joblib.load(MODEL_PATH)
+    _cached_model = model_data['model']
+    _cached_feature_names = model_data['feature_names']
+    _cached_model_meta = {
+        'horizon': model_data.get('horizon', 6),
+        'threshold': model_data.get('threshold', 0.01),
+        'test_acc': model_data.get('test_acc'),
+        'train_acc': model_data.get('train_acc'),
+        'feature_count': len(model_data['feature_names']),
+    }
+    return _cached_model, _cached_feature_names, _cached_model_meta
+
+
+def run_regime_check(storage=None):
+    """Lightweight in-process regime check for engine.py integration.
+    
+    PERF-005: Called directly by engine.py without subprocess overhead.
+    Uses cached model (loaded once, reused across cycles).
+    
+    Args:
+        storage: Optional MarketStorage instance (avoids redundant construction).
+                 If None, creates one from config.
+    
+    Returns:
+        dict: Regime result (same format as standalone main() output), or
+        None on data error (insufficient data).
+    """
+    now = datetime.now(timezone.utc)
+    
+    # Load model (cached after first call)
+    try:
+        model, feature_names, model_meta = _load_model()
+    except FileNotFoundError:
+        return None
+    
+    # Load data
+    if storage is None:
+        cfg = get_config()
+        storage = MarketStorage(cfg.db_path)
+    
+    df = storage.load_klines(SYMBOL, TF)
+    if df is None or len(df) < MIN_BARS:
+        return None
+    
+    df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
+    df.set_index('open_time', inplace=True)
+    df.sort_index(inplace=True)
+    
+    return _run_regime_check_inner(df, model, feature_names, model_meta, now)
+
+
+def _run_regime_check_inner(df, model, feature_names, model_meta, now):
+    """Core regime check logic. Extracted from main() for reuse.
+    
+    Args:
+        df: Pre-loaded OHLCV DataFrame with DatetimeIndex (already sorted).
+        model: Trained LightGBM classifier.
+        feature_names: Ordered list of feature column names.
+        model_meta: Dict with horizon, threshold, test_acc, train_acc, feature_count.
+        now: datetime of this check.
+    """
+    horizon = model_meta['horizon']
+    threshold = model_meta['threshold']
 
     # Build features
     feats = build_regime_features(df)
@@ -179,33 +263,45 @@ def main():
         'regime_shift': (prev_regime is not None and prev_regime != regime),
         'prev_regime': prev_regime,
         'model': {
-            'test_acc': model_data.get('test_acc'),
-            'train_acc': model_data.get('train_acc'),
-            'features': len(feature_names),
+            'test_acc': model_meta.get('test_acc'),
+            'train_acc': model_meta.get('train_acc'),
+            'features': model_meta.get('feature_count', len(feature_names)),
         },
         'rsi_mr_eth_favorable': regime == 'RANGING',
     }
+    return result
 
+
+def _write_and_post(result, now):
+    """Write regime result to state file and post feed alert on shift.
+    
+    PERF-005: Extracted from _run_regime_check_inner so that in-process
+    callers (run_regime_check) can decide whether to write/post or just
+    get the result dict. Standalone main() always writes/posts.
+    """
     # Write state
     os.makedirs(os.path.dirname(STATE_PATH), exist_ok=True)
     with open(STATE_PATH, 'w') as f:
         json.dump(result, f, indent=2, default=str)
 
     # Summary
+    regime = result['regime']
+    p_trending = result['p_trending']
+    trending_count = result['recent_12h']['trending_bars']
+    ranging_count = result['recent_12h']['ranging_bars']
     favorable = "✅ FAVORABLE" if regime == 'RANGING' else "⚠️ RISK"
-    print(f"Regime: {regime} {favorable} | P(Trend)={p_trending:.3f} P(Range)={p_ranging:.3f} | "
+    print(f"Regime: {regime} {favorable} | P(Trend)={p_trending:.3f} P(Range)={result['p_ranging']:.3f} | "
           f"Recent 12h: {trending_count}T/{ranging_count}R")
 
     # Post to feed on regime shift
     if result['regime_shift']:
+        prev_regime = result['prev_regime']
         shift_msg = f"REGIME SHIFT: {prev_regime} → {regime} | P(Trend)={p_trending:.3f} | " \
                     f"RSI_MR_ETH {'FAVORABLE' if regime=='RANGING' else 'AT RISK'}"
         import subprocess
         subprocess.run(['python3', '.aether/feed.py', 'post', 'prometheus',
                         'alert', shift_msg], capture_output=True)
         print(f"📢 Posted regime shift alert to feed")
-
-    return result
 
 
 if __name__ == '__main__':

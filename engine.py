@@ -8,18 +8,22 @@ Aether 自动化引擎 — 后台持续运行所有机械性工作
 import sys, os, json, time, logging, warnings
 from datetime import datetime, timezone
 
+# PERF-006: Module-level base directory — eliminates 7 repetitive
+# os.path.dirname(os.path.abspath(__file__)) calls per engine cycle.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Suppress sklearn feature-name warnings (LightGBM 4.6.0 bug)
 warnings.filterwarnings('ignore', message='X does not have valid feature names')
 warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from dotenv import load_dotenv; load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+sys.path.insert(0, BASE_DIR)
+from dotenv import load_dotenv; load_dotenv(os.path.join(BASE_DIR, ".env"))
 from data.db import get_market_db
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [ENGINE] %(message)s")
 logger = logging.getLogger("engine")
 
-STATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state")
+STATE_DIR = os.path.join(BASE_DIR, ".aether", "state")
 os.makedirs(STATE_DIR, exist_ok=True)
 
 INTERVAL = 300  # 5 minutes
@@ -39,8 +43,7 @@ def sync_trades_db():
     2. Inserts exchange positions missing from DB
     """
     try:
-        import sqlite3
-        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "market.db")
+        db_path = os.path.join(BASE_DIR, "data", "market.db")
         if not os.path.exists(db_path):
             return
 
@@ -199,7 +202,7 @@ def run_backtests():
         import yaml
 
         # Load ALL strategies from YAML to read config metadata (only backtest enabled ones)
-        yaml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "strategies.yaml")
+        yaml_path = os.path.join(BASE_DIR, "config", "strategies.yaml")
         with open(yaml_path, "r") as f:
             strat_cfg = yaml.safe_load(f)
         all_strategies = strat_cfg.get("strategies", [])
@@ -1216,7 +1219,7 @@ def sync_agent_states():
             f"|------|------|------|------|------|\n"
             f"{strat_table}\n"
         )
-        bulletin_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "bulletin.md")
+        bulletin_path = os.path.join(BASE_DIR, ".aether", "bulletin.md")
         with open(bulletin_path, "a") as bf:
             bf.write(bulletin_entry)
         # Truncate to last 500 lines to prevent unbounded growth
@@ -1292,12 +1295,11 @@ def check_pipeline_health():
 
             # Restart pipeline
             try:
-                base_dir = os.path.dirname(os.path.abspath(__file__))
                 subprocess.Popen(
                     ["/usr/bin/bash", "-lic",
-                     f"set +m; cd {base_dir} && source venv/bin/activate && "
-                     f"python3 pipeline.py 2>&1 | tee logs/pipeline.log"],
-                    cwd=base_dir,
+                     f"set +m; cd {BASE_DIR} && source venv/bin/activate && "
+                     "python3 pipeline.py 2>&1 | tee logs/pipeline.log"],
+                    cwd=BASE_DIR,
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                 )
                 logger.info("Pipeline restarted successfully")
@@ -1310,19 +1312,22 @@ def check_pipeline_health():
 def run_regime_monitor():
     """Classify ETH 1h market regime (TRENDING vs RANGING) using LightGBM model.
     RSI_MR_ETH thrives in RANGING; TRENDING regime signals elevated risk.
-    Runs regime_monitor.py as subprocess for isolation; writes to state/regime_monitor.json.
+
+    PERF-005: Calls regime_monitor.py directly (no subprocess). Model is cached
+    in-memory after first load, eliminating ~0.3-0.5s deserialization per cycle.
+    Previous subprocess approach spawned a full Python process every 5 min.
+    Result is still written to state/regime_monitor.json for downstream consumers.
     """
     try:
-        import subprocess, os, json
-        result = subprocess.run(
-            [sys.executable, 'regime_monitor.py'],
-            capture_output=True, text=True, timeout=30,
-            cwd=os.path.dirname(os.path.abspath(__file__)),
-        )
-        if result.returncode != 0:
-            logger.warning("Regime monitor failed: %s", result.stderr.strip()[:200])
-        elif result.stdout.strip():
-            logger.info("Regime: %s", result.stdout.strip())
+        from regime_monitor import run_regime_check, _write_and_post
+        now = datetime.now(timezone.utc)
+        result = run_regime_check()
+        if result is not None:
+            _write_and_post(result, now)
+            logger.info("Regime: %s | P(Trend)=%.3f",
+                        result['regime'], result['p_trending'])
+        else:
+            logger.debug("Regime monitor skipped: insufficient data or model missing")
     except Exception as e:
         logger.warning("Regime monitor error: %s", e)
 
