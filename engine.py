@@ -133,6 +133,8 @@ def run_backtests():
             trendfollow_signals, rsi_mr_signals,
             dynamic_grid_signals, ma_cross_signals,
             bband_rsi_signals, donchian_mr_signals,
+            vol_breakout_signals, supertrend_signals,
+            macd_crossover_signals,
         )
         import numpy as np
         import pandas as pd
@@ -312,6 +314,35 @@ def run_backtests():
                             oversold=p.get("oversold", 25),
                             overbought=p.get("overbought", 75),
                             exit_level=p.get("exit_level", 50),
+                            stop_loss_pct=p.get("stop_loss_pct", 0.02),
+                            take_profit_pct=p.get("take_profit_pct", 0.04),
+                            cooldown_bars=p.get("cooldown_bars", 5),
+                        )
+                    elif strategy_type == "SupertrendStrategy":
+                        signals = supertrend_signals(
+                            df,
+                            atr_period=p.get("atr_period", 10),
+                            atr_mult=p.get("atr_mult", 3.0),
+                            cooldown_bars=p.get("cooldown_bars", 3),
+                        )
+                    elif strategy_type == "VolBreakoutStrategy":
+                        signals = vol_breakout_signals(
+                            df,
+                            atr_period=p.get("atr_period", 20),
+                            atr_mult=p.get("atr_mult", 2.0),
+                            ema_period=p.get("ema_period", 50),
+                            atr_sl_mult=p.get("atr_sl_mult", 1.5),
+                            atr_tp_mult=p.get("atr_tp_mult", 3.0),
+                            cooldown_bars=p.get("cooldown_bars", 5),
+                            volume_filter=p.get("volume_filter", True),
+                            vol_ma_period=p.get("vol_ma_period", 20),
+                        )
+                    elif strategy_type == "MACDCrossoverStrategy":
+                        signals = macd_crossover_signals(
+                            df,
+                            fast_period=p.get("fast_period", 12),
+                            slow_period=p.get("slow_period", 26),
+                            signal_period=p.get("signal_period", 9),
                             stop_loss_pct=p.get("stop_loss_pct", 0.02),
                             take_profit_pct=p.get("take_profit_pct", 0.04),
                             cooldown_bars=p.get("cooldown_bars", 5),
