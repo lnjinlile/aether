@@ -1119,19 +1119,13 @@ def stoch_rsi_signals(df: pd.DataFrame,
     # ── Compute RSI ──
     rsi = _compute_rsi(close, rsi_period)
 
-    # ── Compute StochRSI %K ──
-    stoch_k_vals = np.full(n, np.nan)
-    warmup = rsi_period + stoch_period
-    for i in range(warmup, n):
-        window = rsi[i - stoch_period + 1 : i + 1]
-        rsi_min = np.min(window)
-        rsi_max = np.max(window)
-        denom = rsi_max - rsi_min
-        if denom == 0:
-            stoch_raw = 0.5
-        else:
-            stoch_raw = (rsi[i] - rsi_min) / denom
-        stoch_k_vals[i] = np.clip(stoch_raw, 0.0, 1.0)
+    # ── Compute StochRSI %K — vectorized via pandas rolling (was O(n×period) loop) ──
+    rsi_series = pd.Series(rsi)
+    rsi_min = rsi_series.rolling(stoch_period).min().values
+    rsi_max = rsi_series.rolling(stoch_period).max().values
+    denom = rsi_max - rsi_min
+    stoch_raw = np.where(denom == 0, 0.5, (rsi - rsi_min) / np.where(denom == 0, 1.0, denom))
+    stoch_k_vals = np.clip(stoch_raw, 0.0, 1.0)
 
     # ── Signal generation ──
     signals = np.zeros(n, dtype=int)
