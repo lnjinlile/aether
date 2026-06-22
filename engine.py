@@ -132,7 +132,7 @@ def run_backtests():
         from backtest.signal_gen import (
             trendfollow_signals, rsi_mr_signals,
             dynamic_grid_signals, ma_cross_signals,
-            bband_rsi_signals,
+            bband_rsi_signals, donchian_mr_signals,
         )
         import numpy as np
         import pandas as pd
@@ -303,6 +303,18 @@ def run_backtests():
                             stop_loss_pct=p.get("stop_loss_pct", 0.02),
                             take_profit_pct=p.get("take_profit_pct", 0.05),
                             cooldown_bars=p.get("cooldown_bars", 3),
+                        )
+                    elif strategy_type == "DonchianMRStrategy":
+                        signals = donchian_mr_signals(
+                            df,
+                            donchian_period=p.get("donchian_period", 20),
+                            rsi_period=p.get("rsi_period", 14),
+                            oversold=p.get("oversold", 25),
+                            overbought=p.get("overbought", 75),
+                            exit_level=p.get("exit_level", 50),
+                            stop_loss_pct=p.get("stop_loss_pct", 0.02),
+                            take_profit_pct=p.get("take_profit_pct", 0.04),
+                            cooldown_bars=p.get("cooldown_bars", 5),
                         )
                     else:
                         results[name] = {
