@@ -1,68 +1,84 @@
 {
-  "_updated_at": "2026-06-22T09:39:51.348637+00:00",
+  "_updated_at": "2026-06-22T11:24:46.310521+00:00",
   "strategies_enabled": [
-    "RSI_MR_ETH"
+    "RSI_MR_ETH",
+    "DonchianMR_ETH"
   ],
-  "strategies_disabled": 20,
+  "strategies_disabled": 26,
   "pipeline_running": true,
   "data_ext_running": true,
-  "engine_running": true,
-  "market_db_size_mb": 15.9,
-  "klines_total": 92750,
-  "last_pipeline": "2026-06-22T09:39:51.348637+00:00",
-  "pipeline_pid": 834002,
-  "data_ext_pid": 792158,
+  "market_db_size_mb": 9.1,
+  "klines_total": 92784,
+  "pipeline_pid": 842125,
+  "data_ext_pid": 792103,
   "status": "running",
   "data_fresh": true,
   "data_sources": {
-    "klines": "pipeline.py: 15m/1h/4h/1d BTC+ETH",
+    "klines": "pipeline.py: 15m/1h/4h/1d BTC+ETH (no 1m)",
     "orderbook": "data_ext.py: BTC+ETH snapshots (~5min)",
     "funding_rates": "data_ext.py: BTC+ETH (8h cycle)",
     "open_interest": "data_ext.py: BTC+ETH (~5min)"
   },
   "data_stats": {
     "BTC/USDT_15m": {
-      "count": 35055,
-      "latest": "2026-06-22T15:30:00"
-    },
-    "BTC/USDT_1h": {
-      "count": 8764,
-      "latest": "2026-06-22T15:00:00"
-    },
-    "BTC/USDT_4h": {
-      "count": 2191,
-      "latest": "2026-06-22T12:00:00"
+      "count": 35069,
+      "latest_ts": 1782126000000,
+      "latest": "2026-06-22T11:00:00"
     },
     "BTC/USDT_1d": {
       "count": 365,
+      "latest_ts": 1782086400000,
+      "latest": "2026-06-22T00:00:00"
+    },
+    "BTC/USDT_1h": {
+      "count": 8768,
+      "latest_ts": 1782126000000,
+      "latest": "2026-06-22T11:00:00"
+    },
+    "BTC/USDT_4h": {
+      "count": 2192,
+      "latest_ts": 1782115200000,
       "latest": "2026-06-22T08:00:00"
     },
     "ETH/USDT_15m": {
-      "count": 35055,
-      "latest": "2026-06-22T15:30:00"
-    },
-    "ETH/USDT_1h": {
-      "count": 8764,
-      "latest": "2026-06-22T15:00:00"
-    },
-    "ETH/USDT_4h": {
-      "count": 2191,
-      "latest": "2026-06-22T12:00:00"
+      "count": 35069,
+      "latest_ts": 1782126000000,
+      "latest": "2026-06-22T11:00:00"
     },
     "ETH/USDT_1d": {
       "count": 365,
+      "latest_ts": 1782086400000,
+      "latest": "2026-06-22T00:00:00"
+    },
+    "ETH/USDT_1h": {
+      "count": 8768,
+      "latest_ts": 1782126000000,
+      "latest": "2026-06-22T11:00:00"
+    },
+    "ETH/USDT_4h": {
+      "count": 2192,
+      "latest_ts": 1782115200000,
       "latest": "2026-06-22T08:00:00"
     },
-    "_table_orderbook_snapshots": 284,
-    "_table_open_interest": 469,
-    "_table_funding_rates": 604,
-    "_table_order_flow": 11,
-    "_table_trades": 2,
-    "_db_size_mb": 13.4,
-    "_journal_mode": "wal"
+    "table_orderbook_snapshots": {
+      "count": 364,
+      "max_rowid": 364
+    },
+    "table_open_interest": {
+      "count": 549,
+      "max_rowid": 549
+    },
+    "table_funding_rates": {
+      "count": 606,
+      "max_rowid": 4267
+    },
+    "table_trades_log": {
+      "count": 3,
+      "max_rowid": 11
+    }
   },
   "pipeline_status": {
-    "pipeline_pid": 719747,
+    "pipeline_pid": 842125,
     "data_ext_pid": 792158,
     "pipeline_running": true,
     "data_ext_running": true,
@@ -77,11 +93,6 @@
       "ETH/USDT"
     ]
   },
-  "last_quality_check": "2026-06-22T07:43:11.094827+00:00",
-  "quality_verdict": "OK",
-  "last_klines_ts": 1782120600000,
-  "total_klines": 92732,
-  "db_size_mb": 15.9,
   "symbols": [
     "BTC/USDT",
     "ETH/USDT"
@@ -92,5 +103,11 @@
     "4h",
     "1d"
   ],
-  "klines_count": 92772
+  "db_table": "klines",
+  "db_index_used": "sqlite_autoindex_klines_1 (PK: symbol,timeframe,open_time)",
+  "last_pipeline": "2026-06-22T11:24:46.310521+00:00",
+  "last_klines_ts": 1782126900000,
+  "klines_count": 92790,
+  "db_size_mb": 9.1,
+  "engine_pid": 862946
 }

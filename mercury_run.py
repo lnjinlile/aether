@@ -50,9 +50,11 @@ def debug_log(msg: str):
 # symbol, the higher-priority strategy wins and the lower one is suppressed.
 # Scores derived from Oracle 90d backtest: Sharpe * sqrt(trades) to account
 # for statistical significance (higher trade count = more reliable).
-# Updated 2026-06-22: Only RSI_MR_ETH is LIVE. All other strategies RETIRED/DO_NOT_ENABLE.
+# Updated 2026-06-22: RSI_MR_ETH + DonchianMR_ETH both LIVE.
+# DonchianMR_ETH promoted by Prometheus 10:50 UTC (WF 4/4 OOS, 365d +429% SR=0.55 50trades).
 STRATEGY_PRIORITY = {
-    "RSI_MR_ETH":           1.0547 * (16 ** 0.5),  # Sharpe 1.05, 16 trades → 4.22 (ONLY LIVE)
+    "RSI_MR_ETH":           1.0547 * (16 ** 0.5),   # Sharpe 1.05, 16 trades → 4.22
+    "DonchianMR_ETH":       0.552  * (50 ** 0.5),   # Sharpe 0.55, 50 trades → 3.90
 }
 
 def get_strategy_priority(name: str) -> float:
@@ -193,14 +195,25 @@ def main():
         all_registered = mgr.get_active_strategies()
 
         # ── Cross-reference with athena.json: only trade enabled strategies ──
-        athena_enabled = set()
-        athena_blocked = {}  # strategies blocked by performance filter
+        athena_enabled = set()       # LIVE strategies → real trading
+        athena_paper = set()         # PAPER strategies → signal-only, no real orders
+        athena_blocked = {}          # strategies blocked by performance filter
+        athena_wrong_verdict = {}    # strategies with non-LIVE/non-PAPER verdict
         try:
             with open('.aether/state/athena.json') as f:
                 athena_state = json.load(f)
             strategies = athena_state.get('strategies', {})
             for name, cfg in strategies.items():
                 if cfg.get('status') != 'ok':
+                    continue
+                # ── VERDICT GUARD: only LIVE strategies trade real money ──
+                verdict = cfg.get('verdict', 'UNKNOWN')
+                if verdict == 'PAPER':
+                    # PAPER strategies: generate signals but don't execute orders
+                    athena_paper.add(name)
+                    continue
+                if verdict != 'LIVE':
+                    athena_wrong_verdict[name] = f"verdict={verdict} (not LIVE)"
                     continue
                 # ── PERFORMANCE GUARD: reject strategies with negative metrics ──
                 ret = cfg.get('return_pct', 0)
@@ -224,11 +237,15 @@ def main():
             skipped = set(all_registered) - set(active)
             if skipped:
                 print(f"  ⚠️  已跳过 {len(skipped)} 个未启用策略: {', '.join(sorted(skipped))}")
+        if athena_paper:
+            print(f"  📝 PAPER模式(仅信号,不实盘): {', '.join(sorted(athena_paper))}")
         if athena_blocked:
             print(f"  🛡️  性能守卫已拦截 {len(athena_blocked)} 个亏损策略:")
             for name, reason in sorted(athena_blocked.items()):
                 print(f"      {name}: {reason}")
-        print(f"  已加载 {len(active)} 个策略: {', '.join(active)}")
+        if athena_wrong_verdict:
+            print(f"  ⚠️  非LIVE/PAPER策略已跳过: {', '.join(sorted(athena_wrong_verdict.keys()))}")
+        print(f"  已加载 {len(active)} 个实盘策略: {', '.join(active)}")
     except Exception as e:
         print(f"  ❌ 策略加载失败: {e}")
         return

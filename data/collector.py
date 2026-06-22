@@ -75,6 +75,10 @@ class BinanceDataCollector:
         """
         Fetch a single batch of klines from the exchange.
 
+        Uses Binance's native REST endpoint (public_get_klines) to get all 12
+        fields including quote_volume and trades_count, which ccxt's normalized
+        fetch_ohlcv strips down to 6 fields.
+
         Args:
             symbol: Trading symbol (e.g. 'BTC/USDT').
             timeframe: Kline interval (e.g. '1h', '1m', '5m').
@@ -85,26 +89,40 @@ class BinanceDataCollector:
             DataFrame with columns: open_time, open, high, low, close,
                                     volume, quote_volume, trades_count
         """
-        raw = self.exchange.fetch_ohlcv(
-            symbol=symbol,
-            timeframe=timeframe,
-            since=since,
-            limit=limit,
-        )
+        # Convert CCXT symbol format (BTC/USDT) to Binance raw format (BTCUSDT)
+        raw_symbol = symbol.replace("/", "")
 
-        df = pd.DataFrame(
-            raw,
-            columns=["open_time", "open", "high", "low", "close", "volume"]
-        )
+        params = {
+            "symbol": raw_symbol,
+            "interval": timeframe,
+            "limit": limit,
+        }
+        if since is not None:
+            params["startTime"] = since
 
-        # ccxt Binance futures returns additional columns
-        if raw and len(raw[0]) > 6:
-            df["quote_volume"] = [r[6] if len(r) > 6 else 0.0 for r in raw]
-            df["trades_count"] = [int(r[7]) if len(r) > 7 else 0 for r in raw]
-        else:
-            df["quote_volume"] = 0.0
-            df["trades_count"] = 0
+        raw = self.exchange.public_get_klines(params)
 
+        # Binance kline array fields:
+        # 0:openTime  1:open  2:high  3:low  4:close  5:volume
+        # 6:closeTime  7:quoteAssetVolume  8:numberOfTrades
+        # 9:takerBuyBaseVol  10:takerBuyQuoteVol  11:ignore
+        data = []
+        for r in raw:
+            data.append({
+                "open_time": int(r[0]),
+                "open": float(r[1]),
+                "high": float(r[2]),
+                "low": float(r[3]),
+                "close": float(r[4]),
+                "volume": float(r[5]),
+                "quote_volume": float(r[7]),
+                "trades_count": int(r[8]),
+            })
+
+        df = pd.DataFrame(data, columns=[
+            "open_time", "open", "high", "low", "close",
+            "volume", "quote_volume", "trades_count"
+        ])
         return df
 
     def fetch_historical(
@@ -151,30 +169,19 @@ class BinanceDataCollector:
 
         while current_since < end_time:
             page += 1
-            raw = self.exchange.fetch_ohlcv(
+            df = self.fetch_klines(
                 symbol=symbol,
                 timeframe=timeframe,
                 since=current_since,
                 limit=MAX_LIMIT,
             )
 
-            if not raw:
+            if df.empty:
                 logger.info(
                     "  [%s %s] page %d: 0 bars (API returned empty, stopping)",
                     symbol, timeframe, page
                 )
                 break
-
-            df = pd.DataFrame(
-                raw,
-                columns=["open_time", "open", "high", "low", "close", "volume"]
-            )
-            if raw and len(raw[0]) > 6:
-                df["quote_volume"] = [r[6] if len(r) > 6 else 0.0 for r in raw]
-                df["trades_count"] = [int(r[7]) if len(r) > 7 else 0 for r in raw]
-            else:
-                df["quote_volume"] = 0.0
-                df["trades_count"] = 0
 
             batch_size = len(df)
             all_frames.append(df)

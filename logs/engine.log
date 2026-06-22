@@ -1,0 +1,237 @@
+2026-06-22 18:33:25,388 [ENGINE] Aether Engine started — interval 300s
+2026-06-22 18:33:29,383 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.278 P(Range)=0.722 | Recent 12h: 0T/12R
+2026-06-22 18:33:33,346 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 18:33:33,350 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 18:33:33,610 [ENGINE] Strategy 'DynamicGrid_BTC' is disabled, skipping.
+2026-06-22 18:33:33,610 [ENGINE] Strategy 'DynamicGrid_ETH' is disabled, skipping.
+2026-06-22 18:33:33,610 [ENGINE] Strategy 'MLAlpha_BTC' is disabled, skipping.
+2026-06-22 18:33:33,610 [ENGINE] Strategy 'MA_Cross_BTC' is disabled, skipping.
+2026-06-22 18:33:33,610 [ENGINE] Strategy 'MA_Cross_ETH' is disabled, skipping.
+2026-06-22 18:33:33,610 [ENGINE] Strategy 'TrendFollow_BTC' is disabled, skipping.
+2026-06-22 18:33:33,610 [ENGINE] Strategy 'TrendFollow_ETH' is disabled, skipping.
+2026-06-22 18:33:33,610 [ENGINE] Strategy 'TrendFollow_BTC_1h' is disabled, skipping.
+2026-06-22 18:33:33,610 [ENGINE] Strategy 'RSI_MR_BTC' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Loaded strategy 'RSI_MR_ETH' from strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy (params: {'cooldown_bars': 5, 'exit_rsi': 50, 'leverage': 3, 'overbought': 75, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'MLEnsemble_BTC' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'MLEnsemble_ETH' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'BBandRSI_BTC' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'BBandRSI_ETH' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'RegimeSwitch_BTC' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'RegimeSwitch_ETH' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'ADXTrend_BTC' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'Momentum_ETH' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'TrendPullback_ETH' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'VolBreakout_BTC' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'VolBreakout_ETH' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'Supertrend_BTC' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'Supertrend_ETH' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'MACD_BTC' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'MACD_ETH' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'StochRSI_ETH' is disabled, skipping.
+2026-06-22 18:33:33,616 [ENGINE] Strategy 'DonchianMR_BTC' is disabled, skipping.
+2026-06-22 18:33:33,617 [ENGINE] Loaded strategy 'DonchianMR_ETH' from strategy.examples.donchian_mr.DonchianMRStrategy (params: {'cooldown_bars': 5, 'donchian_period': 10, 'exit_level': 50, 'leverage': 3, 'overbought': 80, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 18:33:33,617 [ENGINE] Loaded 2 strategies from /home/rinnen/binance_quant/config/strategies.yaml
+2026-06-22 18:33:33,617 [ENGINE] Strategies reloaded from YAML (mtime changed): 2 enabled
+2026-06-22 18:33:33,890 [ENGINE] Signals: 0 generated
+2026-06-22 18:38:29,450 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.269 P(Range)=0.731 | Recent 12h: 0T/12R
+2026-06-22 18:38:31,214 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 18:38:31,219 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 18:38:31,488 [ENGINE] Signals: 0 generated
+2026-06-22 18:43:29,473 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.371 P(Range)=0.629 | Recent 12h: 0T/12R
+2026-06-22 18:43:31,195 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 18:43:31,200 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 18:43:31,483 [ENGINE] Signals: 0 generated
+2026-06-22 18:48:25,476 [ENGINE] Backtests: 2/28 strategies evaluated with real metrics
+2026-06-22 18:48:25,477 [ENGINE] AUDIT-040 guard: 1 LIVE strategies, 0 leaked — consistency OK
+2026-06-22 18:48:30,125 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.371 P(Range)=0.629 | Recent 12h: 0T/12R
+2026-06-22 18:48:31,874 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 18:48:31,879 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 18:48:32,152 [ENGINE] Signals: 0 generated
+2026-06-22 18:53:30,192 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.371 P(Range)=0.629 | Recent 12h: 0T/12R
+2026-06-22 18:53:31,943 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 18:53:31,948 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 18:53:32,220 [ENGINE] Signals: 0 generated
+2026-06-22 18:58:29,442 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.389 P(Range)=0.611 | Recent 12h: 0T/12R
+2026-06-22 18:58:31,237 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 18:58:31,243 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 18:58:31,519 [ENGINE] Signals: 0 generated
+2026-06-22 19:03:29,388 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.289 P(Range)=0.711 | Recent 12h: 0T/12R
+2026-06-22 19:03:31,157 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 19:03:31,163 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 19:03:31,461 [ENGINE] Signals: 0 generated
+2026-06-22 19:08:29,449 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.232 P(Range)=0.768 | Recent 12h: 0T/12R
+2026-06-22 19:08:31,152 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 19:08:31,157 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 19:08:31,195 [ENGINE] Strategy 'DynamicGrid_BTC' is disabled, skipping.
+2026-06-22 19:08:31,195 [ENGINE] Strategy 'DynamicGrid_ETH' is disabled, skipping.
+2026-06-22 19:08:31,195 [ENGINE] Strategy 'MLAlpha_BTC' is disabled, skipping.
+2026-06-22 19:08:31,195 [ENGINE] Strategy 'MA_Cross_BTC' is disabled, skipping.
+2026-06-22 19:08:31,195 [ENGINE] Strategy 'MA_Cross_ETH' is disabled, skipping.
+2026-06-22 19:08:31,195 [ENGINE] Strategy 'TrendFollow_BTC' is disabled, skipping.
+2026-06-22 19:08:31,195 [ENGINE] Strategy 'TrendFollow_ETH' is disabled, skipping.
+2026-06-22 19:08:31,195 [ENGINE] Strategy 'TrendFollow_BTC_1h' is disabled, skipping.
+2026-06-22 19:08:31,195 [ENGINE] Strategy 'RSI_MR_BTC' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Loaded strategy 'RSI_MR_ETH' from strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy (params: {'cooldown_bars': 5, 'exit_rsi': 50, 'leverage': 3, 'overbought': 75, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'MLEnsemble_BTC' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'MLEnsemble_ETH' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'BBandRSI_BTC' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'BBandRSI_ETH' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'RegimeSwitch_BTC' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'RegimeSwitch_ETH' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'ADXTrend_BTC' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'Momentum_ETH' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'TrendPullback_ETH' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'VolBreakout_BTC' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'VolBreakout_ETH' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'Supertrend_BTC' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'Supertrend_ETH' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'MACD_BTC' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'MACD_ETH' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'StochRSI_ETH' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Strategy 'DonchianMR_BTC' is disabled, skipping.
+2026-06-22 19:08:31,196 [ENGINE] Loaded strategy 'DonchianMR_ETH' from strategy.examples.donchian_mr.DonchianMRStrategy (params: {'cooldown_bars': 5, 'donchian_period': 10, 'exit_level': 50, 'leverage': 3, 'overbought': 80, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:08:31,196 [ENGINE] Loaded 2 strategies from /home/rinnen/binance_quant/config/strategies.yaml
+2026-06-22 19:08:31,196 [ENGINE] Strategies reloaded from YAML (mtime changed): 2 enabled
+2026-06-22 19:08:31,466 [ENGINE] Signals: 0 generated
+2026-06-22 19:13:29,697 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.285 P(Range)=0.715 | Recent 12h: 0T/12R
+2026-06-22 19:13:31,415 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 19:13:31,420 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 19:13:31,719 [ENGINE] Signals: 0 generated
+2026-06-22 19:18:29,434 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.277 P(Range)=0.723 | Recent 12h: 0T/12R
+2026-06-22 19:18:31,169 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 19:18:31,175 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 19:18:31,213 [ENGINE] Strategy 'DynamicGrid_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'DynamicGrid_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'MLAlpha_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'MA_Cross_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'MA_Cross_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'TrendFollow_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'TrendFollow_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'TrendFollow_BTC_1h' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'RSI_MR_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Loaded strategy 'RSI_MR_ETH' from strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy (params: {'cooldown_bars': 5, 'exit_rsi': 50, 'leverage': 3, 'overbought': 75, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'MLEnsemble_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'MLEnsemble_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'BBandRSI_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'BBandRSI_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'RegimeSwitch_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'RegimeSwitch_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'ADXTrend_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'Momentum_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'TrendPullback_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'VolBreakout_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'VolBreakout_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'Supertrend_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'Supertrend_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'MACD_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'MACD_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'StochRSI_ETH' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Strategy 'DonchianMR_BTC' is disabled, skipping.
+2026-06-22 19:18:31,214 [ENGINE] Loaded strategy 'DonchianMR_ETH' from strategy.examples.donchian_mr.DonchianMRStrategy (params: {'cooldown_bars': 5, 'donchian_period': 10, 'exit_level': 50, 'leverage': 3, 'overbought': 80, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:18:31,214 [ENGINE] Loaded 2 strategies from /home/rinnen/binance_quant/config/strategies.yaml
+2026-06-22 19:18:31,214 [ENGINE] Strategies reloaded from YAML (mtime changed): 2 enabled
+2026-06-22 19:18:31,483 [ENGINE] Signals: 0 generated
+2026-06-22 19:23:29,439 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.254 P(Range)=0.746 | Recent 12h: 0T/12R
+2026-06-22 19:23:31,155 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 19:23:31,161 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'DynamicGrid_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'DynamicGrid_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'MLAlpha_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'MA_Cross_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'MA_Cross_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'TrendFollow_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'TrendFollow_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'TrendFollow_BTC_1h' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'RSI_MR_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Loaded strategy 'RSI_MR_ETH' from strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy (params: {'cooldown_bars': 5, 'exit_rsi': 50, 'leverage': 3, 'overbought': 75, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'MLEnsemble_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'MLEnsemble_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'BBandRSI_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'BBandRSI_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'RegimeSwitch_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'RegimeSwitch_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'ADXTrend_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'Momentum_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'TrendPullback_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'VolBreakout_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'VolBreakout_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'Supertrend_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'Supertrend_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'MACD_BTC' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'MACD_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Strategy 'StochRSI_ETH' is disabled, skipping.
+2026-06-22 19:23:31,200 [ENGINE] Loaded strategy 'DonchianMR_BTC' from strategy.examples.donchian_mr.DonchianMRStrategy (params: {'cooldown_bars': 9, 'donchian_period': 8, 'exit_level': 50, 'leverage': 3, 'overbought': 80, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.015, 'symbols': ['BTC/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:23:31,200 [ENGINE] Loaded strategy 'DonchianMR_ETH' from strategy.examples.donchian_mr.DonchianMRStrategy (params: {'cooldown_bars': 5, 'donchian_period': 10, 'exit_level': 50, 'leverage': 3, 'overbought': 80, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:23:31,200 [ENGINE] Loaded 3 strategies from /home/rinnen/binance_quant/config/strategies.yaml
+2026-06-22 19:23:31,200 [ENGINE] Strategies reloaded from YAML (mtime changed): 3 enabled
+2026-06-22 19:23:31,621 [ENGINE] Signals: 0 generated
+2026-06-22 19:25:12,603 [ENGINE] Aether Engine started — interval 300s
+2026-06-22 19:25:17,309 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.254 P(Range)=0.746 | Recent 12h: 0T/12R
+2026-06-22 19:25:19,561 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 19:25:19,566 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 19:25:19,859 [ENGINE] Strategy 'DynamicGrid_BTC' is disabled, skipping.
+2026-06-22 19:25:19,859 [ENGINE] Strategy 'DynamicGrid_ETH' is disabled, skipping.
+2026-06-22 19:25:19,860 [ENGINE] Strategy 'MLAlpha_BTC' is disabled, skipping.
+2026-06-22 19:25:19,860 [ENGINE] Strategy 'MA_Cross_BTC' is disabled, skipping.
+2026-06-22 19:25:19,860 [ENGINE] Strategy 'MA_Cross_ETH' is disabled, skipping.
+2026-06-22 19:25:19,860 [ENGINE] Strategy 'TrendFollow_BTC' is disabled, skipping.
+2026-06-22 19:25:19,860 [ENGINE] Strategy 'TrendFollow_ETH' is disabled, skipping.
+2026-06-22 19:25:19,860 [ENGINE] Strategy 'TrendFollow_BTC_1h' is disabled, skipping.
+2026-06-22 19:25:19,860 [ENGINE] Strategy 'RSI_MR_BTC' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Loaded strategy 'RSI_MR_ETH' from strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy (params: {'cooldown_bars': 5, 'exit_rsi': 50, 'leverage': 3, 'overbought': 75, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'MLEnsemble_BTC' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'MLEnsemble_ETH' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'BBandRSI_BTC' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'BBandRSI_ETH' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'RegimeSwitch_BTC' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'RegimeSwitch_ETH' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'ADXTrend_BTC' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'Momentum_ETH' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'TrendPullback_ETH' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'VolBreakout_BTC' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'VolBreakout_ETH' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'Supertrend_BTC' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'Supertrend_ETH' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'MACD_BTC' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'MACD_ETH' is disabled, skipping.
+2026-06-22 19:25:19,866 [ENGINE] Strategy 'StochRSI_ETH' is disabled, skipping.
+2026-06-22 19:25:19,867 [ENGINE] Loaded strategy 'DonchianMR_BTC' from strategy.examples.donchian_mr.DonchianMRStrategy (params: {'cooldown_bars': 9, 'donchian_period': 8, 'exit_level': 50, 'leverage': 3, 'overbought': 80, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.015, 'symbols': ['BTC/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:25:19,867 [ENGINE] Loaded strategy 'DonchianMR_ETH' from strategy.examples.donchian_mr.DonchianMRStrategy (params: {'cooldown_bars': 5, 'donchian_period': 10, 'exit_level': 50, 'leverage': 3, 'overbought': 80, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:25:19,867 [ENGINE] Loaded 3 strategies from /home/rinnen/binance_quant/config/strategies.yaml
+2026-06-22 19:25:19,867 [ENGINE] Strategies reloaded from YAML (mtime changed): 3 enabled
+2026-06-22 19:25:20,285 [ENGINE] Signals: 0 generated
+2026-06-22 19:26:50,318 [ENGINE] Aether Engine started — interval 300s
+2026-06-22 19:26:54,415 [ENGINE] Regime: Regime: RANGING ✅ FAVORABLE | P(Trend)=0.254 P(Range)=0.746 | Recent 12h: 0T/12R
+2026-06-22 19:26:56,557 [ENGINE] Live exchange: balance=4995.42, positions=0, orders=0
+2026-06-22 19:26:56,561 [ENGINE] Risk check: 4995.42, 0 positions, risk=normal
+2026-06-22 19:26:56,841 [ENGINE] Strategy 'DynamicGrid_BTC' is disabled, skipping.
+2026-06-22 19:26:56,841 [ENGINE] Strategy 'DynamicGrid_ETH' is disabled, skipping.
+2026-06-22 19:26:56,841 [ENGINE] Strategy 'MLAlpha_BTC' is disabled, skipping.
+2026-06-22 19:26:56,841 [ENGINE] Strategy 'MA_Cross_BTC' is disabled, skipping.
+2026-06-22 19:26:56,841 [ENGINE] Strategy 'MA_Cross_ETH' is disabled, skipping.
+2026-06-22 19:26:56,841 [ENGINE] Strategy 'TrendFollow_BTC' is disabled, skipping.
+2026-06-22 19:26:56,841 [ENGINE] Strategy 'TrendFollow_ETH' is disabled, skipping.
+2026-06-22 19:26:56,841 [ENGINE] Strategy 'TrendFollow_BTC_1h' is disabled, skipping.
+2026-06-22 19:26:56,841 [ENGINE] Strategy 'RSI_MR_BTC' is disabled, skipping.
+2026-06-22 19:26:56,843 [ENGINE] Loaded strategy 'RSI_MR_ETH' from strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy (params: {'cooldown_bars': 5, 'exit_rsi': 50, 'leverage': 3, 'overbought': 75, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:26:56,843 [ENGINE] Strategy 'MLEnsemble_BTC' is disabled, skipping.
+2026-06-22 19:26:56,843 [ENGINE] Strategy 'MLEnsemble_ETH' is disabled, skipping.
+2026-06-22 19:26:56,843 [ENGINE] Strategy 'BBandRSI_BTC' is disabled, skipping.
+2026-06-22 19:26:56,843 [ENGINE] Strategy 'BBandRSI_ETH' is disabled, skipping.
+2026-06-22 19:26:56,843 [ENGINE] Strategy 'RegimeSwitch_BTC' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Strategy 'RegimeSwitch_ETH' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Strategy 'ADXTrend_BTC' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Strategy 'Momentum_ETH' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Strategy 'TrendPullback_ETH' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Strategy 'VolBreakout_BTC' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Strategy 'VolBreakout_ETH' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Strategy 'Supertrend_BTC' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Strategy 'Supertrend_ETH' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Strategy 'MACD_BTC' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Strategy 'MACD_ETH' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Strategy 'StochRSI_ETH' is disabled, skipping.
+2026-06-22 19:26:56,844 [ENGINE] Loaded strategy 'DonchianMR_BTC' from strategy.examples.donchian_mr.DonchianMRStrategy (params: {'cooldown_bars': 9, 'donchian_period': 8, 'exit_level': 50, 'leverage': 3, 'overbought': 80, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.015, 'symbols': ['BTC/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:26:56,844 [ENGINE] Loaded strategy 'DonchianMR_ETH' from strategy.examples.donchian_mr.DonchianMRStrategy (params: {'cooldown_bars': 5, 'donchian_period': 10, 'exit_level': 50, 'leverage': 3, 'overbought': 80, 'oversold': 20, 'rsi_period': 14, 'stop_loss_pct': 0.02, 'symbols': ['ETH/USDT'], 'take_profit_pct': 0.04, 'timeframes': ['1h']})
+2026-06-22 19:26:56,844 [ENGINE] Loaded 3 strategies from /home/rinnen/binance_quant/config/strategies.yaml
+2026-06-22 19:26:56,844 [ENGINE] Strategies reloaded from YAML (mtime changed): 3 enabled
+2026-06-22 19:26:57,268 [ENGINE] Signals: 0 generated

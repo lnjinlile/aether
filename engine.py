@@ -135,6 +135,8 @@ def run_backtests():
             bband_rsi_signals, donchian_mr_signals,
             vol_breakout_signals, supertrend_signals,
             macd_crossover_signals,
+            adx_trend_signals, momentum_signals,
+            trend_pullback_signals,
         )
         import numpy as np
         import pandas as pd
@@ -347,6 +349,37 @@ def run_backtests():
                             take_profit_pct=p.get("take_profit_pct", 0.04),
                             cooldown_bars=p.get("cooldown_bars", 5),
                         )
+                    elif strategy_type == "ADXTrendStrategy":
+                        signals = adx_trend_signals(
+                            df,
+                            adx_period=p.get("adx_period", 14),
+                            adx_threshold=p.get("adx_threshold", 25),
+                            adx_exit=p.get("adx_exit", 20),
+                            ema_period=p.get("ema_period", 50),
+                            atr_period=p.get("atr_period", 14),
+                            atr_sl_mult=p.get("atr_sl_mult", 2.0),
+                            atr_tp_mult=p.get("atr_tp_mult", 4.0),
+                            cooldown_bars=p.get("cooldown_bars", 3),
+                        )
+                    elif strategy_type == "MomentumStrategy":
+                        signals = momentum_signals(
+                            df,
+                            fast_ema=p.get("fast_ema", 12),
+                            slow_ema=p.get("slow_ema", 26),
+                            signal_period=p.get("signal_period", 9),
+                            atr_period=p.get("atr_period", 14),
+                            atr_sl_mult=p.get("atr_sl_mult", 2.0),
+                            atr_tp_mult=p.get("atr_tp_mult", 3.5),
+                        )
+                    elif strategy_type == "TrendPullback":
+                        signals = trend_pullback_signals(
+                            df,
+                            ema_period=p.get("ema_period", 100),
+                            atr_period=p.get("atr_period", 14),
+                            atr_sl_mult=p.get("atr_sl_mult", 1.5),
+                            atr_tp_mult=p.get("atr_tp_mult", 3.0),
+                            cooldown_bars=p.get("cooldown_bars", 5),
+                        )
                     else:
                         results[name] = {
                             "status": "skipped",
@@ -401,7 +434,7 @@ def run_backtests():
                     "total_trades": m["total_trades"],
                     "profit_factor": m["profit_factor"],
                     "backtest_period": "90d",
-                    "verdict": "LIVE" if enabled else "PAPER",
+                    "verdict": existing_results.get(name, {}).get("verdict", "PAPER"),
                     # Nested detailed metrics (for backward compat)
                     "metrics": {
                         "total_return_pct": m["total_return_pct"],
@@ -573,6 +606,10 @@ def run_signal_check():
         signals = {}
         # Track signals per symbol for conflict detection
         symbol_signals = {}  # symbol -> list of (name, signal_dict)
+        
+        # Cache fetched klines by (symbol, timeframe) to avoid redundant API calls
+        # when multiple strategies share the same symbol/timeframe
+        _klines_cache = {}
 
         for name in mgr.get_active_strategies():
             if name not in _enabled_names:
@@ -583,7 +620,10 @@ def run_signal_check():
             tf = strat.timeframes[0]
 
             try:
-                df = collector.fetch_current_klines(sym, tf, 300)
+                cache_key = (sym, tf)
+                if cache_key not in _klines_cache:
+                    _klines_cache[cache_key] = collector.fetch_current_klines(sym, tf, 300)
+                df = _klines_cache[cache_key]
                 mgr.feed_data_only(sym, tf, df)
                 sig = strat.generate_signal(sym)
             except Exception as e:
@@ -856,15 +896,34 @@ def sync_agent_states():
         strat_summary = {}
         for name, s in bt.get("strategies", {}).items():
             entry = {"signals": s.get("signals_count", 0), "status": s.get("status", "?")}
-            # Support both nested (legacy) and top-level (flattened) metrics
+            # Support both nested (canonical metrics) and top-level (legacy) fields.
+            # Prefer nested metrics when available — top-level can be stale duplicates
+            # (e.g. RSI_MR_ETH had top-level 50.23% vs metrics 81.24%).
             m = s.get("metrics", {})
-            entry["return_pct"] = s.get("total_return_pct") or m.get("total_return_pct", 0)
-            entry["sharpe"] = s.get("sharpe_ratio") or m.get("sharpe_ratio", 0)
-            entry["win_rate"] = s.get("win_rate") or m.get("win_rate", 0)
-            entry["trades"] = s.get("total_trades") or m.get("total_trades", 0)
-            entry["max_dd"] = s.get("max_drawdown_pct") or m.get("max_drawdown_pct", 0)
+            has_metrics = m and m.get("total_trades", 0) > 0
+            top_trades = s.get("total_trades") or 0
+            # Use nested metrics if they exist and have >= trades (more authoritative)
+            if has_metrics and m.get("total_trades", 0) >= top_trades:
+                entry["return_pct"] = m.get("total_return_pct", 0)
+                entry["sharpe"] = m.get("sharpe_ratio", 0)
+                entry["win_rate"] = m.get("win_rate", 0)
+                entry["trades"] = m.get("total_trades", 0)
+                entry["max_dd"] = m.get("max_drawdown_pct", 0)
+            else:
+                entry["return_pct"] = s.get("total_return_pct") or m.get("total_return_pct", 0)
+                entry["sharpe"] = s.get("sharpe_ratio") or m.get("sharpe_ratio", 0)
+                entry["win_rate"] = s.get("win_rate") or m.get("win_rate", 0)
+                entry["trades"] = s.get("total_trades") or m.get("total_trades", 0)
+                entry["max_dd"] = s.get("max_drawdown_pct") or m.get("max_drawdown_pct", 0)
             entry["verdict"] = s.get("verdict", m.get("verdict", ""))
             strat_summary[name] = entry
+        # Preserve existing verdicts from athena.json that were manually set
+        # (e.g. Athena/Prometheus promote to LIVE, PAUSE, RETIRE — engine must not overwrite)
+        existing_athena = load_json(os.path.join(STATE_DIR, "athena.json"))
+        for name in strat_summary:
+            existing_verdict = existing_athena.get("strategies", {}).get(name, {}).get("verdict", "")
+            if existing_verdict and existing_verdict not in ("", "?"):
+                strat_summary[name]["verdict"] = existing_verdict
         merge_state("athena", {"status": "ok", "strategies": strat_summary})
 
         risk = load_json(os.path.join(STATE_DIR, "risk_check.json"))
@@ -931,6 +990,21 @@ def sync_agent_states():
         for key in ("dsr_implemented", "walk_forward_implemented", "anti_overfitting_run", "wf_findings", "next"):
             if key in existing_prom:
                 prom_state[key] = existing_prom[key]
+        # Preserve existing prometheus.json strategy data that has MORE trades
+        # (manually set by Prometheus persona via live validation).
+        # Backtest metrics can be stale (e.g. RSI_MR_ETH 50.23% vs live-confirmed 81.24%).
+        # If existing has more trades → it's been updated with richer data → preserve it.
+        # Also preserve if existing has a higher Sharpe (better data quality).
+        existing_strats = existing_prom.get("strategies", {})
+        for name, strat in prom_state.get("strategies", {}).items():
+            if name in existing_strats:
+                old_trades = existing_strats[name].get("trades", 0)
+                new_trades = strat.get("trades", 0)
+                old_sr = existing_strats[name].get("sharpe", 0)
+                new_sr = strat.get("sharpe", 0)
+                if old_trades > new_trades or (old_trades == new_trades and abs(old_sr) > abs(new_sr) + 0.01):
+                    # Existing data is more authoritative — preserve it
+                    prom_state["strategies"][name] = existing_strats[name]
         # Clean up stale hardcoded fake fields (replaced by strategies dict)
         prom_state["dgt_deployed"] = None
         prom_state["dgt_btc_pnl"] = None

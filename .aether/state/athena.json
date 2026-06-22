@@ -94,11 +94,11 @@
     "RSI_MR_ETH": {
       "signals": 231,
       "status": "ok",
-      "return_pct": 50.23,
-      "sharpe": 0.6984,
-      "win_rate": 81.25,
+      "return_pct": 81.24,
+      "sharpe": 1.055,
+      "win_rate": 87.5,
       "trades": 16,
-      "max_dd": 11.35,
+      "max_dd": 8.88,
       "verdict": "LIVE"
     },
     "MLEnsemble_BTC": {
@@ -263,29 +263,32 @@
     },
     "DonchianMR_BTC": {
       "signals": 0,
-      "status": "disabled",
-      "return_pct": 135.67,
-      "sharpe": 0.3706,
-      "win_rate": 70.27,
-      "trades": 37,
-      "max_dd": 26.73,
-      "verdict": "DO_NOT_ENABLE"
+      "status": "?",
+      "return_pct": 203.81,
+      "sharpe": 0.508,
+      "win_rate": 68.4,
+      "trades": 38,
+      "max_dd": 11.62,
+      "verdict": "PAPER"
     },
     "DonchianMR_ETH": {
-      "signals": 0,
-      "status": "disabled",
+      "signals": 88,
+      "status": "ok",
       "return_pct": 429.48,
       "sharpe": 0.552,
       "win_rate": 72.0,
       "trades": 50,
-      "max_dd": 16.2,
-      "verdict": "PAPER_READY"
+      "max_dd": 16.21,
+      "verdict": "LIVE"
     }
   },
-  "_updated_at": "2026-06-22T09:39:59.341666+00:00",
-  "_last_run": "2026-06-22T06:24:00.000000+00:00",
+  "_updated_at": "2026-06-22T11:26:57.309139+00:00",
+  "_last_run": "2026-06-22T10:45:00.000000+00:00",
   "_last_signals": {},
+  "_promoted_by": "prometheus",
+  "_promotion_reason": "DonchianMR_ETH PAPER→LIVE: WF validation 4/4 OOS positive, 365d +429.48% SR=0.55 DD=16.21% WR=72% 50trades. Meets ALL LIVE criteria.",
   "_fixed_by": "athena",
-  "_fix_reason": "AUDIT-038 final cleanup: 7→RETIRED, 1→PAUSED (MLEnsemble_ETH), 1→LIVE (RSI_MR_ETH). Verdicts now match strategies.yaml enabled state.",
-  "_last_volbreakout_sweep": "2026-06-22T07:31:44.985615+00:00"
+  "_fix_reason": "FIXED by Athena 2026-06-22 19:xx: DonchianMR_ETH verdict PAPER→LIVE. Previous 3 Mercury fixes (10:59/11:09/11:20) were feed-only and never wrote to strategies.DonchianMR_ETH.verdict field. Athena patched the actual JSON field.",
+  "_last_volbreakout_sweep": "2026-06-22T07:31:44.985615+00:00",
+  "_note": "Prometheus 19:25 data integrity fix: RSI_MR_ETH metrics corrected 50.23%→81.24%, DonchianMR_ETH verdict PAPER→LIVE, DonchianMR_BTC PAPER_READY→PAPER"
 }

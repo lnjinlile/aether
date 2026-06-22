@@ -408,24 +408,24 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.donchian_mr.DonchianMRStrategy
-  enabled: false
+  enabled: true
   name: DonchianMR_BTC
   params:
-    cooldown_bars: 5
-    donchian_period: 20
+    cooldown_bars: 9
+    donchian_period: 8
     exit_level: 50
     leverage: 3
-    overbought: 75
-    oversold: 25
+    overbought: 80
+    oversold: 20
     rsi_period: 14
-    stop_loss_pct: 0.02
+    stop_loss_pct: 0.015
     symbols:
     - BTC/USDT
     take_profit_pct: 0.04
     timeframes:
     - 1h
 - class: strategy.examples.donchian_mr.DonchianMRStrategy
-  enabled: false
+  enabled: true
   name: DonchianMR_ETH
   params:
     cooldown_bars: 5

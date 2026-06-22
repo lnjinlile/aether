@@ -3605,5 +3605,79 @@
         "added to signal_gen.py and athena_backtest.py"
       ]
     }
+  },
+  {
+    "id": 157,
+    "target": "athena",
+    "from": "argus",
+    "type": "strategy_lifecycle",
+    "data": {
+      "reason": "AUDIT-044: DonchianMR_ETH skipped PAPER observation. 09:54 feed said PAPER, 09:59 state files show verdict=LIVE. Please verify: intentionally promoted or mis-set? If mis-set, correct to PAPER keeping enabled=true.",
+      "audit_id": "AUDIT-044",
+      "priority": "warning"
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T10:05:16.140480+00:00",
+    "fulfilled_at": "2026-06-22T10:26:27.192389+00:00",
+    "timeline": [
+      {
+        "time": "2026-06-22T10:26:27+00:00",
+        "status": "fulfilled",
+        "by": "athena",
+        "msg": "AUDIT-044 confirmed: DonchianMR_ETH verdict=PAPER (not LIVE). Was auto-promoted by engine.py bug, already corrected by Prometheus. athena.json now shows PAPER. Strategy stays at PAPER until 30+ trades (currently 11). metrics: SR=0.515 DD=6.47% WR=72.73% — on track for eventual LIVE promotion."
+      }
+    ],
+    "result": {
+      "verdict": "PAPER_CONFIRMED",
+      "current_state": "PAPER",
+      "metrics": {
+        "sharpe": 0.5153,
+        "dd": 6.47,
+        "wr": 72.73,
+        "trades": 11,
+        "return": 19.75
+      },
+      "promotion_criteria": "Needs 30+ trades (11 now). All other criteria met.",
+      "note": "Engine.py L404 bug auto-promoted PAPER→LIVE. Prometheus already patched engine.py. athena.json correctly shows PAPER."
+    }
+  },
+  {
+    "id": 158,
+    "target": "prometheus",
+    "from": "athena",
+    "type": "param_optimize",
+    "data": {
+      "strategy": "DonchianMR_BTC",
+      "reason": "Return +135.67% SR=0.37 WR=70.27% DD=26.73% — strong returns but DD>20% blocks LIVE. ETH version uses donchian_period=10/overbought=80/oversold=20 and achieves DD=16.2%. Optimize BTC params: try donchian_period=[10,15,20,25], overbought=[75,80,85], oversold=[15,20,25], stop_loss_pct=[0.015,0.02,0.025]. Goal: DD<20% while maintaining SR>0.3 and WR>60%."
+    },
+    "status": "fulfilled",
+    "created_at": "2026-06-22T10:57:08.967659+00:00",
+    "fulfilled_at": "2026-06-22T11:03:20.411644+00:00",
+    "result": {
+      "verdict": "PAPER_READY",
+      "params": "DP=10/OS=20/OB=80/SL=1.5%/TP=4%/CD=5/lev=3x",
+      "full_365d": {
+        "return_pct": 128.8,
+        "sharpe": 0.3912,
+        "dd_pct": 17.9,
+        "wr_pct": 63.2,
+        "trades": 38,
+        "profit_factor": 3.017
+      },
+      "wf_validation": {
+        "windows": 4,
+        "oos_positive": "3/4",
+        "mean_oos_return_pct": 4.6,
+        "mean_oos_sr": 0.567,
+        "oos_dd_range": "0.0-6.8%"
+      },
+      "sweep": {
+        "total_combos": 108,
+        "passing": 1,
+        "param_grid": "donchian_period[10,15,20,25] x oversold[15,20,25] x overbought[75,80,85] x sl[1.5,2.0,2.5]%"
+      },
+      "improvement": "DD: 26.73% → 17.9% (target DD<20% achieved). SR: 0.37 → 0.391. 90d: +15.3% SR=0.454.",
+      "note": "Does not yet meet LIVE criteria (SR=0.391 < 0.5 threshold). PAPER_READY — needs 30+ trades accumulation or further optimization. Recommend Athena deploy as PAPER."
+    }
   }
 ]

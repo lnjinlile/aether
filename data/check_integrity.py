@@ -42,19 +42,22 @@ def check(verbose=False):
     if total < 10000:
         issues.append(f"K线总数过低: {total}")
 
-    # 3. 缺口检测 (BTC 15m)
-    rows = db.execute(
-        "SELECT open_time FROM klines WHERE symbol='BTC/USDT' AND timeframe='15m' ORDER BY open_time"
-    ).fetchall()
-    if rows:
-        expected_gap = 15 * 60 * 1000
-        gap_count = 0
-        for i in range(1, min(len(rows), 2000)):
-            if rows[-i][0] - rows[-i-1][0] > expected_gap * 1.5:
-                gap_count += 1
-        stats["btc_15m_gaps_recent"] = gap_count
-        if gap_count > 3:
-            issues.append(f"BTC 15m 近期缺口: {gap_count}个")
+    # 3. 缺口检测 (全量, LAG 窗口函数)
+    tf_ms = {"15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000}
+    total_gaps = 0
+    for sym in SYMBOLS:
+        for tf in TIMEFRAMES:
+            step_ms = tf_ms.get(tf, 3600000)
+            gap_count = db.execute("""
+                SELECT COUNT(*) FROM (
+                    SELECT open_time - LAG(open_time) OVER (ORDER BY open_time) as diff
+                    FROM klines WHERE symbol=? AND timeframe=?
+                ) WHERE diff > ?
+            """, (sym, tf, step_ms * 2.5)).fetchone()[0]
+            if gap_count > 0:
+                issues.append(f"缺口: {sym} {tf}: {gap_count}个")
+            total_gaps += gap_count
+    stats["total_gaps"] = total_gaps
 
     # 4. 辅助数据表检查
     for tbl, min_rows in [("funding_rates", 10), ("open_interest", 10), ("orderbook_snapshots", 5)]:
