@@ -119,7 +119,8 @@
       "win_rate": 55.56,
       "trades": 27,
       "max_dd": 21.18,
-      "verdict": "PAUSED"
+      "verdict": "RETIRED",
+      "retired_reason": "AUDIT-049: DD=21.18% > 20% max, SR=0.116 \u2248 noise, 27 trades. RETIRED per lifecycle rules."
     },
     "BBandRSI_BTC": {
       "signals": 0,
@@ -264,32 +265,33 @@
     "DonchianMR_BTC": {
       "signals": 0,
       "status": "disabled",
-      "return_pct": 0,
-      "sharpe": 0.508,
-      "win_rate": 0,
+      "return_pct": 128.8,
+      "sharpe": 0.3912,
+      "win_rate": 63.2,
       "trades": 38,
-      "max_dd": 0,
+      "max_dd": 17.9,
       "verdict": "PAPER"
     },
     "DonchianMR_ETH": {
-      "signals": 88,
+      "signals": 0,
       "status": "ok",
-      "return_pct": 20.52,
-      "sharpe": 0.5332,
-      "win_rate": 80.0,
-      "trades": 10,
-      "max_dd": 6.47,
+      "return_pct": 429.48,
+      "sharpe": 0.552,
+      "win_rate": 72.0,
+      "trades": 50,
+      "max_dd": 16.21,
       "verdict": "LIVE"
     }
   },
-  "_updated_at": "2026-06-22T12:31:46.536860+00:00",
+  "_updated_at": "2026-06-22T12:47:46.827131+00:00",
   "_last_run": "2026-06-22T10:45:00.000000+00:00",
   "_last_signals": {},
   "_promoted_by": "prometheus",
-  "_promotion_reason": "DonchianMR_ETH PAPER→LIVE: WF validation 4/4 OOS positive, 365d +429.48% SR=0.55 DD=16.21% WR=72% 50trades. Meets ALL LIVE criteria.",
+  "_promotion_reason": "DonchianMR_ETH PAPER\u2192LIVE: WF validation 4/4 OOS positive, 365d +429.48% SR=0.55 DD=16.21% WR=72% 50trades. Meets ALL LIVE criteria.",
   "_fixed_by": "athena",
-  "_fix_reason": "FIXED by Athena 2026-06-22 19:xx: DonchianMR_ETH verdict PAPER→LIVE. Previous 3 Mercury fixes (10:59/11:09/11:20) were feed-only and never wrote to strategies.DonchianMR_ETH.verdict field. Athena patched the actual JSON field.",
+  "_fix_reason": "FIXED by Athena 2026-06-22 19:xx: DonchianMR_ETH verdict PAPER\u2192LIVE. Previous 3 Mercury fixes (10:59/11:09/11:20) were feed-only and never wrote to strategies.DonchianMR_ETH.verdict field. Athena patched the actual JSON field.",
   "_last_volbreakout_sweep": "2026-06-22T07:31:44.985615+00:00",
-  "_note": "Hermes 2026-06-22 16:30 data integrity fix: RSI_MR_ETH prometheus.json strategies+live_confirmed corrected 81.24%→50.23% (matching engine/backtest_results/athena — Prometheus ran independent backtest with different methodology). DonchianMR_ETH verdict PAPER→LIVE, DonchianMR_BTC PAPER_READY→PAPER",
-  "_hermes_fix": "AUDIT-045 regression: DonchianMR_BTC verdict LIVE->PAPER"
+  "_note": "Hermes 2026-06-22 16:30 data integrity fix: RSI_MR_ETH prometheus.json strategies+live_confirmed corrected 81.24%\u219250.23% (matching engine/backtest_results/athena \u2014 Prometheus ran independent backtest with different methodology). DonchianMR_ETH verdict PAPER\u2192LIVE, DonchianMR_BTC PAPER_READY\u2192PAPER",
+  "_hermes_fix": "AUDIT-045 regression: DonchianMR_BTC verdict LIVE->PAPER",
+  "_audit_048_fix": "DonchianMR metrics synced from Prometheus 365d sweeps (#156/#158)"
 }

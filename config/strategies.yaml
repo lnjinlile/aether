@@ -411,8 +411,8 @@ strategies:
   enabled: false
   name: DonchianMR_BTC
   params:
-    cooldown_bars: 9
-    donchian_period: 8
+    cooldown_bars: 5
+    donchian_period: 10
     exit_level: 50
     leverage: 3
     overbought: 80

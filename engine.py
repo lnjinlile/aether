@@ -456,6 +456,35 @@ def run_backtests():
                     "error": str(e),
                 }
 
+        # AUDIT-048 FIX: Preserve existing backtest results that have MORE trades
+        # (indicating a more comprehensive backtest like Prometheus 365d sweep).
+        # Engine's 90d backtest must not overwrite longer-window authoritative results.
+        existing_bt = load_json(os.path.join(STATE_DIR, "backtest_results.json"))
+        existing_strategies = existing_bt.get("strategies", {}) if isinstance(existing_bt, dict) else {}
+        for name, new_entry in list(results.items()):
+            old_entry = existing_strategies.get(name, {})
+            old_trades = old_entry.get("total_trades") or 0
+            new_trades = new_entry.get("total_trades") or 0
+            # Preserve old entry if it has strictly more trades (longer/better backtest)
+            # AND the new entry doesn't have a status upgrade (e.g. disabled→ok)
+            if old_trades > new_trades and new_trades > 0:
+                logger.info(
+                    "AUDIT-048 PRESERVED: %s (old=%d trades > new=%d trades) — keeping longer backtest",
+                    name, old_trades, new_trades
+                )
+                # Keep old entry but update enabled/status fields from current config
+                old_entry["enabled"] = new_entry.get("enabled", old_entry.get("enabled", False))
+                old_entry["status"] = new_entry.get("status", old_entry.get("status", "?"))
+                results[name] = old_entry
+            elif old_trades > 0 and new_trades == 0:
+                logger.info(
+                    "AUDIT-048 PRESERVED: %s (old=%d trades > new=0) — new backtest produced no trades, keeping old",
+                    name, old_trades
+                )
+                old_entry["enabled"] = new_entry.get("enabled", old_entry.get("enabled", False))
+                old_entry["status"] = new_entry.get("status", old_entry.get("status", "?"))
+                results[name] = old_entry
+
         write_json("backtest_results.json", {"strategies": results})
         # Summary log
         ok_count = sum(1 for r in results.values() if r.get("status") == "ok")
