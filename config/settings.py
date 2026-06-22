@@ -38,6 +38,11 @@ class Config:
     default_stop_loss_pct: float = 0.05
     default_take_profit_pct: float = 0.10
 
+    # Position sizing (risk-based, Prometheus optimized 2026-06-22)
+    risk_per_trade_pct: float = 0.02   # 2% of account risked per trade
+    max_capital_pct: float = 0.20      # Max 20% of account as margin per position
+    min_position_notional: float = 10.0  # Minimum $10 notional (exchange minimum)
+
     # Backtesting
     initial_capital: float = 10000.0
     commission: float = 0.0004

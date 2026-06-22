@@ -1,5 +1,5 @@
 {
-  "_updated_at": "2026-06-22T09:09:43.558000+00:00",
+  "_updated_at": "2026-06-22T09:39:51.348637+00:00",
   "strategies_enabled": [
     "RSI_MR_ETH"
   ],
@@ -9,7 +9,7 @@
   "engine_running": true,
   "market_db_size_mb": 15.9,
   "klines_total": 92750,
-  "last_pipeline": "2026-06-22T09:09:43.558000+00:00",
+  "last_pipeline": "2026-06-22T09:39:51.348637+00:00",
   "pipeline_pid": 834002,
   "data_ext_pid": 792158,
   "status": "running",
@@ -79,7 +79,7 @@
   },
   "last_quality_check": "2026-06-22T07:43:11.094827+00:00",
   "quality_verdict": "OK",
-  "last_klines_ts": 1782118800000,
+  "last_klines_ts": 1782120600000,
   "total_klines": 92732,
   "db_size_mb": 15.9,
   "symbols": [
@@ -92,5 +92,5 @@
     "4h",
     "1d"
   ],
-  "klines_count": 92768
+  "klines_count": 92772
 }

@@ -132,7 +132,7 @@
       "symbol": "ETH/USDT",
       "timeframe": "1h",
       "data_rows": 2161,
-      "signals_count": 232,
+      "signals_count": 231,
       "latest_signal": {
         "time": "2026-06-15 10:00:00",
         "signal": "SHORT",
@@ -165,25 +165,25 @@
           "price": 1736.3
         }
       ],
-      "total_return_pct": 81.24,
-      "sharpe_ratio": 1.0547,
-      "max_drawdown_pct": 8.88,
-      "win_rate": 87.5,
+      "total_return_pct": 50.23,
+      "sharpe_ratio": 0.6984,
+      "max_drawdown_pct": 11.35,
+      "win_rate": 81.25,
       "total_trades": 16,
-      "profit_factor": 5.3193,
+      "profit_factor": 2.708,
       "backtest_period": "90d",
       "verdict": "LIVE",
       "metrics": {
-        "total_return_pct": 81.24,
-        "sharpe_ratio": 1.0547,
+        "total_return_pct": 50.23,
+        "sharpe_ratio": 0.6984,
         "deflated_sharpe_ratio": 1.0,
-        "max_drawdown_pct": 8.88,
-        "win_rate": 87.5,
-        "profit_factor": 5.3193,
+        "max_drawdown_pct": 11.35,
+        "win_rate": 81.25,
+        "profit_factor": 2.708,
         "total_trades": 16,
-        "avg_win_pct": 5.48,
-        "avg_loss_pct": 7.22,
-        "final_equity": 18124.26
+        "avg_win_pct": 5.37,
+        "avg_loss_pct": 8.6,
+        "final_equity": 15023.06
       }
     },
     "MLEnsemble_BTC": {
@@ -409,7 +409,35 @@
       "backtest_period": "365d",
       "verdict": "DO_NOT_ENABLE",
       "retired_reason": "5 param sweep 365d. Best OS=0.18: -14.87% SR=0.117 DD=69.4%. All combos negative. StochRSI overtrades vs plain RSI."
+    },
+    "DonchianMR_BTC": {
+      "status": "disabled",
+      "enabled": false,
+      "symbol": "BTC/USDT",
+      "timeframe": "1h",
+      "total_return_pct": 135.67,
+      "sharpe_ratio": 0.3706,
+      "max_drawdown_pct": 26.73,
+      "win_rate": 70.27,
+      "total_trades": 37,
+      "backtest_period": "365d",
+      "verdict": "DO_NOT_ENABLE",
+      "retired_reason": "162 run sweep 365d. Best DP=30/OS=20/OB=80/CD=5: +135.67% SR=0.371 DD=26.73%. No config passes DD<=20% AND SR>=0.5 thresholds."
+    },
+    "DonchianMR_ETH": {
+      "status": "disabled",
+      "enabled": false,
+      "symbol": "ETH/USDT",
+      "timeframe": "1h",
+      "total_return_pct": 429.48,
+      "sharpe_ratio": 0.552,
+      "max_drawdown_pct": 16.2,
+      "win_rate": 72.0,
+      "total_trades": 50,
+      "backtest_period": "365d",
+      "verdict": "PAPER_READY",
+      "retired_reason": "162 run sweep 365d. 3 configs pass ALL criteria (SR>=0.5, DD<=20%, WR>=40%, T>=30). Best: DP=10/OS=20/OB=80/CD=5 → +429.48% SR=0.552 DD=16.2% WR=72% PF=3.12 T=50. Overbought=80 is key — requires extreme RSI for SHORT to reduce false shorts."
     }
   },
-  "_updated_at": "2026-06-22T08:40:17.389478+00:00"
+  "_updated_at": "2026-06-22T09:21:49.136002+00:00"
 }

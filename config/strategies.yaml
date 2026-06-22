@@ -429,11 +429,11 @@ strategies:
   name: DonchianMR_ETH
   params:
     cooldown_bars: 5
-    donchian_period: 20
+    donchian_period: 10
     exit_level: 50
     leverage: 3
-    overbought: 75
-    oversold: 25
+    overbought: 80
+    oversold: 20
     rsi_period: 14
     stop_loss_pct: 0.02
     symbols:

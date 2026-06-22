@@ -92,13 +92,13 @@
       "verdict": "DO_NOT_ENABLE"
     },
     "RSI_MR_ETH": {
-      "signals": 232,
+      "signals": 231,
       "status": "ok",
-      "return_pct": 81.24,
-      "sharpe": 1.0547,
-      "win_rate": 87.5,
+      "return_pct": 50.23,
+      "sharpe": 0.6984,
+      "win_rate": 81.25,
       "trades": 16,
-      "max_dd": 8.88,
+      "max_dd": 11.35,
       "verdict": "LIVE"
     },
     "MLEnsemble_BTC": {
@@ -260,9 +260,29 @@
       "trades": 411,
       "max_dd": 69.4,
       "verdict": "DO_NOT_ENABLE"
+    },
+    "DonchianMR_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 135.67,
+      "sharpe": 0.3706,
+      "win_rate": 70.27,
+      "trades": 37,
+      "max_dd": 26.73,
+      "verdict": "DO_NOT_ENABLE"
+    },
+    "DonchianMR_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 429.48,
+      "sharpe": 0.552,
+      "win_rate": 72.0,
+      "trades": 50,
+      "max_dd": 16.2,
+      "verdict": "PAPER_READY"
     }
   },
-  "_updated_at": "2026-06-22T09:11:55.951563+00:00",
+  "_updated_at": "2026-06-22T09:39:59.341666+00:00",
   "_last_run": "2026-06-22T06:24:00.000000+00:00",
   "_last_signals": {},
   "_fixed_by": "athena",
