@@ -149,16 +149,42 @@ class BinanceFuturesClient:
         return info
 
     def get_ticker(self, symbol: str) -> Dict[str, Any]:
-        """Get current ticker for a symbol.  Returns ccxt ticker dict."""
+        """Get current ticker for a symbol.  Returns ccxt ticker dict.
+
+        PERF-020: On testnet, use REST /fapi/v1/ticker/price to avoid ccxt hang.
+        """
+        if self.testnet:
+            return self._get_ticker_via_rest(symbol)
         ccxt_symbol = self.to_ccxt_symbol(symbol)
         return self._exchange.fetch_ticker(ccxt_symbol)
+
+    def _get_ticker_via_rest(self, symbol: str) -> Dict[str, Any]:
+        """Get ticker via public REST on testnet (ccxt hangs).  PERF-020"""
+        import urllib.request, json as _json
+        native = symbol.replace("/", "").replace(":USDT", "")
+        url = f"{TESTNET_BASE_URL}/fapi/v1/ticker/price?symbol={native}"
+        try:
+            with urllib.request.urlopen(url, timeout=10) as resp:
+                data = _json.loads(resp.read())
+            return {"last": float(data.get("price", 0)), "symbol": symbol}
+        except Exception:
+            return {"last": 0, "symbol": symbol}
 
     # ------------------------------------------------------------------
     # Account (private)
     # ------------------------------------------------------------------
 
     def get_account(self) -> Dict[str, Any]:
-        """Return account info: balances and positions."""
+        """Return account info: balances and positions.
+
+        PERF-002: On testnet, skip ccxt (always times out) — go straight to REST.
+        """
+        if self.testnet:
+            acct = self._get_account_via_rest()
+            return {
+                "balances": {"USDT": {"free": acct["available"], "total": acct["balance"]}},
+                "positions": acct["positions"],
+            }
         try:
             balance_info = self._exchange.fetch_balance()
         except Exception:
