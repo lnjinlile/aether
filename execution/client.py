@@ -6,6 +6,7 @@ Handles symbol format conversion (BTCUSDT <-> BTC/USDT) internally.
 """
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
 import ccxt
@@ -569,55 +570,98 @@ class BinanceFuturesClient:
 
     def get_live_snapshot(self):
         """Return (balance, positions, open_orders, tickers) in minimal API calls.
-        
-        Optimized for testnet latency — reduces 5-8 sequential calls to 4 calls
-        that can be parallelized. Uses /fapi/v1/ticker/bookTicker to get both
-        BTC and ETH tickers in a single REST call.
+
+        PERF-010: Parallelizes 4 independent REST calls via ThreadPoolExecutor.
+        Each call has 5s timeout — parallel execution reduces 18s→~5s on testnet.
         Each step is independently fault-tolerant — one timeout won't kill the rest.
-        PERF-004: Uses 5s REST timeout (vs 15s default) — monitoring data is
-        non-critical per-cycle; stale data via AUDIT-009 is acceptable.
         """
-        # Step 1: Account balance (/fapi/v2/account, cached 30s, 5s timeout)
+        results = {}
+
+        def _fetch_balance():
+            try:
+                acct = self._get_account_via_rest(timeout=5)
+                return {"balance": acct["balance"], "available": acct["available"],
+                        "unrealized_pnl": acct["unrealized_pnl"]}
+            except Exception:
+                return {"balance": 0, "available": 0, "unrealized_pnl": 0.0}
+
+        def _fetch_positions():
+            try:
+                if self.testnet:
+                    return self._get_positions_via_risk(timeout=5)
+                return []
+            except Exception:
+                return []
+
+        def _fetch_orders():
+            try:
+                return self.get_open_orders(timeout=5)
+            except Exception:
+                return []
+
+        def _fetch_tickers():
+            tickers = {}
+            try:
+                raw = self._rest_get("/fapi/v1/ticker/bookTicker", timeout=5)
+                if isinstance(raw, list):
+                    for t in raw:
+                        sym = t.get("symbol", "")
+                        if sym == "BTCUSDT":
+                            tickers["BTC/USDT"] = float(t.get("bidPrice", 0))
+                        elif sym == "ETHUSDT":
+                            tickers["ETH/USDT"] = float(t.get("bidPrice", 0))
+            except Exception:
+                pass
+            return tickers
+
+        # PERF-016: ThreadPoolExecutor is fragile during interpreter shutdown.
+        # When atexit handlers fire (e.g. ccxt cleanup), submit() raises
+        # RuntimeError("cannot schedule new futures after interpreter shutdown").
+        # Catch at both submit() and shutdown() levels; fall back to sequential.
         try:
-            acct = self._get_account_via_rest(timeout=5)
-            bal = {
-                "balance": acct["balance"],
-                "available": acct["available"],
-                "unrealized_pnl": acct["unrealized_pnl"],
-            }
-        except Exception:
-            bal = {"balance": 0, "available": 0, "unrealized_pnl": 0.0}
-        
-        # Step 2: Positions with accurate mark/liquidation/leverage (5s timeout)
-        try:
-            if self.testnet:
-                positions = self._get_positions_via_risk(timeout=5)
-            else:
-                positions = acct.get("positions", []) if 'acct' in dir() else []
-        except Exception:
-            positions = []
-        
-        # Step 3: Orders (5s REST timeout)
-        try:
-            orders = self.get_open_orders(timeout=5)
-        except Exception:
-            orders = []
-        
-        # Step 4: Tickers — single REST call for both symbols (5s timeout)
-        tickers = {}
-        try:
-            raw = self._rest_get("/fapi/v1/ticker/bookTicker", timeout=5)
-            if isinstance(raw, list):
-                for t in raw:
-                    sym = t.get("symbol", "")
-                    if sym == "BTCUSDT":
-                        tickers["BTC/USDT"] = float(t.get("bidPrice", 0))
-                    elif sym == "ETHUSDT":
-                        tickers["ETH/USDT"] = float(t.get("bidPrice", 0))
-        except Exception:
-            pass
-        # Fallback: individual ticker calls for any missing symbols
-        # On testnet, ccxt ticker calls always time out — skip fallback, accept 0
+            pool = ThreadPoolExecutor(max_workers=4)
+        except RuntimeError:
+            results["balance"] = _fetch_balance()
+            results["positions"] = _fetch_positions()
+            results["orders"] = _fetch_orders()
+            results["tickers"] = _fetch_tickers()
+        else:
+            try:
+                try:
+                    futures = {
+                        pool.submit(_fetch_balance): "balance",
+                        pool.submit(_fetch_positions): "positions",
+                        pool.submit(_fetch_orders): "orders",
+                        pool.submit(_fetch_tickers): "tickers",
+                    }
+                except RuntimeError:
+                    # Interpreter shutting down mid-submit – fall back to sequential
+                    futures = None
+                if futures:
+                    for future in as_completed(futures):
+                        key = futures[future]
+                        try:
+                            results[key] = future.result()
+                        except Exception:
+                            results[key] = [] if key in ("positions", "orders") else (
+                                {} if key == "tickers" else {"balance": 0, "available": 0, "unrealized_pnl": 0.0})
+                else:
+                    results["balance"] = _fetch_balance()
+                    results["positions"] = _fetch_positions()
+                    results["orders"] = _fetch_orders()
+                    results["tickers"] = _fetch_tickers()
+            finally:
+                try:
+                    pool.shutdown(wait=False)
+                except RuntimeError:
+                    pass  # interpreter shutting down
+
+        bal = results.get("balance", {"balance": 0, "available": 0, "unrealized_pnl": 0.0})
+        positions = results.get("positions", [])
+        orders = results.get("orders", [])
+        tickers = results.get("tickers", {})
+
+        # Fallback: individual ticker calls for any missing symbols (mainnet only)
         if not self.testnet:
             for sym in ["BTC/USDT", "ETH/USDT"]:
                 if sym not in tickers:
@@ -625,7 +669,7 @@ class BinanceFuturesClient:
                         tickers[sym] = self.get_ticker(sym).get("last", 0)
                     except Exception:
                         tickers[sym] = 0
-        
+
         return bal, positions, orders, tickers
 
     def get_open_orders(self, symbol: Optional[str] = None, timeout: int = 15) -> List[Dict]:
@@ -634,6 +678,7 @@ class BinanceFuturesClient:
         Merges ccxt standard orders + REST algo orders (testnet-safe).
         Falls back to REST openOrders when ccxt returns empty (common on testnet).
         PERF-003: On testnet, skip ccxt fetch_open_orders (always times out).
+        PERF-010: Parallelizes openOrders + openAlgoOrders REST calls on testnet.
         """
         orders = []
         # Standard orders via ccxt (skip on testnet — always times out)
@@ -645,29 +690,93 @@ class BinanceFuturesClient:
             except Exception:
                 pass
 
-        # Fallback: REST /fapi/v1/openOrders (ccxt may return empty on testnet)
-        ccxt_count = len(orders)
-        if ccxt_count == 0:
+        # On testnet: parallelize openOrders + openAlgoOrders REST calls
+        if self.testnet and len(orders) == 0:
+            params = {}
+            if symbol:
+                params["symbol"] = self.to_binance_symbol(symbol)
+
+            def _fetch_open():
+                try:
+                    raw = self._rest_get("/fapi/v1/openOrders", params, timeout=timeout)
+                    return raw if isinstance(raw, list) else []
+                except Exception:
+                    return []
+
+            def _fetch_algos():
+                try:
+                    raw = self._rest_get("/fapi/v1/openAlgoOrders", params, timeout=timeout)
+                    return raw if isinstance(raw, list) else []
+                except Exception:
+                    return []
+
+            # PERF-016: Guard ThreadPoolExecutor against interpreter-shutdown RuntimeError.
+            try:
+                pool = ThreadPoolExecutor(max_workers=2)
+            except RuntimeError:
+                # Fallback: sequential execution
+                try:
+                    orders.extend(_fetch_open())
+                except Exception:
+                    pass
+                try:
+                    orders.extend(_fetch_algos())
+                except Exception:
+                    pass
+            else:
+                try:
+                    try:
+                        f_open = pool.submit(_fetch_open)
+                        f_algos = pool.submit(_fetch_algos)
+                    except RuntimeError:
+                        # Interpreter shutting down – sequential fallback
+                        try:
+                            orders.extend(_fetch_open())
+                        except Exception:
+                            pass
+                        try:
+                            orders.extend(_fetch_algos())
+                        except Exception:
+                            pass
+                        f_open = f_algos = None
+                    if f_open is not None and f_algos is not None:
+                        try:
+                            orders.extend(f_open.result())
+                        except Exception:
+                            pass
+                        try:
+                            orders.extend(f_algos.result())
+                        except Exception:
+                            pass
+                finally:
+                    try:
+                        pool.shutdown(wait=False)
+                    except RuntimeError:
+                        pass  # interpreter shutting down
+        else:
+            # Fallback: REST /fapi/v1/openOrders (ccxt may return empty on testnet)
+            ccxt_count = len(orders)
+            if ccxt_count == 0:
+                try:
+                    params = {}
+                    if symbol:
+                        params["symbol"] = self.to_binance_symbol(symbol)
+                    rest_orders = self._rest_get("/fapi/v1/openOrders", params, timeout=timeout)
+                    if isinstance(rest_orders, list):
+                        orders.extend(rest_orders)
+                except Exception:
+                    pass
+
+            # Algo orders (STOP/TAKE_PROFIT on testnet) — REST-only, ccxt doesn't cover these
             try:
                 params = {}
                 if symbol:
                     params["symbol"] = self.to_binance_symbol(symbol)
-                rest_orders = self._rest_get("/fapi/v1/openOrders", params, timeout=timeout)
-                if isinstance(rest_orders, list):
-                    orders.extend(rest_orders)
+                algos = self._rest_get("/fapi/v1/openAlgoOrders", params, timeout=timeout)
+                if isinstance(algos, list):
+                    orders.extend(algos)
             except Exception:
                 pass
-
-        # Algo orders (STOP/TAKE_PROFIT on testnet) — REST-only, ccxt doesn't cover these
-        try:
-            params = {}
-            if symbol:
-                params["symbol"] = self.to_binance_symbol(symbol)
-            algos = self._rest_get("/fapi/v1/openAlgoOrders", params, timeout=timeout)
-            if isinstance(algos, list):
-                orders.extend(algos)
-        except Exception:
-            pass
 
         return orders
 
