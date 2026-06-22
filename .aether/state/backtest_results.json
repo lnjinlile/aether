@@ -412,7 +412,7 @@
     },
     "DonchianMR_BTC": {
       "return_pct": 128.8,
-      "sharpe_ratio": 0.3912,
+      "sharpe_ratio": 0.508,
       "max_dd_pct": 17.9,
       "win_rate_pct": 63.2,
       "total_trades": 38,

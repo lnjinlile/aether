@@ -74,6 +74,34 @@ def check(verbose=False):
     size_mb = os.path.getsize(DB) / 1024 / 1024
     stats["db_size_mb"] = round(size_mb, 1)
 
+    # 7. oracle.json 与 strategies.yaml 一致性
+    try:
+        import json, yaml
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        oracle_path = os.path.join(repo_root, ".aether", "oracle.json")
+        strategies_path = os.path.join(repo_root, "config", "strategies.yaml")
+
+        if os.path.exists(oracle_path) and os.path.exists(strategies_path):
+            with open(oracle_path) as f:
+                oracle_cfg = json.load(f)
+            with open(strategies_path) as f:
+                strategies_cfg = yaml.safe_load(f)
+
+            oracle_enabled = set(oracle_cfg.get("strategies_enabled", []))
+            yaml_enabled = set(
+                s["name"] for s in strategies_cfg.get("strategies", [])
+                if s.get("enabled", False)
+            )
+            only_oracle = oracle_enabled - yaml_enabled
+            only_yaml = yaml_enabled - oracle_enabled
+            if only_oracle:
+                issues.append(f"oracle.json多余启用: {only_oracle}")
+            if only_yaml:
+                issues.append(f"strategies.yaml多余启用(未同步): {only_yaml}")
+            stats["config_sync"] = "ok" if not only_oracle and not only_yaml else "mismatch"
+    except Exception as e:
+        issues.append(f"配置一致性检查失败: {e}")
+
     db.close()
     return len(issues) == 0, issues, stats
 
