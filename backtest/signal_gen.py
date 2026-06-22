@@ -270,13 +270,7 @@ def ma_cross_signals(df: pd.DataFrame, fast_period: int, slow_period: int,
     fast_ema = pd.Series(close).ewm(span=fast_period, adjust=False).mean().values
     slow_ema = pd.Series(close).ewm(span=slow_period, adjust=False).mean().values
 
-    high_low = high - low
-    high_close = np.abs(high - np.roll(close, 1))
-    low_close = np.abs(low - np.roll(close, 1))
-    high_close[0] = 0
-    low_close[0] = 0
-    tr = np.maximum(np.maximum(high_low, high_close), low_close)
-    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+    atr = _compute_atr(high, low, close, atr_period)
 
     cross_above = (fast_ema > slow_ema) & (np.roll(fast_ema, 1) <= np.roll(slow_ema, 1))
     cross_above[:1] = False
@@ -434,13 +428,15 @@ def adx_trend_signals(df: pd.DataFrame,
     if n < min_bars:
         return pd.Series(np.zeros(n, dtype=int), index=df.index)
 
-    # --- ATR ---
+    # --- ATR (shared utility for signal exits; ADX uses its own smoothing below) ---
+    atr = _compute_atr(high, low, close, atr_period)
+
+    # True Range for ADX-internal Wilder ATR smoothing
     tr1 = high - low
     tr2 = np.abs(high - np.roll(close, 1))
     tr3 = np.abs(low - np.roll(close, 1))
     tr2[0] = tr3[0] = 0.0
     tr = np.maximum(np.maximum(tr1, tr2), tr3)
-    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
 
     # --- ADX ---
     up_move = np.diff(high, prepend=high[0])
@@ -558,13 +554,8 @@ def momentum_signals(df: pd.DataFrame,
     macd_hist = macd - macd_signal
     macd_direction = macd_hist > 0  # True=LONG bias, False=SHORT bias
 
-    # ATR
-    tr1 = high - low
-    tr2 = np.abs(high - np.roll(close, 1))
-    tr3 = np.abs(low - np.roll(close, 1))
-    tr2[0] = tr3[0] = 0.0
-    tr = np.maximum(np.maximum(tr1, tr2), tr3)
-    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+    # ATR (shared utility)
+    atr = _compute_atr(high, low, close, atr_period)
 
     signals = np.zeros(n, dtype=int)
     pos = 0
@@ -650,13 +641,8 @@ def vol_breakout_signals(
     if n < min_bars:
         return pd.Series(np.zeros(n, dtype=int), index=df.index)
 
-    # ATR
-    tr1 = high - low
-    tr2 = np.abs(high - np.roll(close, 1))
-    tr3 = np.abs(low - np.roll(close, 1))
-    tr2[0] = tr3[0] = 0.0
-    tr = np.maximum(np.maximum(tr1, tr2), tr3)
-    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+    # ATR (shared utility)
+    atr = _compute_atr(high, low, close, atr_period)
 
     # EMA
     ema = pd.Series(close).ewm(span=ema_period, adjust=False).mean().values
@@ -761,13 +747,8 @@ def trend_pullback_signals(df: pd.DataFrame,
     ema_slope = np.zeros(n)
     ema_slope[5:] = ema[5:] - ema[:-5]
 
-    # ATR
-    tr1 = high - low
-    tr2 = np.abs(high - np.roll(close, 1))
-    tr3 = np.abs(low - np.roll(close, 1))
-    tr2[0] = tr3[0] = 0.0
-    tr = np.maximum(np.maximum(tr1, tr2), tr3)
-    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+    # ATR (shared utility)
+    atr = _compute_atr(high, low, close, atr_period)
 
     signals = np.zeros(n, dtype=int)
     pos = 0
@@ -864,13 +845,8 @@ def supertrend_signals(
     if n < min_bars:
         return pd.Series(np.zeros(n, dtype=int), index=df.index)
 
-    # ATR (via ewm)
-    tr1 = high - low
-    tr2 = np.abs(high - np.roll(close, 1))
-    tr3 = np.abs(low - np.roll(close, 1))
-    tr2[0] = tr3[0] = 0.0
-    tr = np.maximum(np.maximum(tr1, tr2), tr3)
-    atr = pd.Series(tr).ewm(span=atr_period, adjust=False).mean().values
+    # ATR (shared utility, via ewm)
+    atr = _compute_atr(high, low, close, atr_period)
 
     # Basic bands
     hl2 = (high + low) / 2
@@ -1048,19 +1024,14 @@ def donchian_mr_signals(df: pd.DataFrame,
 
     signals = np.zeros(n, dtype=int) if isinstance(df.index, pd.DatetimeIndex) else np.zeros(n, dtype=int)
 
-    # Donchian Channel — shifted so current bar excluded from window
+    # Donchian Channel — vectorized via pandas rolling (O(n) C-level vs O(n×period) loop)
     prev_close = np.roll(close, 1)
     prev_close[0] = close[0]
+    prev_series = pd.Series(prev_close, index=df.index)
 
-    dc_upper = np.full(n, np.nan)
-    dc_lower = np.full(n, np.nan)
-    dc_mid = np.full(n, np.nan)
-
-    for i in range(donchian_period, n):
-        window = prev_close[i - donchian_period + 1:i + 1]
-        dc_upper[i] = np.max(window)
-        dc_lower[i] = np.min(window)
-        dc_mid[i] = (dc_upper[i] + dc_lower[i]) / 2.0
+    dc_upper = prev_series.rolling(donchian_period).max().values
+    dc_lower = prev_series.rolling(donchian_period).min().values
+    dc_mid = (dc_upper + dc_lower) / 2.0
 
     # RSI (via shared utility)
     rsi = _compute_rsi(close, rsi_period)
@@ -1251,19 +1222,15 @@ def donchian_trend_signals(df: pd.DataFrame,
 
     signals = np.zeros(n, dtype=int)
 
-    # ── Donchian Channel (shifted: use prev bar close for channel calc) ──
+    # ── Donchian Channel — vectorized via pandas rolling (O(n) C-level) ──
     prev_close = np.roll(close, 1)
     prev_close[0] = close[0]
+    prev_series = pd.Series(prev_close, index=df.index)
 
-    dc_upper = np.full(n, np.nan)
-    dc_lower = np.full(n, np.nan)
+    dc_upper = prev_series.rolling(donchian_period).max().values
+    dc_lower = prev_series.rolling(donchian_period).min().values
 
-    for i in range(donchian_period, n):
-        window = prev_close[i - donchian_period + 1:i + 1]
-        dc_upper[i] = np.max(window)
-        dc_lower[i] = np.min(window)
-
-    # ── ATR ──
+    # ── ATR (shared utility) ──
     atr = _compute_atr(high, low, close, atr_period)
 
     # ── ADX (Wilder's smoothing) ──
