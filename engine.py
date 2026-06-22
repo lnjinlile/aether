@@ -103,14 +103,15 @@ def run_backtests():
     """Run backtests on all enabled strategies using BacktestEngine, write results.
     
     Cached: skips re-computation if results are < 30 min old (backtests are expensive:
-    14 strategies × data load × signal generation × metrics = ~30s per run).
+    21 strategies × data load × signal generation × metrics = ~30-60s per run).
+    Strategy evaluation doesn't need 5-min granularity — signals stay fresh via run_signal_check.
     """
     try:
         # Cache check: skip if results are fresh (< 30 min)
         results_path = os.path.join(STATE_DIR, "backtest_results.json")
         if os.path.exists(results_path):
             mtime = os.path.getmtime(results_path)
-            if time.time() - mtime < 300:  # 5 minutes (match engine cycle)
+            if time.time() - mtime < 1800:  # 30 minutes
                 logger.debug("Backtest results are fresh (%.0f min old), skipping.", (time.time() - mtime) / 60)
                 return
 
@@ -494,10 +495,12 @@ def run_risk_check():
 # Peristent strategy manager — survives across engine ticks so strategy
 # state (regime, cooldown, bars_since_last_trade) is preserved.
 _persistent_mgr = None
+_yaml_mtime = 0          # mtime of last-read strategies.yaml
+_yaml_enabled_names = set()  # cached set of enabled strategy names
 
 def run_signal_check():
     """Generate trading signals from active strategies."""
-    global _persistent_mgr
+    global _persistent_mgr, _yaml_mtime, _yaml_enabled_names
     try:
         from strategy.manager import StrategyManager
         from data.collector import BinanceDataCollector
@@ -507,16 +510,30 @@ def run_signal_check():
         cfg = get_config()
         collector = BinanceDataCollector(cfg.api_key, cfg.api_secret, cfg.testnet)
 
-        # Reuse persistent manager so strategy state survives across ticks
-        if _persistent_mgr is None:
-            _persistent_mgr = StrategyManager.load_from_yaml("config/strategies.yaml")
+        # ── Reload strategies.yaml only when file changes (mtime check) ──
+        _yaml_path = "config/strategies.yaml"
+        _cur_mtime = os.path.getmtime(_yaml_path)
+        _reload = (_persistent_mgr is None or _cur_mtime != _yaml_mtime)
+
+        if _reload:
+            import yaml as _yaml
+            with open(_yaml_path) as _f:
+                _yaml_cfg = _yaml.safe_load(_f)
+            _yaml_enabled_names = {s['name'] for s in _yaml_cfg.get('strategies', []) if s.get('enabled')}
+            _yaml_mtime = _cur_mtime
+            _persistent_mgr = StrategyManager.load_from_yaml(_yaml_path)
+            logger.info("Strategies reloaded from YAML (mtime changed): %d enabled", len(_yaml_enabled_names))
+
         mgr = _persistent_mgr
+        _enabled_names = _yaml_enabled_names
 
         signals = {}
         # Track signals per symbol for conflict detection
         symbol_signals = {}  # symbol -> list of (name, signal_dict)
 
         for name in mgr.get_active_strategies():
+            if name not in _enabled_names:
+                continue  # Skip disabled strategies (guard against stale persistent manager)
             strat = mgr.get_strategy(name)
             if not strat: continue
             sym = strat.symbols[0]
@@ -550,12 +567,25 @@ def run_signal_check():
         bt_strategies = bt_results.get("strategies", {})
 
         def strategy_score(name: str) -> float:
-            """Score a strategy for priority: positive metrics = higher score."""
+            """Score a strategy for priority: positive metrics = higher score.
+            
+            Supports both nested 'metrics' sub-dict (newer format) and flat top-level
+            fields (legacy format from Prometheus sweeps). Returns -999.0 for
+            NOT_EVALUATED / error strategies to ensure they lose in arbitration.
+            """
             s = bt_strategies.get(name, {})
+            if s.get("status") == "error" or s.get("verdict") == "NOT_EVALUATED":
+                return -999.0
+            # Try nested metrics first (engine.py format), fall back to flat fields (Prometheus sweep format)
             m = s.get("metrics", {})
-            if not m or s.get("status") == "error":
-                return -999.0  # unverified/errored strategies lose
-            return m.get("sharpe_ratio", 0) * 10 + m.get("total_return_pct", 0) / 10
+            if m:
+                return m.get("sharpe_ratio", 0) * 10 + m.get("total_return_pct", 0) / 10
+            # Flat format: top-level sharpe_ratio / total_return_pct
+            sr = s.get("sharpe_ratio") or 0
+            ret = s.get("total_return_pct") or 0
+            if sr == 0 and ret == 0:
+                return -999.0  # no real metrics
+            return sr * 10 + ret / 10
 
         for sym, candidates in symbol_signals.items():
             if len(candidates) == 1:
@@ -1021,8 +1051,25 @@ def run_regime_monitor():
         logger.warning("Regime monitor error: %s", e)
 
 
+def _wal_checkpoint():
+    """Periodic WAL checkpoint — prevents WAL file from growing unbounded.
+    
+    SQLite WAL accumulates all writes since the last checkpoint. Without periodic
+    truncation, the WAL file grows indefinitely (observed: 6.9MB after ~12h).
+    This runs every 60 minutes to keep the WAL file small.
+    """
+    try:
+        from data.db import wal_checkpoint
+        before, after = wal_checkpoint(truncate=True)
+        if before > 100:  # Only log if there was meaningful work
+            logger.info("WAL checkpoint: %d → %d pages", before, after)
+    except Exception as e:
+        logger.debug("WAL checkpoint skipped: %s", e)
+
+
 def run_all():
     logger.info("Aether Engine started — interval %ds", INTERVAL)
+    _last_wal_checkpoint = 0
     while True:
         loop_start = time.time()
         try:
@@ -1033,6 +1080,10 @@ def run_all():
             _timed("risk_check", run_risk_check)
             _timed("signal_check", run_signal_check)
             _timed("state_sync", sync_agent_states)
+            # WAL checkpoint every 60 minutes (12 loops × 5min)
+            if time.time() - _last_wal_checkpoint > 3600:
+                _wal_checkpoint()
+                _last_wal_checkpoint = time.time()
         except Exception as e:
             logger.error("Engine loop error: %s", e)
         elapsed = time.time() - loop_start

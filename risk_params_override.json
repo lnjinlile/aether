@@ -1,1 +1,8 @@
-{"max_leverage": 5, "risk_per_trade": 0.01, "max_positions": 2, "max_per_symbol_pct": 0.08, "kelly_fraction": 0.15, "_reason": "NORMAL conservative: best_sharpe=0, best_wr=0 from prometheus.json — all strategies negative/unvalidated"}
+{
+  "max_leverage": 5,
+  "risk_per_trade": 0.01,
+  "max_positions": 3,
+  "max_per_symbol_pct": 0.08,
+  "kelly_fraction": 0.15,
+  "_reason": "NORMAL level \u2014 Prometheus best_sharpe=0, best_wr=0 \u2192 conservative fallback"
+}

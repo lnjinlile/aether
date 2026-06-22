@@ -28,7 +28,7 @@ def save_json(path, data):
 def cmd_check_requests(agent):
     """检查并输出待处理请求。格式: ID|FROM|TYPE|REASON"""
     reqs = load_json(REQ_FILE)
-    pending = [r for r in reqs if r["target"] == agent and r["status"] == "pending"]
+    pending = [r for r in reqs if r.get("target", r.get("to", "")) == agent and r.get("status") == "pending"]
     if not pending:
         print("NO_PENDING_REQUESTS")
         return

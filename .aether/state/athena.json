@@ -92,13 +92,13 @@
       "verdict": "DO_NOT_ENABLE"
     },
     "RSI_MR_ETH": {
-      "signals": 231,
+      "signals": 232,
       "status": "ok",
-      "return_pct": 50.23,
-      "sharpe": 0.6984,
-      "win_rate": 81.25,
+      "return_pct": 81.24,
+      "sharpe": 1.0547,
+      "win_rate": 87.5,
       "trades": 16,
-      "max_dd": 11.35,
+      "max_dd": 8.88,
       "verdict": "LIVE"
     },
     "MLEnsemble_BTC": {
@@ -194,21 +194,21 @@
     "VolBreakout_BTC": {
       "signals": 0,
       "status": "disabled",
-      "return_pct": 0,
-      "sharpe": 0,
+      "return_pct": 71.56,
+      "sharpe": 0.22,
       "win_rate": 0,
-      "trades": 0,
-      "max_dd": 0,
+      "trades": 118,
+      "max_dd": 47.7,
       "verdict": "DO_NOT_ENABLE"
     },
     "VolBreakout_ETH": {
       "signals": 0,
       "status": "disabled",
-      "return_pct": 0,
-      "sharpe": 0,
+      "return_pct": -59.28,
+      "sharpe": 0.005,
       "win_rate": 0,
-      "trades": 0,
-      "max_dd": 0,
+      "trades": 135,
+      "max_dd": 85.3,
       "verdict": "DO_NOT_ENABLE"
     },
     "Supertrend_BTC": {
@@ -219,9 +219,7 @@
       "win_rate": 46.3,
       "trades": 121,
       "max_dd": 26.27,
-      "verdict": "DO_NOT_ENABLE",
-      "best_params": "AP=14 AM=3.5 CD=8",
-      "note": "96-combo sweep. Barely positive with near-zero Sharpe."
+      "verdict": "DO_NOT_ENABLE"
     },
     "Supertrend_ETH": {
       "signals": 0,
@@ -231,12 +229,40 @@
       "win_rate": 41.4,
       "trades": 227,
       "max_dd": 66.18,
-      "verdict": "DO_NOT_ENABLE",
-      "best_params": "AP=20 AM=2.0 CD=8",
-      "note": "96-combo sweep. All 48 combos negative. Whipsaw dominates."
+      "verdict": "DO_NOT_ENABLE"
+    },
+    "MACD_BTC": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 0,
+      "sharpe": 0.222,
+      "win_rate": 37.2,
+      "trades": 0,
+      "max_dd": 38.1,
+      "verdict": "DO_NOT_ENABLE"
+    },
+    "MACD_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": 0,
+      "sharpe": -0.223,
+      "win_rate": 0,
+      "trades": 0,
+      "max_dd": 0,
+      "verdict": "DO_NOT_ENABLE"
+    },
+    "StochRSI_ETH": {
+      "signals": 0,
+      "status": "disabled",
+      "return_pct": -14.87,
+      "sharpe": 0.117,
+      "win_rate": 58,
+      "trades": 411,
+      "max_dd": 69.4,
+      "verdict": "DO_NOT_ENABLE"
     }
   },
-  "_updated_at": "2026-06-22T07:57:14.274444+00:00",
+  "_updated_at": "2026-06-22T09:11:55.951563+00:00",
   "_last_run": "2026-06-22T06:24:00.000000+00:00",
   "_last_signals": {},
   "_fixed_by": "athena",

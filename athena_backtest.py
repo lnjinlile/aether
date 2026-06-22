@@ -25,6 +25,7 @@ from backtest.signal_gen import (
     bband_rsi_signals, adx_trend_signals,
     momentum_signals, trend_pullback_signals,
     vol_breakout_signals, supertrend_signals,
+    macd_crossover_signals, donchian_mr_signals,
 )
 
 
@@ -532,6 +533,24 @@ if __name__ == '__main__':
                                          p.get('atr_period', 10),
                                          p.get('atr_mult', 3.0),
                                          p.get('cooldown_bars', 3))
+        elif strategy_type == 'MACDCrossoverStrategy':
+            signals = macd_crossover_signals(df,
+                                             p.get('fast_period', 12),
+                                             p.get('slow_period', 26),
+                                             p.get('signal_period', 9),
+                                             p.get('stop_loss_pct', 0.02),
+                                             p.get('take_profit_pct', 0.04),
+                                             p.get('cooldown_bars', 5))
+        elif strategy_type == 'DonchianMRStrategy':
+            signals = donchian_mr_signals(df,
+                                          p.get('donchian_period', 20),
+                                          p.get('rsi_period', 14),
+                                          p.get('oversold', 20),
+                                          p.get('overbought', 80),
+                                          p.get('exit_level', 50),
+                                          p.get('stop_loss_pct', 0.02),
+                                          p.get('take_profit_pct', 0.04),
+                                          p.get('cooldown_bars', 5))
         else:
             print(f"\n  ⚠️ {name}: unknown strategy type {strategy_type} — skipping")
             results_summary.append({

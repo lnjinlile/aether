@@ -132,7 +132,7 @@
       "symbol": "ETH/USDT",
       "timeframe": "1h",
       "data_rows": 2161,
-      "signals_count": 231,
+      "signals_count": 232,
       "latest_signal": {
         "time": "2026-06-15 10:00:00",
         "signal": "SHORT",
@@ -165,25 +165,25 @@
           "price": 1736.3
         }
       ],
-      "total_return_pct": 50.23,
-      "sharpe_ratio": 0.6984,
-      "max_drawdown_pct": 11.35,
-      "win_rate": 81.25,
+      "total_return_pct": 81.24,
+      "sharpe_ratio": 1.0547,
+      "max_drawdown_pct": 8.88,
+      "win_rate": 87.5,
       "total_trades": 16,
-      "profit_factor": 2.708,
+      "profit_factor": 5.3193,
       "backtest_period": "90d",
       "verdict": "LIVE",
       "metrics": {
-        "total_return_pct": 50.23,
-        "sharpe_ratio": 0.6984,
+        "total_return_pct": 81.24,
+        "sharpe_ratio": 1.0547,
         "deflated_sharpe_ratio": 1.0,
-        "max_drawdown_pct": 11.35,
-        "win_rate": 81.25,
-        "profit_factor": 2.708,
+        "max_drawdown_pct": 8.88,
+        "win_rate": 87.5,
+        "profit_factor": 5.3193,
         "total_trades": 16,
-        "avg_win_pct": 5.37,
-        "avg_loss_pct": 8.6,
-        "final_equity": 15023.06
+        "avg_win_pct": 5.48,
+        "avg_loss_pct": 7.22,
+        "final_equity": 18124.26
       }
     },
     "MLEnsemble_BTC": {
@@ -317,28 +317,28 @@
       "enabled": false,
       "symbol": "BTC/USDT",
       "timeframe": "1h",
-      "total_return_pct": null,
-      "sharpe_ratio": null,
-      "max_drawdown_pct": null,
+      "total_return_pct": 71.56,
+      "sharpe_ratio": 0.22,
+      "max_drawdown_pct": 47.7,
       "win_rate": null,
-      "total_trades": 0,
-      "backtest_period": "pending",
-      "verdict": "NOT_EVALUATED",
-      "retired_reason": null
+      "total_trades": 118,
+      "backtest_period": "365d",
+      "verdict": "DO_NOT_ENABLE",
+      "retired_reason": "365d best=+71.56% SR=0.22 DD=47.7% (288 runs). Risk-adjusted insufficient for live."
     },
     "VolBreakout_ETH": {
       "status": "disabled",
       "enabled": false,
       "symbol": "ETH/USDT",
       "timeframe": "1h",
-      "total_return_pct": null,
-      "sharpe_ratio": null,
-      "max_drawdown_pct": null,
+      "total_return_pct": -59.28,
+      "sharpe_ratio": 0.005,
+      "max_drawdown_pct": 85.3,
       "win_rate": null,
-      "total_trades": 0,
-      "backtest_period": "pending",
-      "verdict": "NOT_EVALUATED",
-      "retired_reason": null
+      "total_trades": 135,
+      "backtest_period": "365d",
+      "verdict": "DO_NOT_ENABLE",
+      "retired_reason": "365d best=-59.28% SR=0.005 DD=85.3% (288 runs). All combos unprofitable."
     },
     "Supertrend_BTC": {
       "status": "disabled",
@@ -352,12 +352,7 @@
       "total_trades": 121,
       "backtest_period": "365d",
       "verdict": "DO_NOT_ENABLE",
-      "params_best": {
-        "atr_period": 14,
-        "atr_mult": 3.5,
-        "cooldown_bars": 8,
-        "leverage": 3
-      }
+      "retired_reason": null
     },
     "Supertrend_ETH": {
       "status": "disabled",
@@ -371,13 +366,50 @@
       "total_trades": 227,
       "backtest_period": "365d",
       "verdict": "DO_NOT_ENABLE",
-      "params_best": {
-        "atr_period": 20,
-        "atr_mult": 2.0,
-        "cooldown_bars": 8,
-        "leverage": 3
-      }
+      "retired_reason": null
+    },
+    "MACD_BTC": {
+      "status": "disabled",
+      "enabled": false,
+      "symbol": "BTC/USDT",
+      "timeframe": "1h",
+      "total_return_pct": null,
+      "sharpe_ratio": 0.222,
+      "max_drawdown_pct": 38.1,
+      "win_rate": 37.2,
+      "total_trades": null,
+      "backtest_period": "365d",
+      "verdict": "DO_NOT_ENABLE",
+      "retired_reason": "365d best SR=0.222 DD=38.1% WR=37.2% (2304 runs). Sharpe < 0.5 threshold."
+    },
+    "MACD_ETH": {
+      "status": "disabled",
+      "enabled": false,
+      "symbol": "ETH/USDT",
+      "timeframe": "1h",
+      "total_return_pct": null,
+      "sharpe_ratio": -0.223,
+      "max_drawdown_pct": null,
+      "win_rate": null,
+      "total_trades": null,
+      "backtest_period": "365d",
+      "verdict": "DO_NOT_ENABLE",
+      "retired_reason": "365d all combos losing (2304 runs). Best SR=-0.223. No viable config."
+    },
+    "StochRSI_ETH": {
+      "status": "disabled",
+      "enabled": false,
+      "symbol": "ETH/USDT",
+      "timeframe": "1h",
+      "total_return_pct": -14.87,
+      "sharpe_ratio": 0.117,
+      "max_drawdown_pct": 69.4,
+      "win_rate": 58,
+      "total_trades": 411,
+      "backtest_period": "365d",
+      "verdict": "DO_NOT_ENABLE",
+      "retired_reason": "5 param sweep 365d. Best OS=0.18: -14.87% SR=0.117 DD=69.4%. All combos negative. StochRSI overtrades vs plain RSI."
     }
   },
-  "_updated_at": "2026-06-22T07:35:02.629391+00:00"
+  "_updated_at": "2026-06-22T08:40:17.389478+00:00"
 }

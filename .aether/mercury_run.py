@@ -56,12 +56,28 @@ balance = client.get_balance()
 print(f"Balance: {balance['balance']:.2f} USDT | Available: {balance['available']:.2f}")
 print()
 
-# ---- Step 2: Fetch data and generate signals ----
+# ---- Step 2: Load athena.json to determine which strategies are actually enabled ----
+print('=== Loading Athena State ===')
+athena_enabled = set()
+try:
+    with open('.aether/state/athena.json') as f:
+        athena_state = json.load(f)
+    strategies = athena_state.get('strategies', {})
+    for name, cfg in strategies.items():
+        if cfg.get('status') == 'ok':
+            athena_enabled.add(name)
+    print(f'Athena-enabled strategies: {athena_enabled}')
+except Exception as e:
+    print(f'Warning: Failed to load athena.json: {e}')
+
+# ---- Step 3: Fetch data and generate signals (only for enabled strategies) ----
 print('=== Signal Generation ===')
-# Collect unique (symbol, timeframe) pairs needed by active strategies
+# Collect unique (symbol, timeframe) pairs needed by enabled strategies
 all_signals = {}
 active_tf_pairs: set = set()
 for name, strategy in mgr._strategies.items():
+    if name not in athena_enabled:
+        continue  # Skip disabled / unevaluated strategies
     for sym in strategy.symbols:
         for tf in strategy.timeframes:
             active_tf_pairs.add((sym, tf))
@@ -78,6 +94,8 @@ for sym, tf in sorted(active_tf_pairs):
 
 for sym in ['BTC/USDT', 'ETH/USDT']:
     signals = mgr.generate_all_signals(sym)
+    # Filter to only athena-enabled strategies
+    signals = {name: sig for name, sig in signals.items() if name in athena_enabled}
     all_signals[sym] = signals
     for name, sig in signals.items():
         print(f'  {sym} {name}: {sig.type.value} @ {sig.price:.1f} -- {sig.reason}')

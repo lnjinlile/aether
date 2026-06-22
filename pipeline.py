@@ -147,8 +147,17 @@ def run():
             # ── Touch oracle.json freshness (prevents AUDIT-005 stale state regressions) ──
             try:
                 _now_iso = datetime.now(timezone.utc).isoformat()
-                # Compute latest kline timestamp from DB
-                _last_klines_ts = storage.db.execute("SELECT MAX(open_time) FROM klines").fetchone()[0]
+                # Compute latest kline timestamp + total count from DB
+                _conn = storage._get_conn()
+                try:
+                    _row = _conn.execute(
+                        "SELECT MAX(open_time), COUNT(*) FROM klines"
+                    ).fetchone()
+                    _last_klines_ts = _row[0]
+                    _klines_count = _row[1]
+                finally:
+                    _conn.close()
+                _my_pid = os.getpid()  # actual python process PID, not the bash wrapper
                 # Update both state/oracle.json AND main oracle.json
                 for oracle_path in [
                     os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state", "oracle.json"),
@@ -162,6 +171,8 @@ def run():
                     oracle["last_pipeline"] = _now_iso
                     oracle["data_fresh"] = True
                     oracle["last_klines_ts"] = _last_klines_ts
+                    oracle["klines_count"] = _klines_count
+                    oracle["pipeline_pid"] = _my_pid
                     oracle["_updated_at"] = _now_iso
                     with open(oracle_path, "w") as f:
                         json.dump(oracle, f, indent=2, ensure_ascii=False)

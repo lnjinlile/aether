@@ -1,101 +1,14 @@
 {
   "status": "ok",
-  "timestamp": "2026-06-22T05:52:26.268564+00:00",
-  "btc_price": 64155.8,
-  "balance": 4995.52890299,
-  "available": 4975.69036004,
-  "positions": 1,
-  "open_orders": 2,
-  "action": "EXECUTED",
-  "signals": {
-    "BTC/USDT/TrendFollow_BTC": {
-      "type": "LONG",
-      "price": 64155.8,
-      "reason": "Uptrend",
-      "confidence": 0.65,
-      "leverage": 3,
-      "quantity": 0.001,
-      "stop_loss": 63514.242000000006,
-      "take_profit": 65118.136999999995
-    },
-    "ETH/USDT/DynamicGrid_ETH": {
-      "type": "LONG",
-      "price": 1734.5,
-      "reason": "Grid buy level 5/5 @ 1734.5",
-      "confidence": 0.85,
-      "leverage": 3,
-      "quantity": 0.01,
-      "stop_loss": 1682.465,
-      "take_profit": 1744.9
-    },
-    "ETH/USDT/TrendFollow_ETH": {
-      "type": "LONG",
-      "price": 1741.46,
-      "reason": "Uptrend",
-      "confidence": 0.65,
-      "leverage": 3,
-      "quantity": 0.001,
-      "stop_loss": 1689.2162,
-      "take_profit": 1845.9476000000002
-    }
-  },
-  "executed": [
-    {
-      "symbol": "ETHUSDT",
-      "action": "LONG",
-      "side": "buy",
-      "price": 1741.46,
-      "limit_px": 1739.7,
-      "qty": 0.001,
-      "leverage": 3,
-      "notional": 1.74146,
-      "margin": 0.5804866666666667,
-      "sl": 1682.465,
-      "tp": 1744.9,
-      "liq": 1169.6806333333334,
-      "liq_dist": 32.83333333333333,
-      "strategy": "DynamicGrid_ETH",
-      "reason": "Grid buy level 5/5 @ 1734.5",
-      "order_id": "?"
-    },
-    {
-      "symbol": "ETHUSDT",
-      "action": "LONG",
-      "side": "buy",
-      "price": 1741.46,
-      "limit_px": 1739.7,
-      "qty": 0.001,
-      "leverage": 3,
-      "notional": 1.74146,
-      "margin": 0.5804866666666667,
-      "sl": 1689.2162,
-      "tp": 1845.9476000000002,
-      "liq": 1169.6806333333334,
-      "liq_dist": 32.83333333333333,
-      "strategy": "TrendFollow_ETH",
-      "reason": "Uptrend",
-      "order_id": "?"
-    }
-  ],
+  "timestamp": "2026-06-22T09:04:26.202938+00:00",
+  "btc_price": 64164.0,
+  "balance": 4995.41952638,
+  "available": 4995.41952638,
+  "positions": 0,
+  "open_orders": 0,
+  "action": "MONITORING",
+  "signals": {},
+  "executed": [],
   "exits": [],
-  "current_positions": [
-    {
-      "symbol": "BTCUSDT",
-      "side": "long",
-      "contracts": 0.0009,
-      "positionAmt": 0.0009,
-      "amount": 0.0009,
-      "entry_price": 63200.0,
-      "mark_price": 64168.9,
-      "markPrice": 64168.9,
-      "unrealized_pnl": 0.87201,
-      "unrealizedPnl": 0.87201,
-      "liquidation_price": 42295.25552209,
-      "liquidationPrice": 42295.25552209,
-      "leverage": 3,
-      "margin_mode": "isolated",
-      "marginMode": "isolated",
-      "notional": 57.75201
-    }
-  ]
+  "current_positions": []
 }

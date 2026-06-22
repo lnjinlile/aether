@@ -23,6 +23,7 @@ from data.storage import MarketStorage
 from execution.client import BinanceFuturesClient
 from execution.engine import OrderExecutionEngine
 from risk.manager import RiskManager
+from risk.position_sizer import DynamicPositionSizer
 from strategy.base import Signal, SignalType
 from strategy.manager import StrategyManager
 
@@ -49,11 +50,9 @@ def debug_log(msg: str):
 # symbol, the higher-priority strategy wins and the lower one is suppressed.
 # Scores derived from Oracle 90d backtest: Sharpe * sqrt(trades) to account
 # for statistical significance (higher trade count = more reliable).
+# Updated 2026-06-22: Only RSI_MR_ETH is LIVE. All other strategies RETIRED/DO_NOT_ENABLE.
 STRATEGY_PRIORITY = {
-    "TrendFollow_BTC_1h":   0.42 * (49 ** 0.5),  # Sharpe 0.42, 49 trades → 2.94
-    "RSI_MR_ETH":           0.60 * (9 ** 0.5),   # Sharpe 0.60, 9 trades  → 1.80
-    "RegimeSwitch_BTC":     0.20 * (49 ** 0.5),  # Sharpe 0.20, 49 trades → 1.40
-    "MLEnsemble_BTC":       0.17 * (10 ** 0.5),  # Sharpe 0.17, 10 trades → 0.54
+    "RSI_MR_ETH":           1.0547 * (16 ** 0.5),  # Sharpe 1.05, 16 trades → 4.22 (ONLY LIVE)
 }
 
 def get_strategy_priority(name: str) -> float:
@@ -148,6 +147,29 @@ def main():
         "unrealized_pnl": balance["unrealized_pnl"],
         "positions": positions,
     }
+
+    # ── Position Sizer: dynamic, volatility-targeted sizing ──
+    # Use prometheus.json backtest stats for Kelly criterion
+    backtest_stats = {}
+    position_sizer = DynamicPositionSizer(
+        risk_per_trade=0.015,      # 1.5% per trade
+        max_position_pct=0.30,     # max 30% of balance
+        max_leverage=5.0,          # conservative cap
+        atr_multiplier=2.0,        # 2× ATR for stop
+        kelly_fraction=0.25,       # quarter-Kelly (conservative)
+    )
+    try:
+        with open('.aether/state/prometheus.json') as f:
+            ps = json.load(f)
+        strategies_metrics = ps.get('strategies', {})
+        for sname, sm in strategies_metrics.items():
+            backtest_stats[sname] = {
+                'win_rate': sm.get('win_rate', 0) / 100.0 if sm.get('win_rate', 0) > 1 else sm.get('win_rate', 0),
+                'avg_win': sm.get('avg_win_pct', sm.get('return_pct', 0) / max(sm.get('trades', 1), 1)),
+                'avg_loss': sm.get('avg_loss_pct', 2.0),
+            }
+    except Exception:
+        pass  # If prometheus.json unavailable, just use vol-targeted sizing
 
     if positions:
         print(f"\n  当前持仓 ({len(positions)}):")
@@ -284,22 +306,46 @@ def main():
 
             sig_dict = sig.to_dict()
             sig_dict["leverage"] = sig.leverage or cfg.default_leverage
-            all_signals.append((strategy_name, sym, sig, sig_dict))
 
-            current_price = market_data.get((sym, strategy.timeframes[0]))
-            price_val = float(current_price["close"].iloc[-1]) if current_price is not None else 0
+            # ── Dynamic position sizing (volatility-targeted + Kelly) ──
+            current_price_df = market_data.get((sym, strategy.timeframes[0]))
+            price_val = float(current_price_df["close"].iloc[-1]) if current_price_df is not None else 0
+
+            if price_val > 0 and sig.type in (SignalType.LONG, SignalType.SHORT):
+                sizing_signal = {
+                    "symbol": sym,
+                    "type": sig.type.value,
+                    "price": price_val,
+                    "stop_loss": sig.stop_loss,
+                    "leverage": sig.leverage or cfg.default_leverage,
+                }
+                stats = backtest_stats.get(strategy_name)
+                pos_size = position_sizer.size_position(
+                    sizing_signal, account_info,
+                    ohlcv_df=current_price_df,
+                    backtest_stats=stats,
+                )
+                sig_dict["quantity"] = pos_size.quantity
+                sig_dict["_sizing_method"] = pos_size.sizing_method
+                sig_dict["_risk_amount"] = pos_size.risk_amount
+                sig_dict["_account_pct"] = pos_size.account_pct
+            else:
+                price_val = 0
+
+            all_signals.append((strategy_name, sym, sig, sig_dict))
 
             signal_details.append({
                 "strategy": strategy_name,
                 "symbol": sym,
                 "signal": sig.type.value,
                 "price": price_val,
-                "qty": sig.quantity,
+                "qty": sig_dict.get("quantity", sig.quantity),
                 "sl": sig.stop_loss,
                 "tp": sig.take_profit,
                 "leverage": sig.leverage or cfg.default_leverage,
                 "reason": sig.reason,
                 "confidence": sig.confidence,
+                "sizing": sig_dict.get("_sizing_method", "fixed"),
             })
 
     # Print all signal details
@@ -309,11 +355,12 @@ def main():
         if sd["signal"] == "HOLD":
             print(f"  ⏸️  {sd['strategy']} | {sd['symbol']}: HOLD ({sd['reason'][:60]})")
         else:
+            sizing_info = f" | 仓位:{sd.get('sizing','fixed')}" if sd.get('sizing') and sd['sizing'] != 'fixed' else ""
             print(f"  🚨 {sd['strategy']} | {sd['symbol']}: {sd['signal']} "
                   f"@ ${sd['price']:,.2f} x{sd.get('qty',0):.4f} "
                   f"| SL:{fmt_price(sd.get('sl'))} TP:{fmt_price(sd.get('tp'))} "
                   f"| 杠杆:{sd.get('leverage',5)}x "
-                  f"| 置信度:{sd.get('confidence',0):.1%}")
+                  f"| 置信度:{sd.get('confidence',0):.1%}{sizing_info}")
             if sd.get("reason"):
                 print(f"      理由: {sd['reason'][:80]}")
 
