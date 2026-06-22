@@ -395,8 +395,8 @@ strategies:
   params:
     cooldown_bars: 5
     leverage: 3
-    overbought: 0.80
-    oversold: 0.20
+    overbought: 0.8
+    oversold: 0.2
     rsi_period: 14
     smooth_d: 3
     smooth_k: 3
@@ -408,7 +408,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.donchian_mr.DonchianMRStrategy
-  enabled: true
+  enabled: false
   name: DonchianMR_BTC
   params:
     cooldown_bars: 9

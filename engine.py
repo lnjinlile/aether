@@ -600,6 +600,41 @@ def run_signal_check():
             _persistent_mgr = StrategyManager.load_from_yaml(_yaml_path)
             logger.info("Strategies reloaded from YAML (mtime changed): %d enabled", len(_yaml_enabled_names))
 
+            # ═══ AUDIT-047: Regression guard — detect re-enabled disabled strategies ═══
+            # Cross-reference newly-enabled strategies against athena.json verdicts.
+            # If a strategy was previously disabled (verdict=PAPER/DO_NOT_ENABLE/RETIRED)
+            # and appears as enabled:true in YAML, auto-correct it back to enabled:false.
+            # This catches optimization scripts accidentally flipping the enabled flag.
+            _athena_path = os.path.join(STATE_DIR, "athena.json")
+            if os.path.exists(_athena_path):
+                _athena = load_json(_athena_path)
+                _athena_strats = _athena.get("strategies", {})
+                _re_enabled = []
+                for _name in _yaml_enabled_names:
+                    _v = _athena_strats.get(_name, {}).get("verdict", "")
+                    if _v in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
+                        _re_enabled.append(f"{_name}(verdict={_v})")
+                if _re_enabled:
+                    # Auto-fix: flip enabled back to false in strategies.yaml
+                    import yaml as _yaml2
+                    _fixed = []
+                    for _s in _yaml_cfg.get("strategies", []):
+                        _sn = _s.get("name", "")
+                        _sv = _athena_strats.get(_sn, {}).get("verdict", "")
+                        if _sn in _yaml_enabled_names and _sv in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
+                            _s["enabled"] = False
+                            _fixed.append(_sn)
+                    if _fixed:
+                        with open(_yaml_path, "w") as _f:
+                            _yaml2.dump(_yaml_cfg, _f, default_flow_style=False, sort_keys=False)
+                        _yaml_enabled_names = {s['name'] for s in _yaml_cfg.get('strategies', []) if s.get('enabled')}
+                        _yaml_mtime = os.path.getmtime(_yaml_path)
+                        _persistent_mgr = StrategyManager.load_from_yaml(_yaml_path)
+                        logger.critical(
+                            "AUDIT-047 AUTO-FIX: Re-disabled %d strategies that were re-enabled in YAML: %s",
+                            len(_fixed), ", ".join(_fixed)
+                        )
+
         mgr = _persistent_mgr
         _enabled_names = _yaml_enabled_names
 
@@ -877,6 +912,8 @@ def sync_agent_states():
             pass
 
         # Sync strategies_enabled from strategies.yaml
+        # Also compute _disabled_in_yaml for AUDIT-047 guard (avoid double YAML read)
+        _disabled_in_yaml = set()
         try:
             import yaml
             cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "strategies.yaml")
@@ -885,6 +922,7 @@ def sync_agent_states():
             strategies = cfg.get("strategies", [])
             enabled = [s["name"] for s in strategies if s.get("enabled", False)]
             disabled = [s["name"] for s in strategies if not s.get("enabled", False)]
+            _disabled_in_yaml = set(disabled)
             oracle_updates["strategies_enabled"] = enabled
             oracle_updates["strategies_disabled"] = len(disabled)
         except Exception:
@@ -919,11 +957,25 @@ def sync_agent_states():
             strat_summary[name] = entry
         # Preserve existing verdicts from athena.json that were manually set
         # (e.g. Athena/Prometheus promote to LIVE, PAUSE, RETIRE — engine must not overwrite)
+        #
+        # AUDIT-047 guard: Never preserve a LIVE verdict for a strategy that is
+        # disabled in strategies.yaml. This prevents the pattern where a strategy
+        # is re-enabled by accident (YAML flip), promoted by Athena, and the
+        # engine blindly preserves the now-invalid LIVE verdict.
         existing_athena = load_json(os.path.join(STATE_DIR, "athena.json"))
+        # _disabled_in_yaml already computed in oracle section above (avoids double YAML read)
         for name in strat_summary:
             existing_verdict = existing_athena.get("strategies", {}).get(name, {}).get("verdict", "")
             if existing_verdict and existing_verdict not in ("", "?"):
-                strat_summary[name]["verdict"] = existing_verdict
+                # AUDIT-047: Block LIVE verdict for disabled strategies
+                if existing_verdict == "LIVE" and name in _disabled_in_yaml:
+                    logger.warning(
+                        "AUDIT-047 BLOCKED: %s verdict=LIVE but strategy is disabled in YAML. "
+                        "Downgrading to PAPER.", name
+                    )
+                    strat_summary[name]["verdict"] = "PAPER"
+                else:
+                    strat_summary[name]["verdict"] = existing_verdict
         merge_state("athena", {"status": "ok", "strategies": strat_summary})
 
         risk = load_json(os.path.join(STATE_DIR, "risk_check.json"))
