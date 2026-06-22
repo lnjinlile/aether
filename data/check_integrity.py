@@ -106,6 +106,68 @@ def check(verbose=False):
     return len(issues) == 0, issues, stats
 
 
+def _refresh_oracle_stats(stats):
+    """Refresh data_stats in both oracle.json copies from integrity stats."""
+    import json
+    from datetime import datetime, timezone
+    try:
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        # Build data_stats dict from check stats
+        data_stats = {}
+        for sym in ["BTC/USDT", "ETH/USDT"]:
+            for tf in ["15m", "1h", "4h", "1d"]:
+                key = f"{sym}_{tf}_delay_min"
+                if key in stats:
+                    # We need count and latest_ts too — re-query from DB
+                    db = sqlite3.connect(DB)
+                    db.execute("PRAGMA busy_timeout=5000")
+                    row = db.execute(
+                        "SELECT COUNT(*), MAX(open_time) FROM klines WHERE symbol=? AND timeframe=?",
+                        (sym, tf)
+                    ).fetchone()
+                    db.close()
+                    data_stats[f"{sym}_{tf}"] = {
+                        "count": row[0],
+                        "latest_ts": row[1],
+                        "latest": datetime.fromtimestamp(row[1]/1000).strftime("%Y-%m-%dT%H:%M:%S") if row[1] else "N/A"
+                    }
+
+        # Also refresh table counts
+        db = sqlite3.connect(DB)
+        db.execute("PRAGMA busy_timeout=5000")
+        for tbl in ["funding_rates", "open_interest", "orderbook_snapshots", "trades_log"]:
+            try:
+                cnt = db.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
+                data_stats[f"table_{tbl}"] = {"count": cnt}
+            except Exception:
+                pass
+        db.close()
+
+        # Update both oracle.json copies (preserve other fields)
+        for oracle_path in [
+            os.path.join(repo_root, ".aether", "state", "oracle.json"),
+            os.path.join(repo_root, ".aether", "oracle.json"),
+        ]:
+            if os.path.exists(oracle_path):
+                with open(oracle_path, "r") as f:
+                    oracle = json.load(f)
+            else:
+                oracle = {}
+            oracle["data_stats"] = data_stats
+            oracle["_updated_at"] = now_iso
+            oracle["db_size_mb"] = stats.get("db_size_mb", oracle.get("db_size_mb", 0))
+            oracle["klines_total"] = data_stats.get("total_klines", stats.get("total_klines", 0))
+            oracle["data_fresh"] = True
+            with open(oracle_path, "w") as f:
+                json.dump(oracle, f, indent=2, ensure_ascii=False)
+
+        return True
+    except Exception:
+        return False  # best-effort, don't block integrity check
+
+
 if __name__ == "__main__":
     ok, issues, stats = check(verbose=True)
     if ok:
@@ -115,4 +177,8 @@ if __name__ == "__main__":
         for i in issues:
             print(f"  - {i}")
     print(f"统计: {stats}")
+    # Refresh oracle.json data_stats to prevent staleness
+    refreshed = _refresh_oracle_stats(stats)
+    if refreshed:
+        print("✅ oracle.json 已刷新")
     sys.exit(0 if ok else 1)

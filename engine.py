@@ -629,17 +629,38 @@ def run_signal_check():
             logger.info("Strategies reloaded from YAML (mtime changed): %d enabled", len(_yaml_enabled_names))
 
             # ═══ AUDIT-047: Regression guard — detect re-enabled disabled strategies ═══
-            # Cross-reference newly-enabled strategies against athena.json verdicts.
+            # Cross-reference newly-enabled strategies against athena.json AND backtest_results.json.
             # If a strategy was previously disabled (verdict=PAPER/DO_NOT_ENABLE/RETIRED)
             # and appears as enabled:true in YAML, auto-correct it back to enabled:false.
-            # This catches optimization scripts accidentally flipping the enabled flag.
+            # 
+            # AUDIT-047 v2: Also cross-check backtest_results.json (Prometheus authority).
+            # If athena.json is manipulated to show LIVE while backtest_results.json
+            # shows PAPER/DO_NOT_ENABLE/RETIRED, block the promotion.
             _athena_path = os.path.join(STATE_DIR, "athena.json")
+            _bt_results_path = os.path.join(STATE_DIR, "backtest_results.json")
+            _bt_verdicts = {}
+            if os.path.exists(_bt_results_path):
+                try:
+                    _bt_data = load_json(_bt_results_path)
+                    for _bn, _bv in _bt_data.get("strategies", {}).items():
+                        _bt_verdicts[_bn] = _bv.get("verdict", "")
+                except Exception:
+                    pass
             if os.path.exists(_athena_path):
                 _athena = load_json(_athena_path)
                 _athena_strats = _athena.get("strategies", {})
                 _re_enabled = []
                 for _name in _yaml_enabled_names:
                     _v = _athena_strats.get(_name, {}).get("verdict", "")
+                    # AUDIT-047 v2: also check backtest_results.json authority
+                    _btv = _bt_verdicts.get(_name, "")
+                    # If athena says LIVE but backtest_results says non-LIVE, treat as blocked
+                    if _v == "LIVE" and _btv and _btv not in ("LIVE", ""):
+                        _v = _btv  # use backtest_results authority
+                        logger.warning(
+                            "AUDIT-047 v2: %s athena verdict=LIVE but backtest_results=%s. Using backtest_results authority.",
+                            _name, _btv
+                        )
                     if _v in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED", "NOT_EVALUATED"):
                         _re_enabled.append(f"{_name}(verdict={_v})")
                 if _re_enabled:
@@ -989,7 +1010,20 @@ def sync_agent_states():
         # disabled in strategies.yaml. This prevents the pattern where a strategy
         # is re-enabled by accident (YAML flip), promoted by Athena, and the
         # engine blindly preserves the now-invalid LIVE verdict.
+        #
+        # AUDIT-047 v2: Cross-check backtest_results.json authority.
+        # If athena says LIVE but backtest_results (Prometheus authority) says non-LIVE,
+        # downgrade to the backtest_results verdict.
         existing_athena = load_json(os.path.join(STATE_DIR, "athena.json"))
+        _bt_results_v2 = {}
+        _bt2_path = os.path.join(STATE_DIR, "backtest_results.json")
+        if os.path.exists(_bt2_path):
+            try:
+                _bt2_data = load_json(_bt2_path)
+                for _bn, _bv in _bt2_data.get("strategies", {}).items():
+                    _bt_results_v2[_bn] = _bv.get("verdict", "")
+            except Exception:
+                pass
         # _disabled_in_yaml already computed in oracle section above (avoids double YAML read)
         for name in strat_summary:
             existing_verdict = existing_athena.get("strategies", {}).get(name, {}).get("verdict", "")
@@ -1001,6 +1035,17 @@ def sync_agent_states():
                         "Downgrading to PAPER.", name
                     )
                     strat_summary[name]["verdict"] = "PAPER"
+                # AUDIT-047 v2: Block LIVE verdict if backtest_results contradicts
+                elif existing_verdict == "LIVE":
+                    _btv2 = _bt_results_v2.get(name, "")
+                    if _btv2 and _btv2 not in ("LIVE", ""):
+                        logger.warning(
+                            "AUDIT-047 v2 BLOCKED: %s athena verdict=LIVE but backtest_results=%s. "
+                            "Downgrading to %s.", name, _btv2, _btv2
+                        )
+                        strat_summary[name]["verdict"] = _btv2
+                    else:
+                        strat_summary[name]["verdict"] = existing_verdict
                 else:
                     strat_summary[name]["verdict"] = existing_verdict
         merge_state("athena", {"status": "ok", "strategies": strat_summary})
