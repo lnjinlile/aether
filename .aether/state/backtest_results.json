@@ -124,7 +124,7 @@
       "total_trades": 69,
       "backtest_period": "365d",
       "verdict": "DO_NOT_ENABLE",
-      "retired_reason": "All params negative across 90d/180d/365d. Best (ETH-like OS=20/OB=75/SL=2%/TP=4%): 90d=-5.5% 180d=-5.5% 365d=-17.1%. BTC lacks mean-reverting behavior in 1h \u2014 RSI_MR only works on ETH."
+      "retired_reason": "All params negative across 90d/180d/365d. Best (ETH-like OS=20/OB=75/SL=2%/TP=4%): 90d=-5.5% 180d=-5.5% 365d=-17.1%. BTC lacks mean-reverting behavior in 1h — RSI_MR only works on ETH."
     },
     "RSI_MR_ETH": {
       "status": "ok",
@@ -165,20 +165,20 @@
           "price": 1736.3
         }
       ],
-      "total_return_pct": 81.24,
-      "sharpe_ratio": 1.055,
-      "max_drawdown_pct": 8.88,
-      "win_rate": 87.5,
+      "total_return_pct": 50.23,
+      "sharpe_ratio": 0.6984,
+      "max_drawdown_pct": 11.35,
+      "win_rate": 81.25,
       "total_trades": 16,
       "profit_factor": 2.708,
       "backtest_period": "90d",
       "verdict": "LIVE",
       "metrics": {
-        "total_return_pct": 81.24,
-        "sharpe_ratio": 1.055,
+        "total_return_pct": 50.23,
+        "sharpe_ratio": 0.6984,
         "deflated_sharpe_ratio": 1.0,
-        "max_drawdown_pct": 8.88,
-        "win_rate": 87.5,
+        "max_drawdown_pct": 11.35,
+        "win_rate": 81.25,
         "profit_factor": 2.708,
         "total_trades": 16,
         "avg_win_pct": 5.37,
@@ -411,23 +411,18 @@
       "retired_reason": "5 param sweep 365d. Best OS=0.18: -14.87% SR=0.117 DD=69.4%. All combos negative. StochRSI overtrades vs plain RSI."
     },
     "DonchianMR_BTC": {
-      "return_pct": 128.8,
-      "sharpe_ratio": 0.508,
-      "max_dd_pct": 17.9,
-      "win_rate_pct": 63.2,
-      "total_trades": 38,
-      "profit_factor": 3.017,
-      "verdict": "PAPER",
+      "status": "disabled",
       "enabled": false,
-      "params": "DP=10/OS=20/OB=80/SL=1.5%/TP=4%/CD=5/RSI=14/EX=50/lev=3x",
-      "updated": "2026-06-22T11:03:12.502739+00:00",
-      "metrics": {
-        "total_return_pct": 203.81,
-        "sharpe_ratio": 0.508,
-        "win_rate": 68.4,
-        "total_trades": 38,
-        "max_drawdown_pct": 11.62
-      }
+      "symbol": "BTC/USDT",
+      "timeframe": "1h",
+      "total_return_pct": null,
+      "sharpe_ratio": 0.508,
+      "max_drawdown_pct": null,
+      "win_rate": null,
+      "total_trades": 38,
+      "backtest_period": "pending",
+      "verdict": "PAPER",
+      "retired_reason": null
     },
     "DonchianMR_ETH": {
       "status": "ok",
@@ -468,11 +463,11 @@
           "price": 1810.2
         }
       ],
-      "total_return_pct": 429.48,
-      "sharpe_ratio": 0.552,
-      "max_drawdown_pct": 16.21,
-      "win_rate": 72.0,
-      "total_trades": 50,
+      "total_return_pct": 20.52,
+      "sharpe_ratio": 0.5332,
+      "max_drawdown_pct": 6.47,
+      "win_rate": 80.0,
+      "total_trades": 10,
       "profit_factor": 3.575,
       "backtest_period": "90d",
       "verdict": "LIVE",
@@ -490,5 +485,5 @@
       }
     }
   },
-  "_updated_at": "2026-06-22T10:48:25.476168+00:00"
+  "_updated_at": "2026-06-22T12:10:22.543292+00:00"
 }

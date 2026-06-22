@@ -94,11 +94,11 @@
     "RSI_MR_ETH": {
       "signals": 231,
       "status": "ok",
-      "return_pct": 81.24,
-      "sharpe": 1.055,
-      "win_rate": 87.5,
+      "return_pct": 50.23,
+      "sharpe": 0.6984,
+      "win_rate": 81.25,
       "trades": 16,
-      "max_dd": 8.88,
+      "max_dd": 11.35,
       "verdict": "LIVE"
     },
     "MLEnsemble_BTC": {
@@ -263,26 +263,26 @@
     },
     "DonchianMR_BTC": {
       "signals": 0,
-      "status": "?",
-      "return_pct": 203.81,
+      "status": "disabled",
+      "return_pct": 0,
       "sharpe": 0.508,
-      "win_rate": 68.4,
+      "win_rate": 0,
       "trades": 38,
-      "max_dd": 11.62,
+      "max_dd": 0,
       "verdict": "PAPER"
     },
     "DonchianMR_ETH": {
       "signals": 88,
       "status": "ok",
-      "return_pct": 429.48,
-      "sharpe": 0.552,
-      "win_rate": 72.0,
-      "trades": 50,
-      "max_dd": 16.21,
+      "return_pct": 20.52,
+      "sharpe": 0.5332,
+      "win_rate": 80.0,
+      "trades": 10,
+      "max_dd": 6.47,
       "verdict": "LIVE"
     }
   },
-  "_updated_at": "2026-06-22T11:26:57.309139+00:00",
+  "_updated_at": "2026-06-22T12:31:46.536860+00:00",
   "_last_run": "2026-06-22T10:45:00.000000+00:00",
   "_last_signals": {},
   "_promoted_by": "prometheus",
@@ -290,5 +290,6 @@
   "_fixed_by": "athena",
   "_fix_reason": "FIXED by Athena 2026-06-22 19:xx: DonchianMR_ETH verdict PAPER→LIVE. Previous 3 Mercury fixes (10:59/11:09/11:20) were feed-only and never wrote to strategies.DonchianMR_ETH.verdict field. Athena patched the actual JSON field.",
   "_last_volbreakout_sweep": "2026-06-22T07:31:44.985615+00:00",
-  "_note": "Prometheus 19:25 data integrity fix: RSI_MR_ETH metrics corrected 50.23%→81.24%, DonchianMR_ETH verdict PAPER→LIVE, DonchianMR_BTC PAPER_READY→PAPER"
+  "_note": "Hermes 2026-06-22 16:30 data integrity fix: RSI_MR_ETH prometheus.json strategies+live_confirmed corrected 81.24%→50.23% (matching engine/backtest_results/athena — Prometheus ran independent backtest with different methodology). DonchianMR_ETH verdict PAPER→LIVE, DonchianMR_BTC PAPER_READY→PAPER",
+  "_hermes_fix": "AUDIT-045 regression: DonchianMR_BTC verdict LIVE->PAPER"
 }

@@ -934,7 +934,7 @@ def sync_agent_states():
             entry = {"signals": s.get("signals_count", 0), "status": s.get("status", "?")}
             # Support both nested (canonical metrics) and top-level (legacy) fields.
             # Prefer nested metrics when available — top-level can be stale duplicates
-            # (e.g. RSI_MR_ETH had top-level 50.23% vs metrics 81.24%).
+            # (both top-level and nested come from same engine run — identical)
             m = s.get("metrics", {})
             has_metrics = m and m.get("total_trades", 0) > 0
             top_trades = s.get("total_trades") or 0
@@ -1035,26 +1035,21 @@ def sync_agent_states():
                 "trades": m.get("total_trades", 0),
                 "max_dd": m.get("max_drawdown_pct", 0),
             }
-        # Also preserve any Prometheus-specific fields from existing state
+        # Preserve Prometheus-specific metadata fields from existing state
         existing_prom = load_json(os.path.join(STATE_DIR, "prometheus.json"))
-        for key in ("dsr_implemented", "walk_forward_implemented", "anti_overfitting_run", "wf_findings", "next"):
+        for key in ("dsr_implemented", "walk_forward_implemented", "anti_overfitting_run", "wf_findings", "next",
+                     "recommendation", "live_validation", "ml_alpha_status", "ml_validation",
+                     "regime_model", "regime_monitor", "regime_classifier", "last_optimization",
+                     "strategy_landscape_20260622", "rsi_mr_eth_live_confirmed",
+                     "donchian_mr_eth_wf_validation", "donchian_mr_eth_365d",
+                     "donchian_mr_btc_optimized", "portfolio_correlation"):
             if key in existing_prom:
                 prom_state[key] = existing_prom[key]
-        # Preserve existing prometheus.json strategy data that has MORE trades
-        # (manually set by Prometheus persona via live validation).
-        # Backtest metrics can be stale (e.g. RSI_MR_ETH 50.23% vs live-confirmed 81.24%).
-        # If existing has more trades → it's been updated with richer data → preserve it.
-        # Also preserve if existing has a higher Sharpe (better data quality).
-        existing_strats = existing_prom.get("strategies", {})
-        for name, strat in prom_state.get("strategies", {}).items():
-            if name in existing_strats:
-                old_trades = existing_strats[name].get("trades", 0)
-                new_trades = strat.get("trades", 0)
-                old_sr = existing_strats[name].get("sharpe", 0)
-                new_sr = strat.get("sharpe", 0)
-                if old_trades > new_trades or (old_trades == new_trades and abs(old_sr) > abs(new_sr) + 0.01):
-                    # Existing data is more authoritative — preserve it
-                    prom_state["strategies"][name] = existing_strats[name]
+        # NOTE: strategies metrics are ENGINE-DERIVED (from backtest_results.json).
+        # Prometheus-generated metrics live in rsi_mr_eth_live_confirmed etc., NOT
+        # in the strategies section which is overwritten by every engine tick.
+        # Do NOT preserve existing prometheus.json strategies metrics — the engine
+        # is the single source of truth for backtest performance data.
         # Clean up stale hardcoded fake fields (replaced by strategies dict)
         prom_state["dgt_deployed"] = None
         prom_state["dgt_btc_pnl"] = None

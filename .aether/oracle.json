@@ -1,11 +1,10 @@
 {
-  "_updated_at": "2026-06-22T12:01:06.535671+00:00",
+  "_updated_at": "2026-06-22T12:33:05.247133+00:00",
   "strategies_enabled": [
     "RSI_MR_ETH",
-    "DonchianMR_ETH",
-    "DonchianMR_BTC"
+    "DonchianMR_ETH"
   ],
-  "strategies_disabled": 26,
+  "strategies_disabled": 27,
   "pipeline_running": true,
   "data_ext_running": true,
   "market_db_size_mb": 9.1,
@@ -102,9 +101,9 @@
   ],
   "db_table": "klines",
   "db_index_used": "sqlite_autoindex_klines_1 (PK: symbol,timeframe,open_time)",
-  "last_pipeline": "2026-06-22T12:01:06.535671+00:00",
-  "last_klines_ts": 1782129600000,
-  "klines_count": 92800,
+  "last_pipeline": "2026-06-22T12:33:05.247133+00:00",
+  "last_klines_ts": 1782131400000,
+  "klines_count": 92804,
   "db_size_mb": 9.1,
   "engine_pid": 862946
 }

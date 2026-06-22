@@ -16,6 +16,7 @@ import pandas as pd
 import numpy as np
 
 from ..base import BaseStrategy, Signal, SignalType
+from ..indicators import compute_rsi
 
 
 class StochRSIMeanReversionStrategy(BaseStrategy):
@@ -74,22 +75,6 @@ class StochRSIMeanReversionStrategy(BaseStrategy):
         self._bars_since_last_trade = cooldown_bars + 1
 
     @staticmethod
-    def _compute_rsi(close: pd.Series, period: int) -> pd.Series:
-        """Compute RSI (Wilder's smoothing method)."""
-        delta = close.diff()
-        gain = delta.where(delta > 0, 0.0)
-        loss = (-delta).where(delta < 0, 0.0)
-
-        avg_gain = gain.ewm(alpha=1 / period, adjust=False).mean()
-        avg_loss = loss.ewm(alpha=1 / period, adjust=False).mean()
-
-        rs = avg_gain / avg_loss.replace(0, np.nan)
-        rsi = 100.0 - (100.0 / (1.0 + rs))
-        rsi[avg_loss == 0] = 100.0
-        rsi[avg_gain == 0] = 0.0
-        return rsi
-
-    @staticmethod
     def _compute_stoch_rsi(
         rsi: pd.Series, stoch_period: int, smooth_k: int, smooth_d: int
     ) -> tuple:
@@ -120,7 +105,7 @@ class StochRSIMeanReversionStrategy(BaseStrategy):
         ind = pd.DataFrame(index=df.index)
 
         # Compute RSI first
-        ind["rsi"] = self._compute_rsi(df["close"], rsi_period)
+        ind["rsi"] = compute_rsi(df["close"], rsi_period)
 
         # Compute Stochastic RSI
         ind["stoch_k"], ind["stoch_d"] = self._compute_stoch_rsi(

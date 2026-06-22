@@ -3,9 +3,9 @@
 from typing import List, Optional
 
 import pandas as pd
-import numpy as np
 
 from ..base import BaseStrategy, Signal, SignalType
+from ..indicators import compute_rsi
 
 
 class RSIMeanReversionStrategy(BaseStrategy):
@@ -55,22 +55,6 @@ class RSIMeanReversionStrategy(BaseStrategy):
         }
         self._bars_since_last_trade = cooldown_bars + 1
 
-    @staticmethod
-    def _compute_rsi(close: pd.Series, period: int) -> pd.Series:
-        """Compute RSI (Wilder's smoothing method)."""
-        delta = close.diff()
-        gain = delta.where(delta > 0, 0.0)
-        loss = (-delta).where(delta < 0, 0.0)
-
-        avg_gain = gain.ewm(alpha=1 / period, adjust=False).mean()
-        avg_loss = loss.ewm(alpha=1 / period, adjust=False).mean()
-
-        rs = avg_gain / avg_loss.replace(0, np.nan)
-        rsi = 100.0 - (100.0 / (1.0 + rs))
-        rsi[avg_loss == 0] = 100.0
-        rsi[avg_gain == 0] = 0.0
-        return rsi
-
     def _preprocess(self, symbol: str, timeframe: str, df: pd.DataFrame):
         """Compute RSI when data is fed."""
         key = (symbol, timeframe)
@@ -78,7 +62,7 @@ class RSIMeanReversionStrategy(BaseStrategy):
         exit_level = self.params["exit_rsi"]
 
         ind = pd.DataFrame(index=df.index)
-        ind["rsi"] = self._compute_rsi(df["close"], period)
+        ind["rsi"] = compute_rsi(df["close"], period)
 
         # Cross signals
         oversold = self.params["oversold"]

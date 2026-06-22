@@ -23,8 +23,8 @@ Parameters:
 
 from typing import List, Optional
 import pandas as pd
-import numpy as np
 from ..base import BaseStrategy, Signal, SignalType
+from ..indicators import compute_rsi
 
 
 class DonchianMRStrategy(BaseStrategy):
@@ -61,20 +61,6 @@ class DonchianMRStrategy(BaseStrategy):
         })
         self._bars_since_last_trade = cooldown_bars + 1
 
-    @staticmethod
-    def _compute_rsi(close: pd.Series, period: int) -> pd.Series:
-        """Compute RSI with Wilder's smoothing."""
-        delta = close.diff()
-        gain = delta.where(delta > 0, 0.0)
-        loss = (-delta).where(delta < 0, 0.0)
-        avg_gain = gain.ewm(alpha=1 / period, adjust=False).mean()
-        avg_loss = loss.ewm(alpha=1 / period, adjust=False).mean()
-        rs = avg_gain / avg_loss.replace(0, np.nan)
-        rsi = 100.0 - (100.0 / (1.0 + rs))
-        rsi[avg_loss == 0] = 100.0
-        rsi[avg_gain == 0] = 0.0
-        return rsi
-
     def _preprocess(self, symbol: str, timeframe: str, df: pd.DataFrame):
         key = (symbol, timeframe)
         p = self.params
@@ -92,7 +78,7 @@ class DonchianMRStrategy(BaseStrategy):
         ind["dc_mid"] = (ind["dc_upper"] + ind["dc_lower"]) / 2.0
 
         # RSI
-        ind["rsi"] = self._compute_rsi(c, p["rsi_period"])
+        ind["rsi"] = compute_rsi(c, p["rsi_period"])
 
         # 突破下轨信号: 前一根收盘价还在通道内，当前bar跌破下轨
         ind["break_lower"] = (c < ind["dc_lower"]) & (prev_c >= ind["dc_lower"])

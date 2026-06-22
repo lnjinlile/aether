@@ -158,6 +158,20 @@ def run():
                 finally:
                     _conn.close()
                 _my_pid = os.getpid()  # actual python process PID, not the bash wrapper
+                # Pre-compute strategies_enabled from strategies.yaml (AUDIT-047 guard)
+                # Prevents drift between .aether/oracle.json and .aether/state/oracle.json
+                _synced_enabled = None
+                _synced_disabled = None
+                try:
+                    import yaml
+                    _yaml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "strategies.yaml")
+                    with open(_yaml_path) as _yf:
+                        _yaml_cfg = yaml.safe_load(_yf)
+                    _strats = _yaml_cfg.get("strategies", [])
+                    _synced_enabled = [s["name"] for s in _strats if s.get("enabled", False)]
+                    _synced_disabled = len([s for s in _strats if not s.get("enabled", False)])
+                except Exception:
+                    pass  # best-effort
                 # Update both state/oracle.json AND main oracle.json
                 for oracle_path in [
                     os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "state", "oracle.json"),
@@ -174,6 +188,9 @@ def run():
                     oracle["klines_count"] = _klines_count
                     oracle["pipeline_pid"] = _my_pid
                     oracle["_updated_at"] = _now_iso
+                    if _synced_enabled is not None:
+                        oracle["strategies_enabled"] = _synced_enabled
+                        oracle["strategies_disabled"] = _synced_disabled
                     with open(oracle_path, "w") as f:
                         json.dump(oracle, f, indent=2, ensure_ascii=False)
             except Exception:
