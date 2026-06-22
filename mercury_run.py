@@ -168,7 +168,44 @@ def main():
     print("-" * 40)
     try:
         mgr = StrategyManager.load_from_yaml('config/strategies.yaml')
-        active = mgr.get_active_strategies()
+        all_registered = mgr.get_active_strategies()
+
+        # ── Cross-reference with athena.json: only trade enabled strategies ──
+        athena_enabled = set()
+        athena_blocked = {}  # strategies blocked by performance filter
+        try:
+            with open('.aether/state/athena.json') as f:
+                athena_state = json.load(f)
+            strategies = athena_state.get('strategies', {})
+            for name, cfg in strategies.items():
+                if cfg.get('status') != 'ok':
+                    continue
+                # ── PERFORMANCE GUARD: reject strategies with negative metrics ──
+                ret = cfg.get('return_pct', 0)
+                sr = cfg.get('sharpe', 0)
+                wr = cfg.get('win_rate', 0)
+                if ret <= 0:
+                    athena_blocked[name] = f"return={ret:.1f}% ≤ 0"
+                    continue
+                if sr <= 0.3:
+                    athena_blocked[name] = f"sharpe={sr:.4f} ≤ 0.3"
+                    continue
+                if wr <= 40:
+                    athena_blocked[name] = f"win_rate={wr:.1f}% ≤ 40%"
+                    continue
+                athena_enabled.add(name)
+        except Exception:
+            pass  # If athena.json is unavailable, fall back to all registered
+
+        active = [n for n in all_registered if n in athena_enabled] if athena_enabled else all_registered
+        if athena_enabled:
+            skipped = set(all_registered) - set(active)
+            if skipped:
+                print(f"  ⚠️  已跳过 {len(skipped)} 个未启用策略: {', '.join(sorted(skipped))}")
+        if athena_blocked:
+            print(f"  🛡️  性能守卫已拦截 {len(athena_blocked)} 个亏损策略:")
+            for name, reason in sorted(athena_blocked.items()):
+                print(f"      {name}: {reason}")
         print(f"  已加载 {len(active)} 个策略: {', '.join(active)}")
     except Exception as e:
         print(f"  ❌ 策略加载失败: {e}")
