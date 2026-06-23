@@ -188,7 +188,7 @@ if os.path.exists(feed_path):
     with open(feed_path) as f:
         for line in f.readlines()[-20:]:
             try: feed_entries.append(json.loads(line.strip()))
-            except: pass
+            except json.JSONDecodeError: pass
 feed_html = ""
 if feed_entries:
     for e in feed_entries[-15:]:

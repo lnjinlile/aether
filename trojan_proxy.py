@@ -46,14 +46,14 @@ def handle_client(client_sock):
                     d = src.recv(8192)
                     if not d: break
                     dst.sendall(d)
-            except: pass
+            except Exception: pass
         t1 = threading.Thread(target=relay, args=(client_sock, remote), daemon=True)
         t2 = threading.Thread(target=relay, args=(remote, client_sock), daemon=True)
         t1.start(); t2.start()
         t1.join(timeout=300); t2.join(timeout=300)
-    except:
+    except Exception:
         try: client_sock.close()
-        except: pass
+        except Exception: pass
 
 if __name__ == "__main__":
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

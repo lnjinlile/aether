@@ -183,6 +183,82 @@ def load_oi_features(symbol: str, db_path: str = None) -> Optional[pd.DataFrame]
     return df
 
 
+def load_orderflow_features(symbol: str, db_path: str = None) -> Optional[pd.DataFrame]:
+    """Load order flow (trade-level) features for a symbol.
+
+    Reads the order_flow table which contains 1-minute aggregated trade windows
+    with pre-computed microstructure features.
+
+    Args:
+        symbol: e.g. 'BTCUSDT' or 'ETHUSDT' (Binance symbol format)
+        db_path: Path to SQLite DB
+
+    Returns:
+        DataFrame indexed by window_start with columns:
+        - volume_imbalance, trade_count_imbalance, aggressiveness_ratio
+        - large_trade_ratio, entropy_trade_size, entropy_buy_sell
+        - avg_trade_size, std_trade_size, total_volume
+        - of_imbalance_smoothed, of_imbalance_delta, of_aggressiveness_smoothed
+        Returns None if no data.
+    """
+    db_path = db_path or _DEFAULT_DB
+    if not os.path.exists(db_path):
+        return None
+
+    # order_flow table uses "BTC/USDT" format; convert if needed (PERF-089)
+    if "/" not in symbol:
+        of_symbol = symbol[:3] + "/" + symbol[3:]
+    else:
+        of_symbol = symbol
+
+    conn = get_market_db(db_path)
+    try:
+        df = pd.read_sql_query(
+            "SELECT window_start, buy_volume, sell_volume, buy_count, sell_count, "
+            "total_trades, total_volume, vwap, volume_imbalance, "
+            "trade_count_imbalance, aggressiveness_ratio, "
+            "large_trade_count, large_trade_volume, "
+            "entropy_trade_size, entropy_buy_sell, "
+            "avg_trade_size, std_trade_size "
+            "FROM order_flow WHERE symbol = ? ORDER BY window_start ASC",
+            conn, params=(of_symbol,)
+        )
+    finally:
+        conn.close()
+
+    if df.empty:
+        return None
+
+    df["window_start"] = pd.to_datetime(df["window_start"], unit="ms", utc=True)
+    df.set_index("window_start", inplace=True)
+    df.sort_index(inplace=True)
+
+    # Derived features
+    # Large trade proportion
+    total_vol = df["total_volume"].replace(0, np.nan)
+    df["large_trade_ratio"] = df["large_trade_volume"] / total_vol
+
+    # Smoothed imbalance (6-period rolling, ~6min)
+    df["of_imbalance_smoothed"] = df["volume_imbalance"].rolling(6, min_periods=2).mean()
+    df["of_imbalance_delta"] = df["volume_imbalance"] - df["of_imbalance_smoothed"]
+
+    # Smoothed aggressiveness
+    df["of_aggressiveness_smoothed"] = df["aggressiveness_ratio"].rolling(6, min_periods=2).mean()
+
+    # Volume surge detection (2-sigma)
+    if len(df) >= 10:
+        vol_mean = df["total_volume"].rolling(20, min_periods=5).mean()
+        vol_std = df["total_volume"].rolling(20, min_periods=5).std().replace(0, np.nan)
+        df["of_volume_surge"] = ((df["total_volume"] - vol_mean) > 2 * vol_std).astype(int)
+    else:
+        df["of_volume_surge"] = 0
+
+    # Net taker volume proxy (buy - sell volume)
+    df["of_net_taker_vol"] = df["buy_volume"] - df["sell_volume"]
+
+    return df
+
+
 def _normalize_index(df: pd.DataFrame, target_idx: pd.DatetimeIndex) -> pd.DataFrame:
     """Normalize a DataFrame's DatetimeIndex to match the target index dtype."""
     df = df.copy()
@@ -304,16 +380,44 @@ def merge_oracle_features(
     else:
         logger.debug("No OI data for %s", symbol)
 
+    # ── Order Flow features (PERF-089) ──
+    of_df = load_orderflow_features(symbol, db_path)
+    if of_df is not None and not of_df.empty:
+        of_cols = ["volume_imbalance", "trade_count_imbalance",
+                    "aggressiveness_ratio", "large_trade_ratio",
+                    "entropy_trade_size", "entropy_buy_sell",
+                    "avg_trade_size", "std_trade_size",
+                    "of_imbalance_smoothed", "of_imbalance_delta",
+                    "of_aggressiveness_smoothed", "of_volume_surge",
+                    "of_net_taker_vol"]
+        for col in of_cols:
+            if col in of_df.columns:
+                result[f"of_{col}"] = _safe_reindex(of_df, col, target_idx)
+        logger.debug("Merged order flow features for %s: %d rows", symbol, len(of_df))
+    else:
+        logger.debug("No order flow data for %s", symbol)
+
     return result
 
 
 def get_oracle_feature_names() -> list:
     """Return the list of oracle feature column names that may be added."""
     return [
+        # Orderbook
         "ob_imbalance", "ob_imbalance_smoothed", "ob_imbalance_delta",
         "ob_spread_bps", "ob_spread_pct",
+        # Funding
         "fund_funding_rate", "fund_funding_rate_pct",
         "fund_funding_extreme", "fund_funding_zscore",
+        # Open Interest
         "oi_oi_change_1", "oi_oi_change_3", "oi_oi_change_12",
         "oi_oi_change_48", "oi_oi_change_288", "oi_oi_surge",
+        # Order Flow (PERF-089)
+        "of_volume_imbalance", "of_trade_count_imbalance",
+        "of_aggressiveness_ratio", "of_large_trade_ratio",
+        "of_entropy_trade_size", "of_entropy_buy_sell",
+        "of_avg_trade_size", "of_std_trade_size",
+        "of_of_imbalance_smoothed", "of_of_imbalance_delta",
+        "of_of_aggressiveness_smoothed", "of_of_volume_surge",
+        "of_of_net_taker_vol",
     ]

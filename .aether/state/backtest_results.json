@@ -124,7 +124,11 @@
       "total_trades": 38,
       "backtest_period": "365d",
       "verdict": "PAPER",
-      "retired_reason": "PAPER: Optimized params RSIPeriod=14/oversold=20/overbought=80/exit_rsi=45/SL=1.5%/TP=6%/CD=3/lev=3. SR=0.466 pass, DD=18.72%<20%, WR=68.4%>40%, 38trades>30. Athena-promoted PAPER 2026-06-23. Paper trading on engine."
+      "retired_reason": "PAPER: Optimized params RSIPeriod=14/oversold=20/overbought=80/exit_rsi=45/SL=1.5%/TP=6%/CD=3/lev=3. SR=0.466 pass, DD=18.72%<20%, WR=68.4%>40%, 38trades>30. Athena-promoted PAPER 2026-06-23. Paper trading on engine.",
+      "sharpe": 0.466,
+      "return_pct": 183.97,
+      "max_dd": 18.72,
+      "trades": 38
     },
     "RSI_MR_ETH": {
       "status": "ok",
@@ -132,23 +136,13 @@
       "symbol": "ETH/USDT",
       "timeframe": "1h",
       "data_rows": 2161,
-      "signals_count": 241,
+      "signals_count": 244,
       "latest_signal": {
-        "time": "2026-06-23 14:00:00",
+        "time": "2026-06-23 16:00:00",
         "signal": "LONG",
-        "price": 1657.7
+        "price": 1658.41
       },
       "last_5_signals": [
-        {
-          "time": "2026-06-23 10:00:00",
-          "signal": "LONG",
-          "price": 1651.79
-        },
-        {
-          "time": "2026-06-23 11:00:00",
-          "signal": "LONG",
-          "price": 1659.9
-        },
         {
           "time": "2026-06-23 12:00:00",
           "signal": "LONG",
@@ -162,28 +156,38 @@
         {
           "time": "2026-06-23 14:00:00",
           "signal": "LONG",
-          "price": 1657.7
+          "price": 1661.27
+        },
+        {
+          "time": "2026-06-23 15:00:00",
+          "signal": "LONG",
+          "price": 1657.62
+        },
+        {
+          "time": "2026-06-23 16:00:00",
+          "signal": "LONG",
+          "price": 1658.41
         }
       ],
-      "total_return_pct": 81.33,
-      "sharpe_ratio": 1.0715,
+      "total_return_pct": 81.52,
+      "sharpe_ratio": 1.0731,
       "max_drawdown_pct": 8.88,
       "win_rate": 88.24,
       "total_trades": 17,
-      "profit_factor": 5.3164,
+      "profit_factor": 5.324,
       "backtest_period": "90d",
       "verdict": "LIVE",
       "metrics": {
-        "total_return_pct": 81.33,
-        "sharpe_ratio": 1.0715,
+        "total_return_pct": 81.52,
+        "sharpe_ratio": 1.0731,
         "deflated_sharpe_ratio": 1.0,
         "max_drawdown_pct": 8.88,
         "win_rate": 88.24,
-        "profit_factor": 5.3164,
+        "profit_factor": 5.324,
         "total_trades": 17,
         "avg_win_pct": 5.12,
         "avg_loss_pct": 7.22,
-        "final_equity": 18132.88
+        "final_equity": 18152.46
       }
     },
     "MLEnsemble_BTC": {
@@ -436,7 +440,11 @@
       "total_trades": 38,
       "backtest_period": "365d",
       "verdict": "LIVE",
-      "retired_reason": "ATHENA RE-PROMOTION 2026-06-23 01:28: SR=0.507>0.5, DD=11.6%<20%, WR=70.3%>40%, 38trades>30. ALL thresholds PASS. Engine loads as LIVE. Prometheus synced verdict PAPER→LIVE 2026-06-23 09:45."
+      "retired_reason": "ATHENA RE-PROMOTION 2026-06-23 01:28: SR=0.507>0.5, DD=11.6%<20%, WR=70.3%>40%, 38trades>30. ALL thresholds PASS. Engine loads as LIVE. Prometheus synced verdict PAPER→LIVE 2026-06-23 09:45.",
+      "sharpe": 0.507,
+      "return_pct": 135.67,
+      "max_dd": 11.6,
+      "trades": 38
     },
     "DonchianMR_ETH": {
       "status": "ok",
@@ -497,7 +505,11 @@
         "avg_loss_pct": 3.84,
         "final_equity": 12052.29,
         "backtest_period": "365d"
-      }
+      },
+      "sharpe": 0.552,
+      "return_pct": 429.48,
+      "max_dd": 16.21,
+      "trades": 50
     },
     "DonchianTrend_BTC": {
       "status": "disabled",
@@ -562,7 +574,11 @@
         "exit_level": 50,
         "leverage": 3,
         "timeframe": "1h"
-      }
+      },
+      "sharpe": 0.516,
+      "return_pct": 172.56,
+      "max_dd": 5.6,
+      "trades": 21
     },
     "KeltnerMR_ETH": {
       "status": "ok",
@@ -599,7 +615,11 @@
         "exit_level": 50,
         "leverage": 3,
         "timeframe": "1h"
-      }
+      },
+      "sharpe": 0.662,
+      "return_pct": 664.01,
+      "max_dd": 17.8,
+      "trades": 27
     },
     "BandMR_BTC": {
       "status": "disabled",
@@ -674,10 +694,14 @@
         "avg_win_pct": 3.03,
         "avg_loss_pct": 3.77,
         "final_equity": 9628.34
-      }
+      },
+      "sharpe": 0.539,
+      "return_pct": 910.08,
+      "max_dd": 20.7,
+      "trades": 118
     }
   },
-  "_updated_at": "2026-06-23T14:29:17.101612+00:00",
+  "_updated_at": "2026-06-23T17:31:56.972339+00:00",
   "rsi_div_mr_sweep": {
     "updated_at": "2026-06-23T11:48:01.005973+00:00",
     "strategy": "RSI_Divergence_MR",

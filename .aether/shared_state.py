@@ -29,6 +29,35 @@ def write_state(agent: str, data: Dict):
     """写入专员状态 (合并更新)。"""
     current = read_state(agent) or {}
     current.update(data)
+
+    # === HARD GUARD: Guardian prometheus_snapshot.best_sharpe must always
+    # come from the authoritative prometheus.json, not self-computed.
+    # This prevents the Guardian LLM from corrupting this field (AUDIT-119 recurrence). ===
+    if agent == "guardian":
+        try:
+            # PERF-089: Read from _STATE_DIR (authoritative), NOT parent dir
+            # (stale zombie copy). Was os.path.join(_STATE_DIR, "..", "prometheus.json")
+            prom_path = os.path.join(_STATE_DIR, "prometheus.json")
+            if os.path.exists(prom_path):
+                with open(prom_path) as pf:
+                    prom = json.load(pf)
+                auth_best_sharpe = prom.get("best_sharpe")
+                auth_best_sharpe_strategy = prom.get("best_sharpe_strategy")
+                auth_best_win_rate = prom.get("best_win_rate")
+                auth_best_win_rate_strategy = prom.get("best_win_rate_strategy")
+                snap = current.setdefault("prometheus_snapshot", {})
+                if auth_best_sharpe is not None:
+                    snap["best_sharpe"] = auth_best_sharpe
+                    snap["source"] = "prometheus.json[best_sharpe] direct (hard guard)"
+                if auth_best_sharpe_strategy is not None:
+                    snap["best_sharpe_strategy"] = auth_best_sharpe_strategy
+                if auth_best_win_rate is not None:
+                    snap["best_win_rate"] = auth_best_win_rate
+                if auth_best_win_rate_strategy is not None:
+                    snap["best_win_rate_strategy"] = auth_best_win_rate_strategy
+        except Exception:
+            pass  # If prometheus.json is unreadable, trust what was given
+
     current["_updated_at"] = datetime.now(timezone.utc).isoformat()
     os.makedirs(_STATE_DIR, exist_ok=True)
     with open(_state_file(agent), "w") as f:

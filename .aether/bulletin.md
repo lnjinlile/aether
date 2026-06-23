@@ -8,7 +8,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 13:35 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 16:58 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -21,7 +21,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +79.05% | SR=+1.05 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |
@@ -49,7 +49,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 13:40 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 17:03 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -62,7 +62,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +79.05% | SR=+1.05 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |
@@ -90,7 +90,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 13:45 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 17:08 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -103,7 +103,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +79.05% | SR=+1.05 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |
@@ -131,7 +131,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 13:50 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 17:12 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -144,7 +144,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +79.05% | SR=+1.05 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |
@@ -172,7 +172,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 13:55 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 17:17 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -185,7 +185,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +81.50% | SR=+1.07 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |
@@ -213,7 +213,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 14:00 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 17:22 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -226,7 +226,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +81.50% | SR=+1.07 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |
@@ -254,7 +254,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 14:05 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 17:27 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -267,7 +267,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +81.50% | SR=+1.07 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |
@@ -295,7 +295,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 14:09 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 17:31 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -308,7 +308,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +81.50% | SR=+1.07 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |
@@ -336,7 +336,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 14:14 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 17:36 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -349,7 +349,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +81.50% | SR=+1.07 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |
@@ -377,7 +377,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 14:19 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 17:41 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -390,7 +390,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +81.50% | SR=+1.07 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |
@@ -418,7 +418,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 14:24 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 17:46 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -431,7 +431,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +81.50% | SR=+1.07 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |
@@ -459,7 +459,7 @@
 | BandMR_ETH | 🟢 +910.08% | SR=+0.54 | WR=63.6% | 118t |
 
 ---
-### 06-23 14:29 — Engine ♡ | 风控 normal | 无持仓
+### 06-23 17:51 — Engine ♡ | 风控 normal | 无持仓
 
 | 策略 | 收益 | 夏普 | 胜率 | 笔数 |
 |------|------|------|------|------|
@@ -472,7 +472,7 @@
 | TrendFollow_ETH | ⚪ no metrics | — | — | — |
 | TrendFollow_BTC_1h | ⚪ no metrics | — | — | — |
 | RSI_MR_BTC | ⚪ no metrics | — | — | — |
-| RSI_MR_ETH | 🟢 +81.33% | SR=+1.07 | WR=88.2% | 17t |
+| RSI_MR_ETH | 🟢 +81.52% | SR=+1.07 | WR=88.2% | 17t |
 | MLEnsemble_BTC | ⚪ no metrics | — | — | — |
 | MLEnsemble_ETH | ⚪ no metrics | — | — | — |
 | BBandRSI_BTC | ⚪ no metrics | — | — | — |

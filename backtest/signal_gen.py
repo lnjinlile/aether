@@ -33,6 +33,30 @@ def _compute_rsi(close: np.ndarray, period: int) -> np.ndarray:
     return rsi
 
 
+def _compute_spread_zscore(eth_close: np.ndarray, btc_close: np.ndarray,
+                           lookback: int = 200) -> np.ndarray:
+    """Compute rolling z-score of ETH/BTC ratio for spread MR filter.
+
+    Returns z-score array. Positive = ETH overvalued vs BTC.
+    The spread is mean-reverting (Hurst=0.076, half-life=3.4h on 1h ETH data).
+
+    Usage in signal generators:
+        spread_z = _compute_spread_zscore(eth_close, btc_close)
+        spread_ok = (spread_z[i] <= spread_z_entry)  # for LONG entries
+    """
+    n = len(eth_close)
+    ratio = np.where(btc_close > 0, eth_close / btc_close, 0.0)
+    z = np.zeros(n)
+
+    for i in range(lookback, n):
+        window = ratio[max(0, i - lookback):i]
+        mu = np.mean(window)
+        sigma = np.std(window)
+        if sigma > 1e-6:
+            z[i] = (ratio[i] - mu) / sigma
+    return z
+
+
 def _compute_atr(high: np.ndarray, low: np.ndarray, close: np.ndarray,
                  period: int) -> np.ndarray:
     """Wilder's smoothed ATR — vectorized via pandas ewm for speed.
@@ -1165,7 +1189,8 @@ def donchian_mr_signals(df: pd.DataFrame,
                         stop_loss_pct: float = 0.02,
                         take_profit_pct: float = 0.04,
                         cooldown_bars: int = 5,
-                        volume_filter: float = 0.0) -> pd.Series:
+                        volume_filter: float = 0.0,
+                        spread_z_entry: float = 0.0) -> pd.Series:
     """
     Donchian Channel Mean Reversion — fade the breakout.
 
@@ -1176,6 +1201,11 @@ def donchian_mr_signals(df: pd.DataFrame,
 
     volume_filter: if > 0, requires volume > MA(volume,20) * volume_filter at entry.
                    Default 0.0 (disabled). BandMR uses 1.2.
+
+    spread_z_entry: if < 0, requires ETH/BTC ratio z-score < spread_z_entry for LONG entry.
+                    (ETH undervalued vs BTC). Default 0.0 (disabled).
+                    Only affects ETH/USDT symbols. Adds ~200ms for DB lookup.
+                    PERF-094: Spread MR filter — Hurst=0.076, half-life=3.4h.
 
     Optimized params (from 162-run sweep, ETH 1h 365d):
         DP=10, OS=20, OB=80, CD=5 → +429% SR=0.552 DD=16.2% WR=72%
@@ -1207,6 +1237,56 @@ def donchian_mr_signals(df: pd.DataFrame,
         vol = df['volume'].values.astype(float)
         vol_ma = pd.Series(vol).rolling(20).mean().values
         vol_ok = vol > (vol_ma * volume_filter)
+
+    # Spread z-score filter — ETH/BTC ratio mean-reversion (PERF-094)
+    spread_z = np.zeros(n)
+    spread_ok = np.ones(n, dtype=bool)  # default: all bars pass
+    if spread_z_entry < 0:
+        try:
+            import sqlite3, os
+            # Detect ETH symbol from DataFrame attrs or column metadata
+            is_eth = False
+            for attr_val in [df.attrs.get('symbol', ''), str(df.attrs)]:
+                if 'ETH' in attr_val.upper():
+                    is_eth = True
+                    break
+            if is_eth:
+                # Find market.db
+                candidates = [
+                    os.path.join(os.path.dirname(os.path.dirname(
+                        os.path.abspath(__file__))), 'data', 'market.db'),
+                    'data/market.db',
+                ]
+                db_path = None
+                for c in candidates:
+                    if os.path.exists(c):
+                        db_path = c
+                        break
+                if db_path:
+                    db = sqlite3.connect(db_path)
+                    # Read both BTC and ETH 1h close prices aligned by timestamp.
+                    # DB returns ALL bars; trim to match DataFrame length (covers lookback).
+                    rows = db.execute("""
+                        SELECT b.open_time, e.close as eth_close, b.close as btc_close
+                        FROM klines b
+                        JOIN klines e ON b.open_time = e.open_time
+                            AND e.symbol = 'ETH/USDT' AND e.timeframe = '1h'
+                        WHERE b.symbol = 'BTC/USDT' AND b.timeframe = '1h'
+                        ORDER BY b.open_time
+                    """).fetchall()
+                    db.close()
+                    if rows and len(rows) >= n:
+                        eth_aligned = np.array([r[1] for r in rows], dtype=float)
+                        btc_aligned = np.array([r[2] for r in rows], dtype=float)
+                        full_spread_z = _compute_spread_zscore(eth_aligned, btc_aligned)
+                        # Trim to match DataFrame length (last n bars)
+                        spread_z_full = full_spread_z[-n:]
+                        # Verify alignment via close price match on first valid bar
+                        if abs(eth_aligned[-n] - close[0]) < 0.01:
+                            spread_z = spread_z_full
+                            spread_ok = spread_z <= spread_z_entry
+        except Exception:
+            pass  # fallback: spread filter disabled on error
 
     min_bars = max(donchian_period, rsi_period) + 5
     pos = 0
@@ -1243,7 +1323,7 @@ def donchian_mr_signals(df: pd.DataFrame,
 
         # Entry
         if pos == 0 and bars_since_trade > cooldown_bars and vol_ok[i]:
-            if price < dc_lower[i] and rsi[i] < oversold:
+            if price < dc_lower[i] and rsi[i] < oversold and spread_ok[i]:
                 pos = 1
                 entry_price = price
                 signals[i] = 1

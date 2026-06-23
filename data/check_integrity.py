@@ -2,6 +2,13 @@
 """Oracle 数据完整性检查脚本 — 心跳时自动运行"""
 import sqlite3, time, os, sys
 
+# Ensure project root is on path so we can import data.db
+_PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _PROJ_ROOT not in sys.path:
+    sys.path.insert(0, _PROJ_ROOT)
+
+from data.db import get_market_db
+
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "market.db")
 
 def check(verbose=False):
@@ -13,8 +20,7 @@ def check(verbose=False):
     if not os.path.exists(DB):
         return False, [f"数据库不存在: {DB}"], {}
 
-    db = sqlite3.connect(DB)
-    db.execute("PRAGMA busy_timeout=5000")
+    db = get_market_db(DB)
 
     # 1. 数据新鲜度检查
     SYMBOLS = ["BTC/USDT", "ETH/USDT"]
@@ -163,8 +169,7 @@ def _refresh_oracle_stats(stats):
         now_iso = datetime.now(timezone.utc).isoformat()
 
         # Single DB connection for all queries
-        db = sqlite3.connect(DB)
-        db.execute("PRAGMA busy_timeout=5000")
+        db = get_market_db(DB)
 
         data_stats = {}
         # Per-symbol/timeframe stats
@@ -204,6 +209,7 @@ def _refresh_oracle_stats(stats):
                 oracle = {}
             oracle["data_stats"] = data_stats
             oracle["_updated_at"] = now_iso
+            oracle["last_heartbeat"] = now_iso  # AUDIT-135: prevent heartbeat staleness on refresh
             oracle["db_size_mb"] = stats.get("db_size_mb", oracle.get("db_size_mb", 0))
             oracle["klines_count"] = stats.get("total_klines", 0)
             oracle["data_fresh"] = True

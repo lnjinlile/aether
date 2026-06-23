@@ -4,13 +4,14 @@ import sqlite3, time, os, sys
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
+from data.db import get_market_db
+
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "market.db")
 
 
 def get_conn() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("PRAGMA busy_timeout=5000")
-    return conn
+    """Return a configured SQLite connection via the centralized db module."""
+    return get_market_db(DB_PATH)
 
 
 def check_klines_latency(symbols: Optional[List[str]] = None,

@@ -12,6 +12,7 @@ Stores aggregated features in a new 'order_flow' table in market.db.
 import os
 import sys
 import time
+import sqlite3
 import json
 import logging
 from datetime import datetime, timezone
@@ -78,11 +79,11 @@ class OrderFlowCollector:
         self._init_db()
 
     def _get_conn(self):
-        """Get a SQLite connection with Row factory for dict-like access."""
-        import sqlite3
-        conn = sqlite3.connect(self.db_path)
-        conn.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access
-        conn.row_factory = sqlite3.Row
+        """Get a SQLite connection via centralized db module."""
+        from data.db import get_market_db
+        conn = get_market_db(self.db_path)
+        # order_flow needs Row factory explicitly (ensured by get_market_db)
+        conn.row_factory = sqlite3.Row  # already set by get_market_db, explicit for clarity
         return conn
 
     def _init_db(self):

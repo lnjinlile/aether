@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Oracle 数据质量检测工具 — 供 cron 和 pipeline 调用"""
-import sqlite3
 import time, os, sys, json
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -10,7 +9,7 @@ _PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJ_ROOT not in sys.path:
     sys.path.insert(0, _PROJ_ROOT)
 
-from data.db import get_market_db  # PERF-013: shared WAL + busy_timeout helper
+from data.db import get_market_db, get_db  # PERF-013/PERF-090: shared WAL + busy_timeout helper
 
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "market.db")
 AETHER_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aether.db")
@@ -206,9 +205,7 @@ def log_to_aether(status, issues, stats, now_ts=None):
         now_ts = int(time.time() * 1000)
     aether_conn = None
     try:
-        aether_conn = sqlite3.connect(AETHER_DB)
-        aether_conn.execute("PRAGMA busy_timeout = 5000")
-        aether_conn.execute("PRAGMA journal_mode = WAL")
+        aether_conn = get_db(AETHER_DB)
         aether_conn.execute("""
             CREATE TABLE IF NOT EXISTS oracle_health (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -235,11 +232,14 @@ def log_to_aether(status, issues, stats, now_ts=None):
                 delays.append(v['delay_min'])
         delay_max = max(delays) if delays else 0
         checked_at = datetime.fromtimestamp(now_ts / 1000, tz=timezone.utc).isoformat()
+        # Count actual gaps and duplicates from issues (was hardcoded to 0)
+        total_gaps = sum(1 for i in issues if '缺口' in i or 'gap' in i.lower())
+        dup_count = sum(1 for i in issues if '重复' in i or 'dup' in i.lower())
         aether_conn.execute(
             "INSERT INTO oracle_health(checked_at,status,total_klines,total_gaps,duplicates,"
             "db_size_mb,delay_max_min,integrity_ok,config_sync_ok,issues,stats) "
-            "VALUES(?,?,?,0,0,?,?,1,1,?,?)",
-            (checked_at, status, total_klines,
+            "VALUES(?,?,?,?,?,?,?,1,1,?,?)",
+            (checked_at, status, total_klines, total_gaps, dup_count,
              round(os.path.getsize(DB) / (1024 * 1024), 1),
              round(delay_max, 2),
              json.dumps(issues),
@@ -260,8 +260,7 @@ def log_data_snapshots(stats, now_ts=None):
         now_ts = int(time.time() * 1000)
     aether_conn = None
     try:
-        aether_conn = sqlite3.connect(AETHER_DB)
-        aether_conn.execute("PRAGMA busy_timeout = 3000")
+        aether_conn = get_db(AETHER_DB)
         aether_conn.execute("""
             CREATE TABLE IF NOT EXISTS oracle_data_snapshots (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

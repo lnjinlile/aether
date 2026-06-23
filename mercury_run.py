@@ -26,6 +26,7 @@ from risk.manager import RiskManager
 from risk.position_sizer import DynamicPositionSizer
 from strategy.base import Signal, SignalType
 from strategy.manager import StrategyManager
+from strategy import MR_PATTERN_NAMES  # PERF-096: centralized MR detection
 
 # ──────────────────────────────────────────────────────────────
 # Helpers
@@ -50,14 +51,15 @@ def debug_log(msg: str):
 # symbol, the higher-priority strategy wins and the lower one is suppressed.
 # Scores derived from Oracle 90d backtest: Sharpe * sqrt(trades) to account
 # for statistical significance (higher trade count = more reliable).
-# Updated 2026-06-22: RSI_MR_ETH + DonchianMR_ETH both LIVE.
-# DonchianMR_ETH promoted by Prometheus 10:50 UTC (WF 4/4 OOS, 365d +429% SR=0.55 50trades).
+# Updated 2026-06-24: BandMR_ETH added (LIVE per PERF-073). RSI_MR_ETH SR updated from athena.
+# BandMR_ETH promoted by Athena 11:22 UTC (PERF-073: SR=0.539 DD=20.7% WR=63.6% 118t).
 STRATEGY_PRIORITY = {
-    "RSI_MR_ETH":           0.782  * (16 ** 0.5),   # Sharpe 0.782, 16 trades → 3.13 (updated from athena.json)
+    "BandMR_ETH":           0.539  * (118 ** 0.5),  # Sharpe 0.539, 118 trades → 5.85 (PERF-073, highest trades)
     "DonchianMR_ETH":       0.552  * (50 ** 0.5),   # Sharpe 0.552, 50 trades → 3.90
+    "KeltnerMR_ETH":        0.662  * (27 ** 0.5),   # Sharpe 0.662, 27 trades → 3.44 (Refined Sweep Req#66)
+    "RSI_MR_ETH":           1.073  * (17 ** 0.5),   # Sharpe 1.073, 17 trades → 4.42 (updated from athena.json 2026-06-24)
     "DonchianMR_BTC":       0.507  * (38 ** 0.5),   # Sharpe 0.507, 38 trades → 3.12 (Athena-authorized LIVE 2026-06-22)
     "KeltnerMR_BTC":        0.516  * (21 ** 0.5),   # Sharpe 0.516, 21 trades → 2.36 (Refined Sweep Req#66)
-    "KeltnerMR_ETH":        0.662  * (27 ** 0.5),   # Sharpe 0.662, 27 trades → 3.44 (Refined Sweep Req#66)
 }
 
 def get_strategy_priority(name: str) -> float:
@@ -100,7 +102,7 @@ def main():
         daily_loss_limit_pct=0.05,
         min_order_usdt=10.0,
         correlated_groups=[
-            ["RSI_MR_ETH", "DonchianMR_ETH", "KeltnerMR_ETH"],    # PERF-048: All 3 ETH MR strategies — pairwise corr ≥ 0.85
+            ["RSI_MR_ETH", "DonchianMR_ETH", "KeltnerMR_ETH", "BandMR_ETH"],   # All 4 ETH MR strategies — pairwise corr ≥ 0.85 (BandMR added Mercury 01:30)
             ["KeltnerMR_BTC", "DonchianMR_BTC", "RSI_MR_BTC"],    # PERF-071: All BTC MR strategies — max 2 concurrent
         ],
         max_correlated_exposure_pct=0.30,
@@ -225,14 +227,23 @@ def main():
         with open('.aether/state/prometheus.json') as f:
             ps = json.load(f)
         strategies_metrics = ps.get('strategies', {})
+        # PERF-088: Prefer strategy_sweep_details for accurate Kelly sizing
+        # (avg_win_pct, avg_loss_pct, dsr from Prometheus sweeps survive engine overwrites)
+        sweep_details = ps.get('strategy_sweep_details', {})
         for sname, sm in strategies_metrics.items():
             wr = sm.get('win_rate', 0)
+            sd = sweep_details.get(sname, {})
+            # Use sweep_details for avg_win/avg_loss/dsr when available,
+            # fall back to strategies dict estimates
+            avg_win_raw = sd.get('avg_win_pct') or sm.get('avg_win_pct')
+            avg_loss_raw = sd.get('avg_loss_pct') or sm.get('avg_loss_pct')
+            dsr_raw = sd.get('dsr') or sm.get('dsr')
             backtest_stats[sname] = {
                 'win_rate': wr / 100.0 if wr > 1 else wr,
-                'avg_win': sm.get('avg_win_pct', sm.get('return_pct', 0) / max(sm.get('trades', 1), 1)),
-                'avg_loss': sm.get('avg_loss_pct', 2.0),
-                'dsr': sm.get('dsr', 0.5),        # PERF-068: DSR for Kelly confidence
-                'sharpe': sm.get('sharpe', 0),     # for logging
+                'avg_win': avg_win_raw if avg_win_raw else sm.get('return_pct', 0) / max(sm.get('trades', 1), 1),
+                'avg_loss': avg_loss_raw if avg_loss_raw else 2.0,
+                'dsr': dsr_raw if dsr_raw else 0.5,        # PERF-068: DSR for Kelly confidence
+                'sharpe': sm.get('sharpe', 0),              # for logging
             }
     except Exception:
         pass  # If prometheus.json unavailable, just use vol-targeted sizing
@@ -384,8 +395,7 @@ def main():
 
         Formula: linear decay from MR_NEUTRAL to MR_MAX_REDUCE, floor at MR_FLOOR.
         """
-        mr_patterns = ("_MR_", "MR_", "RSI_", "DonchianMR", "KeltnerMR",
-                       "BBandRSI", "StochRSI", "BBand", "MeanRev")
+        mr_patterns = MR_PATTERN_NAMES
         is_mr = any(pat in strat_name for pat in mr_patterns)
         if not is_mr:
             return 1.0

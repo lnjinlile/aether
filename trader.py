@@ -161,7 +161,7 @@ def execute(client, symbol, side, qty, tier, price):
     except Exception as e:
         logger.warning("Cancel orders %s: %s", symbol, e)
 
-    r = client.place_order(symbol, side, qty, order_type="MARKET")
+    r = client.place_order(symbol, side, quantity=qty, order_type="MARKET")
     oid = r.get("order",{}).get("id","?") if r else "?"
     fp = r.get("price", price) if r else price
     if not fp or fp <= 0:
@@ -174,10 +174,10 @@ def execute(client, symbol, side, qty, tier, price):
     sl_s = "SELL" if side=="LONG" else "BUY"
 
     try:
-        client.place_order(symbol, sl_s, qty, order_type="STOP_MARKET", stop_price=sl, reduce_only=True)
-        client.place_order(symbol, sl_s, qty, order_type="TAKE_PROFIT_MARKET", stop_price=tp, reduce_only=True)
+        client.place_sl_order(symbol, sl_s, quantity=qty, stop_price=sl, order_type="STOP_MARKET")
+        client.place_sl_order(symbol, sl_s, quantity=qty, stop_price=tp, order_type="TAKE_PROFIT_MARKET")
     except Exception as e:
-        logger.warning("SL/TP placement %s: %s", symbol, e)
+        logger.warning("SL/TP %s: %s", symbol, e)
 
     card = {"层": tier, "描述": cfg["desc"], "标的": symbol, "方向": side, "数量": qty,
             "入场": fp, "SL": round(sl,1), "TP": round(tp,1), "杠杆": f"{LEVERAGE}x", "订单ID": oid}

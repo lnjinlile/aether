@@ -18,7 +18,7 @@ def check_and_restart(name, state_file, script, timeout_min=TIMEOUT_MIN):
         last_dt = datetime.fromisoformat(last_str)
         age = (datetime.now(timezone.utc) - last_dt).total_seconds()
         return age > (timeout_min * 60)
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError, OSError):
         return True  # parse error → restart
 
 def kill_and_restart(name, script):
@@ -26,7 +26,7 @@ def kill_and_restart(name, script):
     # Kill old
     try:
         subprocess.run(["pkill", "-f", f"python3 {script}"], timeout=10, capture_output=True)
-    except:
+    except subprocess.SubprocessError:
         pass
     # Start new
     subprocess.Popen(
