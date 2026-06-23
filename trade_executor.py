@@ -12,10 +12,11 @@ Aether 交易执行层 — 永不重启。独立进程，只做交易。
                                                   │
   engine.py ──→ .aether/backtest_results.json   riskt_monitor.py
 """
-import json, os, sys, time, sqlite3, logging
+import json, os, sys, time, logging
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from data.db import get_market_db  # PERF-074: shared WAL + busy_timeout helper
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [TRADE] %(message)s")
 logger = logging.getLogger("trade_executor")
@@ -25,7 +26,7 @@ STATE_DIR = os.path.join(BASE, ".aether", "state")
 SIGNAL_FILE = os.path.join(STATE_DIR, "trade_signals.json")
 STATE_FILE = os.path.join(STATE_DIR, "executor_state.json")
 DB = os.path.join(BASE, "data", "market.db")
-INTERVAL = 60  # Check for signals every minute
+INTERVAL = 30  # Check for signals every 30 seconds (don't miss entries)
 
 os.makedirs(STATE_DIR, exist_ok=True)
 
@@ -168,7 +169,7 @@ def execute_signal(client, state, signal):
         
         # Record in DB
         try:
-            conn = sqlite3.connect(DB)
+            conn = get_market_db(DB)
             conn.execute("""INSERT INTO trades_log(symbol,side,entry_time,entry_price,quantity,strategy_name,reason,status)
                           VALUES(?,?,?,?,?,?,?,?)""",
                        (sym.replace("/", "").replace(":USDT", ""), side, time.time(), fill_price, qty, strategy,
@@ -189,15 +190,55 @@ def execute_signal(client, state, signal):
 
 
 def process_signals(client, state):
-    """Read signals from engine and execute."""
-    if not os.path.exists(SIGNAL_FILE):
-        return
+    """Read signals from engine AND self-check strategy conditions."""
+    signals = {}
     
+    # 1. Read engine signals
+    if os.path.exists(SIGNAL_FILE):
+        try:
+            with open(SIGNAL_FILE) as f: data = json.load(f)
+            signals.update(data.get("signals", {}))
+        except: pass
+    
+    # 2. Self-check: evaluate enabled strategies independently (faster than engine cycle)
     try:
-        with open(SIGNAL_FILE) as f: data = json.load(f)
-    except: return
-    
-    signals = data.get("signals", {})
+        from strategy.manager import StrategyManager
+        from data.collector import BinanceDataCollector
+        from config.settings import get_config
+        cfg = get_config()
+        collector = BinanceDataCollector(cfg.api_key, cfg.api_secret, cfg.testnet)
+        mgr = StrategyManager.load_from_yaml("config/strategies.yaml")
+        
+        for name in mgr.get_active_strategies():
+            strat = mgr.get_strategy(name)
+            if not strat: continue
+            sym = strat.symbols[0]
+            tf = strat.timeframes[0]
+            
+            # Skip if already have a signal from engine
+            if name in signals: continue
+            
+            df = collector.fetch_current_klines(sym, tf, 300)
+            if df is None or df.empty: continue
+            
+            mgr.feed_data_only(sym, tf, df)
+            sig = strat.generate_signal(sym)
+            
+            if sig and sig.type.name != "HOLD":
+                signals[name] = {
+                    "symbol": sym,
+                    "signal": sig.type.name,
+                    "price": sig.price,
+                    "quantity": sig.quantity or 0.001,
+                    "leverage": sig.leverage or 3,
+                    "strategy": name,
+                    "reason": sig.reason or "",
+                    "sl_pct": sig.stop_loss and (abs(sig.stop_loss - sig.price) / sig.price) or 0.02,
+                    "tp_pct": sig.take_profit and (abs(sig.take_profit - sig.price) / sig.price) or 0.04,
+                    "id": f"{name}_{int(time.time())}",
+                }
+    except Exception as e:
+        logger.error("Self-check error: %s", e)
     executed = set(state.get("executed_signals", []))
     
     for sig_id, signal in signals.items():

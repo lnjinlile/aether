@@ -93,7 +93,7 @@ class BaseStrategy(ABC):
         # Internal state
         self._data: Dict[tuple, pd.DataFrame] = {}
         self._positions: Dict[str, dict] = {}
-        self._indicators: Dict[str, pd.DataFrame] = {}
+        self._indicators: Dict[tuple, pd.DataFrame] = {}
         self._bars_since_last_trade: int = 999  # ready to trade immediately
 
     def feed_data(self, symbol: str, timeframe: str, df: pd.DataFrame):
@@ -186,6 +186,38 @@ class BaseStrategy(ABC):
         if timeframe is None:
             timeframe = self.timeframes[0] if self.timeframes else "15m"
         return self._data.get((symbol, timeframe))
+
+    def _check_ready(
+        self, symbol: str, min_bars: int, timeframe: Optional[str] = None
+    ) -> Optional[Signal]:
+        """Validate that sufficient data is available for signal generation.
+
+        A shared pre-flight check that replaces the duplicated min_bars
+        pattern found in most strategy generate_signal() implementations.
+
+        Args:
+            symbol: Trading symbol
+            min_bars: Minimum number of indicator rows required
+            timeframe: Override the default timeframe (uses self.timeframes[0] if None)
+
+        Returns:
+            None if ready to proceed, or a HOLD Signal if data is insufficient.
+            Callers should early-return the HOLD Signal.
+        """
+        tf = timeframe or self.timeframes[0]
+        key = (symbol, tf)
+        ind = self._indicators.get(key)
+        df = self._data.get(key)
+
+        if ind is None or df is None or len(ind) < min_bars:
+            have = len(ind) if ind is not None else 0
+            return Signal(
+                type=SignalType.HOLD,
+                symbol=symbol,
+                reason=f"Need {min_bars} bars, have {have}",
+                strategy_name=self.name,
+            )
+        return None
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name='{self.name}', symbols={self.symbols})"

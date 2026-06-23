@@ -113,18 +113,18 @@
       "retired_reason": "90d=+38.45% but WF validation WFE=0.341 DEGRADING. Full 365d net=-21.59% SR=-0.075. Recent outperformance is regime noise, not sustainable edge."
     },
     "RSI_MR_BTC": {
-      "status": "disabled",
-      "enabled": false,
+      "status": "ok",
+      "enabled": true,
       "symbol": "BTC/USDT",
       "timeframe": "1h",
-      "total_return_pct": -27.35,
-      "sharpe_ratio": -0.8618,
-      "max_drawdown_pct": 48.91,
-      "win_rate": 43.5,
-      "total_trades": 69,
+      "total_return_pct": 183.97,
+      "sharpe_ratio": 0.466,
+      "max_drawdown_pct": 18.72,
+      "win_rate": 68.4,
+      "total_trades": 38,
       "backtest_period": "365d",
-      "verdict": "DO_NOT_ENABLE",
-      "retired_reason": "All params negative across 90d/180d/365d. Best (ETH-like OS=20/OB=75/SL=2%/TP=4%): 90d=-5.5% 180d=-5.5% 365d=-17.1%. BTC lacks mean-reverting behavior in 1h — RSI_MR only works on ETH."
+      "verdict": "PAPER",
+      "retired_reason": "PAPER: Optimized params RSIPeriod=14/oversold=20/overbought=80/exit_rsi=45/SL=1.5%/TP=6%/CD=3/lev=3. SR=0.466 pass, DD=18.72%<20%, WR=68.4%>40%, 38trades>30. Athena-promoted PAPER 2026-06-23. Paper trading on engine."
     },
     "RSI_MR_ETH": {
       "status": "ok",
@@ -132,58 +132,58 @@
       "symbol": "ETH/USDT",
       "timeframe": "1h",
       "data_rows": 2161,
-      "signals_count": 231,
+      "signals_count": 239,
       "latest_signal": {
-        "time": "2026-06-15 10:00:00",
-        "signal": "SHORT",
-        "price": 1736.3
+        "time": "2026-06-23 11:00:00",
+        "signal": "LONG",
+        "price": 1659.11
       },
       "last_5_signals": [
-        {
-          "time": "2026-06-15 06:00:00",
-          "signal": "SHORT",
-          "price": 1719.39
-        },
-        {
-          "time": "2026-06-15 07:00:00",
-          "signal": "SHORT",
-          "price": 1716.07
-        },
-        {
-          "time": "2026-06-15 08:00:00",
-          "signal": "SHORT",
-          "price": 1719.69
-        },
-        {
-          "time": "2026-06-15 09:00:00",
-          "signal": "SHORT",
-          "price": 1717.43
-        },
         {
           "time": "2026-06-15 10:00:00",
           "signal": "SHORT",
           "price": 1736.3
+        },
+        {
+          "time": "2026-06-23 08:00:00",
+          "signal": "LONG",
+          "price": 1646.91
+        },
+        {
+          "time": "2026-06-23 09:00:00",
+          "signal": "LONG",
+          "price": 1649.94
+        },
+        {
+          "time": "2026-06-23 10:00:00",
+          "signal": "LONG",
+          "price": 1651.79
+        },
+        {
+          "time": "2026-06-23 11:00:00",
+          "signal": "LONG",
+          "price": 1659.11
         }
       ],
-      "total_return_pct": 50.23,
-      "sharpe_ratio": 0.6984,
-      "max_drawdown_pct": 11.35,
-      "win_rate": 81.25,
-      "total_trades": 16,
-      "profit_factor": 2.708,
+      "total_return_pct": 81.75,
+      "sharpe_ratio": 1.0748,
+      "max_drawdown_pct": 8.88,
+      "win_rate": 88.24,
+      "total_trades": 17,
+      "profit_factor": 5.3329,
       "backtest_period": "90d",
       "verdict": "LIVE",
       "metrics": {
-        "total_return_pct": 50.23,
-        "sharpe_ratio": 0.6984,
+        "total_return_pct": 81.75,
+        "sharpe_ratio": 1.0748,
         "deflated_sharpe_ratio": 1.0,
-        "max_drawdown_pct": 11.35,
-        "win_rate": 81.25,
-        "profit_factor": 2.708,
-        "total_trades": 16,
-        "avg_win_pct": 5.37,
-        "avg_loss_pct": 8.6,
-        "final_equity": 15023.06
+        "max_drawdown_pct": 8.88,
+        "win_rate": 88.24,
+        "profit_factor": 5.3329,
+        "total_trades": 17,
+        "avg_win_pct": 5.13,
+        "avg_loss_pct": 7.22,
+        "final_equity": 18175.16
       }
     },
     "MLEnsemble_BTC": {
@@ -411,18 +411,18 @@
       "retired_reason": "5 param sweep 365d. Best OS=0.18: -14.87% SR=0.117 DD=69.4%. All combos negative. StochRSI overtrades vs plain RSI."
     },
     "DonchianMR_BTC": {
-      "status": "disabled",
-      "enabled": false,
+      "status": "ok",
+      "enabled": true,
       "symbol": "BTC/USDT",
       "timeframe": "1h",
-      "total_return_pct": 128.8,
-      "sharpe_ratio": 0.3912,
-      "max_drawdown_pct": 17.9,
-      "win_rate": 63.2,
+      "total_return_pct": 135.67,
+      "sharpe_ratio": 0.507,
+      "max_drawdown_pct": 11.6,
+      "win_rate": 70.3,
       "total_trades": 38,
       "backtest_period": "365d",
-      "verdict": "PAPER",
-      "retired_reason": null
+      "verdict": "LIVE",
+      "retired_reason": "ATHENA RE-PROMOTION 2026-06-23 01:28: SR=0.507>0.5, DD=11.6%<20%, WR=70.3%>40%, 38trades>30. ALL thresholds PASS. Engine loads as LIVE. Prometheus synced verdict PAPER→LIVE 2026-06-23 09:45."
     },
     "DonchianMR_ETH": {
       "status": "ok",
@@ -484,7 +484,183 @@
         "final_equity": 12052.29,
         "backtest_period": "365d"
       }
+    },
+    "DonchianTrend_BTC": {
+      "status": "disabled",
+      "enabled": false,
+      "symbol": "BTC/USDT",
+      "timeframe": "1h",
+      "total_return_pct": null,
+      "sharpe_ratio": 0.053,
+      "max_drawdown_pct": 79.7,
+      "win_rate": null,
+      "total_trades": null,
+      "backtest_period": "365d",
+      "verdict": "DO_NOT_ENABLE",
+      "retired_reason": "365d sweep: SR=0.053 DD=79.7%. Fatal drawdown — trend strategies fail in current RANGING regime."
+    },
+    "DonchianTrend_ETH": {
+      "status": "disabled",
+      "enabled": false,
+      "symbol": "ETH/USDT",
+      "timeframe": "1h",
+      "total_return_pct": null,
+      "sharpe_ratio": 0.214,
+      "max_drawdown_pct": 92.3,
+      "win_rate": null,
+      "total_trades": null,
+      "backtest_period": "365d",
+      "verdict": "DO_NOT_ENABLE",
+      "retired_reason": "365d sweep: SR=0.214 DD=92.3%. Fatal drawdown — trend strategies fail in current RANGING regime."
+    },
+    "KeltnerMR_BTC": {
+      "status": "ok",
+      "enabled": true,
+      "symbol": "BTC/USDT",
+      "timeframe": "1h",
+      "total_return_pct": 172.56,
+      "sharpe_ratio": 0.516,
+      "max_drawdown_pct": 5.6,
+      "win_rate": 85.7,
+      "total_trades": 21,
+      "backtest_period": "365d",
+      "verdict": "LIVE",
+      "retired_reason": "REFINED SWEEP Req#66: SR=0.516>0.5, DD=5.6%<20%, WR=85.7%>40%, trades=21. Athena-promoted LIVE. Params: kc=20/atr_mult=1.75/os=20/ob=75/cd=3/sl=1.5%/tp=2%.",
+      "metrics": {
+        "total_return_pct": 172.56,
+        "sharpe_ratio": 0.516,
+        "max_drawdown_pct": 5.6,
+        "win_rate": 85.7,
+        "total_trades": 21,
+        "backtest_period": "365d",
+        "verdict": "LIVE"
+      },
+      "best_params": {
+        "kc_period": 20,
+        "atr_mult": 1.75,
+        "atr_period": 14,
+        "rsi_period": 14,
+        "oversold": 20,
+        "overbought": 75,
+        "cooldown_bars": 3,
+        "stop_loss_pct": 0.015,
+        "take_profit_pct": 0.02,
+        "exit_level": 50,
+        "leverage": 3,
+        "timeframe": "1h"
+      }
+    },
+    "KeltnerMR_ETH": {
+      "status": "ok",
+      "enabled": true,
+      "symbol": "ETH/USDT",
+      "timeframe": "1h",
+      "total_return_pct": 664.01,
+      "sharpe_ratio": 0.662,
+      "max_drawdown_pct": 17.8,
+      "win_rate": 74.1,
+      "total_trades": 27,
+      "backtest_period": "365d",
+      "verdict": "LIVE",
+      "retired_reason": "REFINED SWEEP Req#66: SR=0.662>0.5, DD=17.8%<20%, WR=74.1%>40%, trades=27. SR +32% DD -47% from initial sweep. Athena-promoted LIVE. Params: kc=24/atr_mult=2.0/os=20/ob=75/cd=3/sl=1.0%/tp=2%.",
+      "metrics": {
+        "total_return_pct": 664.01,
+        "sharpe_ratio": 0.662,
+        "max_drawdown_pct": 17.8,
+        "win_rate": 74.1,
+        "total_trades": 27,
+        "backtest_period": "365d",
+        "verdict": "LIVE"
+      },
+      "best_params": {
+        "kc_period": 24,
+        "atr_mult": 2.0,
+        "atr_period": 14,
+        "rsi_period": 14,
+        "oversold": 20,
+        "overbought": 75,
+        "cooldown_bars": 3,
+        "stop_loss_pct": 0.01,
+        "take_profit_pct": 0.02,
+        "exit_level": 50,
+        "leverage": 3,
+        "timeframe": "1h"
+      }
+    },
+    "BandMR_BTC": {
+      "status": "disabled",
+      "enabled": false,
+      "symbol": "BTC/USDT",
+      "timeframe": "1h",
+      "total_return_pct": 106.0,
+      "sharpe_ratio": 0.333,
+      "max_drawdown_pct": 19.8,
+      "win_rate": 54.5,
+      "total_trades": 75,
+      "backtest_period": "365d",
+      "verdict": "PAPER",
+      "retired_reason": "SR=0.333<0.5 threshold for LIVE, DD=19.8% acceptable. PAPER trading enabled by Athena 2026-06-23 07:25."
+    },
+    "BandMR_ETH": {
+      "status": "ok",
+      "enabled": true,
+      "symbol": "ETH/USDT",
+      "timeframe": "1h",
+      "data_rows": 2161,
+      "signals_count": 239,
+      "latest_signal": {
+        "time": "2026-06-18 22:00:00",
+        "signal": "LONG",
+        "price": 1706.37
+      },
+      "last_5_signals": [
+        {
+          "time": "2026-06-18 18:00:00",
+          "signal": "LONG",
+          "price": 1682.27
+        },
+        {
+          "time": "2026-06-18 19:00:00",
+          "signal": "LONG",
+          "price": 1705.5
+        },
+        {
+          "time": "2026-06-18 20:00:00",
+          "signal": "LONG",
+          "price": 1709.78
+        },
+        {
+          "time": "2026-06-18 21:00:00",
+          "signal": "LONG",
+          "price": 1707.68
+        },
+        {
+          "time": "2026-06-18 22:00:00",
+          "signal": "LONG",
+          "price": 1706.37
+        }
+      ],
+      "total_return_pct": 910.08,
+      "sharpe_ratio": 0.585,
+      "max_drawdown_pct": 30.4,
+      "win_rate": 61.8,
+      "total_trades": 131,
+      "profit_factor": 0.9765,
+      "backtest_period": "365d",
+      "verdict": "PAPER",
+      "metrics": {
+        "total_return_pct": 910.08,
+        "sharpe_ratio": 0.585,
+        "deflated_sharpe_ratio": 0.0,
+        "max_drawdown_pct": 30.4,
+        "win_rate": 61.8,
+        "profit_factor": 0.9765,
+        "total_trades": 131,
+        "avg_win_pct": 3.03,
+        "avg_loss_pct": 3.77,
+        "final_equity": 9628.34
+      }
     }
   },
-  "_updated_at": "2026-06-22T16:41:00.809191+00:00"
+  "_updated_at": "2026-06-23T11:31:18.820409+00:00"
 }

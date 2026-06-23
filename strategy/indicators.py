@@ -13,6 +13,15 @@ import numpy as np
 def compute_rsi(close: pd.Series, period: int = 14) -> pd.Series:
     """Compute RSI (Relative Strength Index) using Wilder's smoothing.
 
+    ⚠️  CANONICAL METHOD — this is the single authoritative RSI implementation
+    for the entire Aether system. ALL consumers (strategy engine, backtests,
+    signal generators, ML features, patrol diagnostics) MUST use Wilder's EWM
+    smoothing (alpha=1/period). 
+
+    DO NOT use SMA-based RSI (rolling(window=period).mean()) — it produces
+    values that diverge by 8-12 points from Wilder's method, causing false
+    signal/no-signal discrepancies between system components.
+
     Args:
         close: Series of closing prices
         period: RSI lookback period (default 14)

@@ -94,6 +94,97 @@ def cmd_read_bulletin(lines):
     print("".join(all_lines[-int(lines):]))
 
 
+def cmd_check_oracle_config():
+    """检查 oracle.json 与 strategies.yaml 策略一致性。PAPER策略由pipeline.py排除属正常。「Unknown」修复 — PERF-020"""
+    import yaml
+    oracle_path = os.path.join(BASE, "oracle.json")
+    yaml_path = os.path.join(BASE, "..", "config", "strategies.yaml")
+    try:
+        oracle = load_json(oracle_path)
+        o_enabled = set(oracle.get("strategies_enabled", []))
+    except Exception as e:
+        print(f"ORACLE_JSON_ERROR: {e}")
+        return
+    try:
+        with open(yaml_path) as f:
+            yaml_cfg = yaml.safe_load(f)
+        y_enabled = {s["name"] for s in yaml_cfg.get("strategies", []) if s.get("enabled", False)}
+    except Exception as e:
+        print(f"YAML_ERROR: {e}")
+        return
+    # Cross-check athena.json/backtest_results.json for PAPER strategies excluded by pipeline.py
+    paper_excluded = set()
+    try:
+        athena_path = os.path.join(STATE_DIR, "athena.json")
+        bt_path = os.path.join(STATE_DIR, "backtest_results.json")
+        for _path in [athena_path, bt_path]:
+            try:
+                with open(_path) as _f:
+                    _data = json.load(_f)
+                _strats = _data.get("strategies", {})
+                for _name in y_enabled:
+                    _s = _strats.get(_name, {})
+                    _v = _s.get("verdict", "")
+                    if _v in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED"):
+                        paper_excluded.add(_name)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    # Effective yaml enabled = y_enabled minus paper-excluded
+    y_effective = y_enabled - paper_excluded
+    if o_enabled == y_effective:
+        if paper_excluded:
+            print(f"CONFIG_CONSISTENT: {sorted(o_enabled)} (PAPER excluded: {sorted(paper_excluded)})")
+        else:
+            print(f"CONFIG_CONSISTENT: {sorted(o_enabled)}")
+        return
+    only_o = o_enabled - y_effective
+    only_y = y_effective - o_enabled
+    if only_o:
+        print(f"ORACLE_ONLY: {sorted(only_o)}")
+    if only_y:
+        print(f"YAML_ONLY: {sorted(only_y)}")
+    if paper_excluded:
+        print(f"PAPER_EXCLUDED: {sorted(paper_excluded)}")
+    print(f"CONFIG_MISMATCH: oracle={sorted(o_enabled)} yaml_effective={sorted(y_effective)}")
+
+
+def cmd_check_positions():
+    """检查 mercury.json 活跃仓位摘要。快速巡检用 — PERF-020"""
+    mercury_path = os.path.join(STATE_DIR, "mercury.json")
+    try:
+        mercury = load_json(mercury_path)
+    except Exception as e:
+        print(f"MERCURY_STATE_ERROR: {e}")
+        return
+    positions = mercury.get("positions", 0)
+    active = mercury.get("active_strategies", {})
+    orders = mercury.get("orders", [])
+    if isinstance(positions, int):
+        pos_count = positions
+    elif isinstance(positions, dict):
+        pos_count = len(positions)
+    elif isinstance(positions, list):
+        pos_count = len(positions)
+    else:
+        pos_count = 0
+    if pos_count == 0 and (not orders or (isinstance(orders, list) and len(orders) == 0)):
+        print("NO_POSITIONS: 无持仓 无挂单")
+    if isinstance(positions, dict):
+        for sym, pos in positions.items():
+            print(f"POSITION|{sym}|{pos.get('side','?')}|{pos.get('quantity',0)}|entry={pos.get('entry_price',0)}")
+    elif isinstance(positions, list):
+        for pos in positions:
+            print(f"POSITION|{pos.get('symbol','?')}|{pos.get('side','?')}|{pos.get('quantity',0)}")
+    for strat, state in active.items():
+        sig = state.get("signal", "NONE") if isinstance(state, dict) else "?"
+        status = state.get("status", "?") if isinstance(state, dict) else str(state)
+        print(f"STRATEGY|{strat}|{status}|signal={sig}")
+    if isinstance(orders, list) and len(orders) > 0:
+        print(f"ORDERS_PENDING: {len(orders)}")
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: platform.py <cmd> [args...]")
@@ -106,4 +197,6 @@ if __name__ == "__main__":
     elif cmd == "write-state": cmd_write_state(sys.argv[2], sys.argv[3])
     elif cmd == "read-state": cmd_read_state(sys.argv[2])
     elif cmd == "read-bulletin": cmd_read_bulletin(sys.argv[2])
+    elif cmd == "check-oracle-config": cmd_check_oracle_config()
+    elif cmd == "check-positions": cmd_check_positions()
     else: print(f"Unknown: {cmd}")

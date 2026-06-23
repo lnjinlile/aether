@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
 """扩展数据采集: 订单簿 + 资金费率 + 持仓量 + 多空比 + 主动买卖量"""
-import os, sys, json, sqlite3, time, logging
+import os, sys, json, sqlite3, time, logging, signal
+from logging.handlers import RotatingFileHandler
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [DATA+] %(message)s")
+LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "data_ext.log")
+
+def setup_logging():
+    """Setup rotating file logger so shell redirect breakage doesn't silence logs."""
+    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+    handler = RotatingFileHandler(LOG_FILE, maxBytes=10*1024*1024, backupCount=5)
+    handler.setFormatter(logging.Formatter("%(asctime)s [DATA+] %(message)s"))
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.handlers.clear()
+    root.addHandler(handler)
+
+setup_logging()
 logger = logging.getLogger("data_ext")
 
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "market.db")

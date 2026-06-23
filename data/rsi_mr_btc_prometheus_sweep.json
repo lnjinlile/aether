@@ -1,0 +1,73 @@
+{
+  "date": "2026-06-23T01:46:00Z",
+  "agent": "prometheus",
+  "symbol": "BTC/USDT",
+  "timeframe": "1h",
+  "lookback": "365d",
+  "total_combos": 486,
+  "elapsed_sec": 2.7,
+  "param_grid": "rsi[14] x os[18,20,22] x ob[78,80,82] x exit[40,45,50] x sl[1%,1.5%,2%] x tp[5%,6%,7%] x cd[3,5] x lev[3]",
+  "best": {
+    "rsi_p": 14,
+    "os": 20,
+    "ob": 80,
+    "exit": 40,
+    "sl": 0.015,
+    "tp": 0.06,
+    "cd": 3,
+    "lev": 3,
+    "sharpe": 0.446,
+    "dd": 6.5,
+    "ret": 46.4,
+    "wr": 64.1,
+    "trades": 39
+  },
+  "best_note": "SR=0.446 ceiling. Cannot reach 0.5 threshold. exit_rsi=40 is key improvement over current exit=45.",
+  "sr_05_count": 0,
+  "verdict": "DO_NOT_PROMOTE \u2014 SR ceiling ~0.45, cannot reach 0.5 LIVE threshold. Strategy remains strong PAPER candidate.",
+  "top_5": [
+    {
+      "rsi_p": 14,
+      "os": 20,
+      "ob": 80,
+      "exit": 40,
+      "sl": 0.015,
+      "tp": 0.06,
+      "cd": 3,
+      "lev": 3,
+      "sharpe": 0.446,
+      "dd": 6.5,
+      "ret": 46.4,
+      "wr": 64.1,
+      "trades": 39
+    },
+    {
+      "rsi_p": 14,
+      "os": 20,
+      "ob": 80,
+      "exit": 40,
+      "sl": 0.015,
+      "tp": 0.05,
+      "cd": 3,
+      "lev": 3,
+      "sharpe": 0.445,
+      "dd": 6.5,
+      "ret": 45.8,
+      "wr": 64.1,
+      "trades": 39
+    }
+  ],
+  "current_vs_best": {
+    "current": {
+      "sharpe": 0.422,
+      "dd": 6.8,
+      "exit_rsi": 45
+    },
+    "best": {
+      "sharpe": 0.446,
+      "dd": 6.5,
+      "exit_rsi": 40
+    },
+    "improvement": "+5.7% Sharpe, exit_rsi 45\u219240 reduces whipsaw"
+  }
+}

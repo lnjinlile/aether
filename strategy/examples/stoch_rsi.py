@@ -147,22 +147,10 @@ class StochRSIMeanReversionStrategy(BaseStrategy):
             + self.params["smooth_d"]
             + 5
         )
-        if ind is None or len(ind) < min_bars:
-            return Signal(
-                type=SignalType.HOLD,
-                symbol=symbol,
-                reason="Insufficient data for StochRSI calculation",
-                strategy_name=self.name,
-            )
+        if (early := self._check_ready(symbol, min_bars)):
+            return early
 
         df = self._data.get(key)
-        if df is None:
-            return Signal(
-                type=SignalType.HOLD,
-                symbol=symbol,
-                reason="No data",
-                strategy_name=self.name,
-            )
 
         self._bars_since_last_trade += 1
 

@@ -12,6 +12,7 @@ import json, os, sys, time, logging
 from datetime import datetime, timezone, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from data.db import get_market_db  # PERF-074: shared WAL + busy_timeout helper
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [RISK] %(message)s")
 logger = logging.getLogger("risk_monitor")
@@ -97,7 +98,7 @@ def check():
 
 
 def load_daily_pnl():
-    conn = sqlite3.connect(os.path.join(BASE, "data", "market.db"))
+    conn = get_market_db(os.path.join(BASE, "data", "market.db"))
     today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0).timestamp()
     pnl = conn.execute(
         "SELECT COALESCE(SUM(pnl),0) FROM trades_log WHERE exit_time > ? AND pnl IS NOT NULL",
@@ -108,7 +109,6 @@ def load_daily_pnl():
 
 
 if __name__ == "__main__":
-    import sqlite3
     logger.info("Risk Monitor started — interval=%ds", INTERVAL)
     
     # Ensure fresh state

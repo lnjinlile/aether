@@ -1,0 +1,8 @@
+{
+  "max_leverage": 10,
+  "risk_per_trade": 0.02,
+  "max_positions": 5,
+  "max_per_symbol_pct": 0.15,
+  "kelly_fraction": 0.35,
+  "_reason": "NORMAL tuning: best_sharpe=1.0547 best_wr=0.875"
+}

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Aether 四项防御措施 + 杠杆数据核对"""
-import json, os, sqlite3, sys
+import json, os, sys
 from datetime import datetime, timezone
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATE_DIR = os.path.join(BASE, ".aether", "state")
+from data.db import get_market_db  # PERF-074: shared WAL + busy_timeout helper
 
 def load_json(path):
     if not os.path.exists(path): return {}
@@ -108,7 +109,7 @@ def check_engine_health():
 # ===== 4. 交易数据完整性检查 =====
 def check_trade_integrity():
     """Verify trades_log has proper exit prices and PnL."""
-    conn = sqlite3.connect(os.path.join(BASE, "data", "market.db"))
+    conn = get_market_db(os.path.join(BASE, "data", "market.db"))
     
     # Check for suspicious closed trades
     bad = conn.execute(

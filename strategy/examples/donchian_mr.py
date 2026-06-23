@@ -103,10 +103,8 @@ class DonchianMRStrategy(BaseStrategy):
         df = self._data.get(key)
 
         min_bars = max(self.params["donchian_period"], self.params["rsi_period"]) + 5
-        if ind is None or df is None or len(ind) < min_bars:
-            return Signal(SignalType.HOLD, symbol,
-                          reason=f"Need {min_bars} bars, have {len(ind) if ind is not None else 0}",
-                          strategy_name=self.name)
+        if (early := self._check_ready(symbol, min_bars)):
+            return early
 
         self._bars_since_last_trade += 1
         latest = ind.iloc[-1]
@@ -145,7 +143,9 @@ class DonchianMRStrategy(BaseStrategy):
         dc_mid = float(latest.get("dc_mid", 0))
 
         # 做多: 跌破下轨 + RSI超卖确认
-        if latest.get("break_lower", False) and rsi < self.params["oversold"]:
+        # Use sustained condition (price < dc_lower) instead of break_lower
+        # to handle engine restarts where the break happened before startup.
+        if price < dc_lower and rsi < self.params["oversold"]:
             self._bars_since_last_trade = 0
             sl = price * (1.0 - sl_pct)
             tp = price * (1.0 + tp_pct)
@@ -158,7 +158,8 @@ class DonchianMRStrategy(BaseStrategy):
                           timestamp=df.index[-1])
 
         # 做空: 突破上轨 + RSI超买确认
-        if latest.get("break_upper", False) and rsi > self.params["overbought"]:
+        # Use sustained condition (price > dc_upper) instead of break_upper
+        if price > dc_upper and rsi > self.params["overbought"]:
             self._bars_since_last_trade = 0
             sl = price * (1.0 + sl_pct)
             tp = price * (1.0 - tp_pct)

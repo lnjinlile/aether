@@ -7,6 +7,8 @@ from .momentum import MomentumStrategy
 from .trend_pullback import TrendPullback
 from .vol_breakout import VolBreakoutStrategy
 from .supertrend import SupertrendStrategy
+from .donchian_trend import DonchianTrendStrategy
+from .band_mr import BandMRStrategy
 
 __all__ = [
     "MACrossoverStrategy",
@@ -18,4 +20,6 @@ __all__ = [
     "TrendPullback",
     "VolBreakoutStrategy",
     "SupertrendStrategy",
+    "DonchianTrendStrategy",
+    "BandMRStrategy",
 ]

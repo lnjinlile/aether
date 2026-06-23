@@ -1,0 +1,170 @@
+{
+  "date": "2026-06-22T17:44:47Z",
+  "symbol": "BTC/USDT",
+  "timeframe": "1h",
+  "horizon": "365d",
+  "total_combos": 108,
+  "elapsed_sec": 6.4,
+  "param_grid": {
+    "donchian_period": [
+      30,
+      40,
+      50,
+      60
+    ],
+    "oversold": [
+      20,
+      25,
+      30
+    ],
+    "overbought": [
+      70,
+      75,
+      80
+    ],
+    "cooldown_bars": [
+      3,
+      5,
+      8
+    ]
+  },
+  "fixed_params": "rsi_period=14, exit_level=50, sl=2.0%, tp=4.0%, lev=3x",
+  "criteria": "SR>=0.5, DD<=20%, WR>=40%, trades>=30, return>0",
+  "passing_count": 0,
+  "verdict": "DO_NOT_ENABLE",
+  "best": {
+    "donchian_period": 30,
+    "oversold": 20,
+    "overbought": 80,
+    "cooldown_bars": 5,
+    "net_pct": 135.67,
+    "sharpe": 0.3707,
+    "dd_pct": 26.73,
+    "wr_pct": 70.3,
+    "trades": 37,
+    "pf": 2.2972
+  },
+  "passing": [],
+  "top_10_by_sharpe": [
+    {
+      "donchian_period": 30,
+      "oversold": 20,
+      "overbought": 80,
+      "cooldown_bars": 5,
+      "net_pct": 135.67,
+      "sharpe": 0.3707,
+      "dd_pct": 26.73,
+      "wr_pct": 70.3,
+      "trades": 37,
+      "pf": 2.2972
+    },
+    {
+      "donchian_period": 30,
+      "oversold": 20,
+      "overbought": 80,
+      "cooldown_bars": 3,
+      "net_pct": 112.28,
+      "sharpe": 0.3308,
+      "dd_pct": 26.73,
+      "wr_pct": 68.4,
+      "trades": 38,
+      "pf": 2.0677
+    },
+    {
+      "donchian_period": 30,
+      "oversold": 20,
+      "overbought": 80,
+      "cooldown_bars": 8,
+      "net_pct": 94.01,
+      "sharpe": 0.3096,
+      "dd_pct": 29.4,
+      "wr_pct": 68.6,
+      "trades": 35,
+      "pf": 2.0257
+    },
+    {
+      "donchian_period": 40,
+      "oversold": 20,
+      "overbought": 80,
+      "cooldown_bars": 5,
+      "net_pct": 78.03,
+      "sharpe": 0.2671,
+      "dd_pct": 26.73,
+      "wr_pct": 64.9,
+      "trades": 37,
+      "pf": 1.7896
+    },
+    {
+      "donchian_period": 50,
+      "oversold": 20,
+      "overbought": 80,
+      "cooldown_bars": 5,
+      "net_pct": 78.03,
+      "sharpe": 0.2671,
+      "dd_pct": 26.73,
+      "wr_pct": 64.9,
+      "trades": 37,
+      "pf": 1.7896
+    },
+    {
+      "donchian_period": 60,
+      "oversold": 20,
+      "overbought": 80,
+      "cooldown_bars": 5,
+      "net_pct": 78.03,
+      "sharpe": 0.2671,
+      "dd_pct": 26.73,
+      "wr_pct": 64.9,
+      "trades": 37,
+      "pf": 1.7896
+    },
+    {
+      "donchian_period": 30,
+      "oversold": 20,
+      "overbought": 75,
+      "cooldown_bars": 5,
+      "net_pct": 80.04,
+      "sharpe": 0.2596,
+      "dd_pct": 34.64,
+      "wr_pct": 66.7,
+      "trades": 57,
+      "pf": 1.5648
+    },
+    {
+      "donchian_period": 40,
+      "oversold": 20,
+      "overbought": 80,
+      "cooldown_bars": 3,
+      "net_pct": 60.36,
+      "sharpe": 0.2275,
+      "dd_pct": 26.73,
+      "wr_pct": 63.2,
+      "trades": 38,
+      "pf": 1.6282
+    },
+    {
+      "donchian_period": 50,
+      "oversold": 20,
+      "overbought": 80,
+      "cooldown_bars": 3,
+      "net_pct": 60.36,
+      "sharpe": 0.2275,
+      "dd_pct": 26.73,
+      "wr_pct": 63.2,
+      "trades": 38,
+      "pf": 1.6282
+    },
+    {
+      "donchian_period": 60,
+      "oversold": 20,
+      "overbought": 80,
+      "cooldown_bars": 3,
+      "net_pct": 60.36,
+      "sharpe": 0.2275,
+      "dd_pct": 26.73,
+      "wr_pct": 63.2,
+      "trades": 38,
+      "pf": 1.6282
+    }
+  ]
+}

@@ -38,6 +38,8 @@ class MarketStorage:
     def _get_conn(self) -> sqlite3.Connection:
         """Create and return a new SQLite connection."""
         conn = sqlite3.connect(self.db_path)
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")  # safe with WAL, better perf
         conn.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access
         conn.row_factory = sqlite3.Row
         return conn
@@ -433,13 +435,18 @@ class MarketStorage:
             db_size_bytes = os.path.getsize(self.db_path) if os.path.exists(self.db_path) else 0
             db_size_mb = round(db_size_bytes / (1024 * 1024), 2)
 
-            # Row counts per table
+            # Row counts per table (all market data tables)
             tables = {}
-            for table in ("klines", "trades_log"):
-                row = conn.execute(
-                    f"SELECT COUNT(*) as cnt FROM {table}"
-                ).fetchone()
-                tables[table] = row["cnt"] if row else 0
+            for table in ("klines", "trades_log", "funding_rates", "open_interest",
+                          "orderbook_snapshots", "order_flow", "long_short_ratio",
+                          "taker_volume"):
+                try:
+                    row = conn.execute(
+                        f"SELECT COUNT(*) as cnt FROM {table}"
+                    ).fetchone()
+                    tables[table] = row["cnt"] if row else 0
+                except Exception:
+                    tables[table] = -1  # table doesn't exist
 
             return {
                 "db_size_bytes": db_size_bytes,

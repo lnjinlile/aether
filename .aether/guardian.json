@@ -1,48 +1,67 @@
 {
   "status": "ok",
-  "timestamp": "2026-06-21T15:23:51Z",
+  "timestamp": "2026-06-23T08:30:00Z",
   "overall": "GREEN",
+  "risk_level": "NORMAL",
   "account": {
-    "total_wallet_balance": 4995.57,
-    "total_margin_balance": 4995.57,
-    "available_balance": 4983.95,
-    "unrealized_pnl": 0.06,
-    "margin_used": 11.62,
-    "margin_utilization_pct": 0.23,
-    "position_exposure_pct": 1.2,
-    "effective_leverage": 0.012
+    "total_wallet_balance": 4995.42,
+    "total_margin_balance": 4995.42,
+    "available_balance": 4995.42,
+    "unrealized_pnl": 0.0,
+    "margin_used": 0.0,
+    "margin_utilization_pct": 0.0,
+    "position_exposure_pct": 0.0,
+    "effective_leverage": 0.0
   },
-  "positions": [
-    {
-      "symbol": "BTCUSDT",
-      "side": "LONG",
-      "contracts": 0.0009,
-      "entry_price": 64099.9,
-      "mark_price": 64166.82,
-      "unrealized_pnl": 0.06,
-      "unrealized_pnl_pct": 0.1,
-      "liquidation_price": 51462.31,
-      "liq_distance_pct": 19.8,
-      "leverage": 1,
-      "margin_type": "isolated",
-      "notional": 57.75,
-      "initial_margin": 11.62
-    }
-  ],
+  "positions": [],
+  "positions_count": 0,
+  "open_orders": 0,
+  "total_notional": 0.0,
   "risk_metrics": {
-    "liquidation_distance_pct": 19.8,
+    "liquidation_distance_pct": null,
     "liquidation_threshold": 5.0,
-    "liquidation_status": "OK",
-    "margin_utilization_pct": 0.23,
+    "liquidation_status": "N/A (no positions)",
+    "margin_utilization_pct": 0.0,
     "margin_utilization_limit": 80.0,
     "margin_utilization_status": "OK",
-    "position_exposure_pct": 1.2,
+    "position_exposure_pct": 0.0,
     "position_exposure_limit": 80.0,
     "position_exposure_status": "OK",
-    "effective_leverage": 0.012,
+    "effective_leverage": 0.0,
     "open_orders": 0,
     "overall_status": "GREEN"
   },
+  "risk_params": {
+    "risk_per_trade": 0.02,
+    "kelly_fraction": 0.35,
+    "max_leverage": 10,
+    "max_positions": 5,
+    "max_per_symbol_pct": 0.15,
+    "_tuning_source": "NORMAL auto-tuning from prometheus data",
+    "_tuning_input": "best_sharpe=1.0547(RSI_MR_ETH) best_wr=87.5%",
+    "_tuning_rule": "SR>1.0→risk=2%, WR>55%→kelly=35%"
+  },
+  "prometheus_snapshot": {
+    "best_sharpe": 1.0547,
+    "best_sharpe_strategy": "RSI_MR_ETH",
+    "best_win_rate": 87.5,
+    "best_win_rate_strategy": "RSI_MR_ETH",
+    "live_strategies_metrics": {
+      "RSI_MR_ETH": {"sharpe": 1.0547, "wr": 87.5, "dd": 8.88, "trades": 16},
+      "DonchianMR_ETH": {"sharpe": 0.552, "wr": 72.0, "dd": 16.21, "trades": 50},
+      "DonchianMR_BTC": {"sharpe": 0.507, "wr": 70.3, "dd": 11.6, "trades": 38},
+      "KeltnerMR_BTC": {"sharpe": null, "wr": null, "note": "不在 prometheus.json 中"},
+      "KeltnerMR_ETH": {"sharpe": null, "wr": null, "note": "不在 prometheus.json 中"}
+    },
+    "paper_strategies_metrics": {
+      "RSI_MR_BTC": {"sharpe": -0.8618, "wr": 43.5, "dd": 48.91, "trades": 69},
+      "BandMR_BTC": {"sharpe": null, "wr": null, "note": "不在 prometheus.json 中"},
+      "BandMR_ETH": {"sharpe": null, "wr": null, "note": "不在 prometheus.json 中"}
+    },
+    "refreshed_at": "2026-06-23T08:30:00Z",
+    "source": "prometheus.json (_updated_at=2026-06-23T06:05:46)"
+  },
   "alerts": [],
-  "notes": ""
+  "action": "AUDIT-101修复: (1) 补充prometheus_snapshot字段含best_sharpe=1.0547(RSI_MR_ETH); (2) 账户状态刷新(0持仓/0挂单/余额$4,995.42, 之前6/21快照残留BTC持仓已清理); (3) NORMAL自动调参: risk_per_trade=2%, kelly=35%",
+  "notes": "AUDIT-101 根因: 前次 Guardian 08:14 称刷新 prometheus_snapshot 但未写入 guardian.json。本次实际写入完整快照。注: KeltnerMR_BTC/ETH、BandMR_BTC/ETH 四个策略尚不在 prometheus.json 的策略指标列表中 → 提请 Prometheus 补充。"
 }

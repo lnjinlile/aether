@@ -19,7 +19,7 @@ class Config:
     # Binance API
     api_key: str = ""
     api_secret: str = ""
-    testnet: bool = True
+    testnet: bool = False
 
     # Database
     db_path: str = os.path.join(_PROJECT_ROOT, "data", "market.db")

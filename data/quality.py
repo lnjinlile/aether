@@ -1,346 +1,205 @@
 #!/usr/bin/env python3
-"""
-数据质量自动检测模块。
-检查 klines 数据的新鲜度、连续性、完整性。
-可供 pipeline.py 或独立脚本调用。
-"""
-import sqlite3
-import time
-import logging
-from typing import Dict, List, Tuple, Optional
+"""Oracle 数据质量检测工具 — 供 cron 和 pipeline 调用"""
+import time, os, sys, json
+from collections import defaultdict
+from datetime import datetime, timezone
 
-logger = logging.getLogger("data.quality")
+# Ensure project root is on path so we can import data.db
+_PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _PROJ_ROOT not in sys.path:
+    sys.path.insert(0, _PROJ_ROOT)
 
-# 各 timeframe 的 K 线持续时间（分钟）和允许的额外延迟
-TIMEFRAME_DURATION_MIN = {
-    "1m": 1,
-    "15m": 15,
-    "1h": 60,
-    "4h": 240,
-    "1d": 1440,
-}
-# 蜡烛闭合后允许的最大额外延迟（分钟）
-MAX_EXTRA_DELAY_MIN = {
-    "1m": 3,
-    "15m": 8,
-    "1h": 15,
-    "4h": 30,
-    "1d": 120,
+from data.db import get_market_db  # PERF-013: shared WAL + busy_timeout helper
+
+DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "market.db")
+AETHER_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aether.db")
+
+# 各时间框架的可接受延迟（分钟）
+# 允许最多丢失 1 根 K 线：即预期间隔 * 2
+# 15m: 30min, 1h: 120min, 4h: 480min, 1d: 2880min(48h)
+ACCEPTABLE_DELAY = {
+    "15m": 30,
+    "1h": 120,
+    "4h": 480,
+    "1d": 2880,
 }
 
-# 各 timeframe 每个 symbol 的最小预期 bar 数（365天）
-MIN_BARS = {
-    "15m": 28000,
-    "1h": 7000,
-    "4h": 1750,
-    "1d": 290,
+def check_freshness(conn, now_ts=None):
+    """检查各 symbol/timeframe 最新数据延迟，返回延迟超标列表"""
+    if now_ts is None:
+        now_ts = int(time.time() * 1000)
+    issues = []
+    for symbol in ["BTC/USDT", "ETH/USDT"]:
+        for tf, max_delay in ACCEPTABLE_DELAY.items():
+            row = conn.execute(
+                "SELECT MAX(open_time) FROM klines WHERE symbol=? AND timeframe=?",
+                (symbol, tf)
+            ).fetchone()
+            if not row[0]:
+                issues.append(f"{symbol} {tf}: 无数据")
+                continue
+            delay = (now_ts - row[0]) / 60000
+            if delay > max_delay:
+                issues.append(f"{symbol} {tf}: 延迟 {delay:.1f}min > {max_delay}min 阈值")
+    return issues
+
+def check_gaps(conn, symbol="BTC/USDT", tf="15m", limit=100):
+    """检查 K 线缺口"""
+    rows = conn.execute(
+        "SELECT open_time FROM klines WHERE symbol=? AND timeframe=? ORDER BY open_time DESC LIMIT ?",
+        (symbol, tf, limit)
+    ).fetchall()
+    if len(rows) < 2:
+        return []
+    timestamps = [r[0] for r in rows]
+    # 计算预期间隔
+    tf_map = {"1m": 60000, "15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000}
+    expected = tf_map.get(tf, 60000)
+    gaps = []
+    for i in range(len(timestamps) - 1):
+        diff = timestamps[i] - timestamps[i+1]
+        if diff != expected:
+            gaps.append((timestamps[i+1], timestamps[i], diff, expected))
+    return gaps
+
+def check_duplicates(conn):
+    """检查重复 K 线"""
+    dups = conn.execute(
+        "SELECT symbol, timeframe, open_time, COUNT(*) as c FROM klines "
+        "GROUP BY symbol, timeframe, open_time HAVING c > 1"
+    ).fetchall()
+    return dups
+
+def check_db_size(conn, warn_mb=500):
+    """检查数据库大小"""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "market.db")
+    size_mb = os.path.getsize(path) / (1024 * 1024)
+    if size_mb > warn_mb:
+        return f"DB size {size_mb:.0f}MB > {warn_mb}MB 警告阈值"
+    return None
+
+
+# ── Auxiliary data freshness (orderbook, OI, funding_rates) ──
+# These tables are populated by data_ext.py. If they go stale, it means
+# data_ext.py is failing silently or the Binance testnet API is down.
+
+AUX_FRESHNESS_WARN = {
+    "orderbook_snapshots": 15,   # minutes — collected every ~5min, 3 cycles
+    "open_interest": 15,          # minutes — collected every ~5min
+    "funding_rates": 480,         # minutes (8h) — funding settles every 8h
+}
+
+AUX_FRESHNESS_CRIT = {
+    "orderbook_snapshots": 30,
+    "open_interest": 30,
+    "funding_rates": 1440,        # 24h — funding should update at least daily
 }
 
 
-class DataQualityCheck:
-    """对 market.db 中的数据执行一系列质量检查。"""
+def check_aux_freshness(conn, now_ts=None):
+    """Check freshness of auxiliary data tables populated by data_ext.py.
 
-    def __init__(self, db_path: str = "data/market.db"):
-        self.db_path = db_path
-        self.issues: List[Dict] = []
-
-    def _conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA busy_timeout=3000")
-        return conn
-
-    def run_all(self, symbols: List[str] = None, timeframes: List[str] = None) -> Dict:
-        """执行全部质量检查，返回结果字典。"""
-        if symbols is None:
-            symbols = ["BTC/USDT", "ETH/USDT"]
-        if timeframes is None:
-            timeframes = ["15m", "1h", "4h", "1d"]
-
-        self.issues = []
-        results = {
-            "timestamp": time.time(),
-            "freshness": self._check_freshness(symbols, timeframes),
-            "completeness": self._check_completeness(symbols, timeframes),
-            "gaps": self._check_gaps(symbols, timeframes),
-            "data_ext": self._check_data_ext_sources(),
-            "health": "ok" if len(self.issues) == 0 else "degraded",
-            "issues": self.issues,
-        }
-        return results
-
-    def _check_freshness(self, symbols: List[str], timeframes: List[str]) -> Dict:
-        """检查各 timeframe 最新数据是否在允许延迟内。"""
-        conn = self._conn()
-        results = {}
+    Returns list of issue strings. Empty list = all healthy.
+    """
+    if now_ts is None:
+        now_ts = int(time.time() * 1000)
+    # Map table name → column holding epoch timestamp (seconds or ms)
+    TS_COLS = {
+        "orderbook_snapshots": "timestamp",   # float seconds
+        "open_interest": "timestamp",          # float seconds
+        "funding_rates": "funding_time",        # int ms
+    }
+    issues = []
+    for table, ts_col in TS_COLS.items():
         try:
-            now = time.time()
-            for sym in symbols:
-                for tf in timeframes:
-                    row = conn.execute(
-                        "SELECT MAX(open_time) as latest FROM klines WHERE symbol=? AND timeframe=?",
-                        (sym, tf),
-                    ).fetchone()
-                    if row and row["latest"]:
-                        age_min = (now - row["latest"] / 1000) / 60
-                        # 允许延迟 = K线持续时间 + 额外闭合延迟（未闭合蜡烛不算延迟）
-                        max_delay = TIMEFRAME_DURATION_MIN.get(tf, 15) + MAX_EXTRA_DELAY_MIN.get(tf, 15)
-                        ok = age_min <= max_delay
-                        results[f"{sym}_{tf}"] = {
-                            "latest_open_time": row["latest"],
-                            "age_minutes": round(age_min, 1),
-                            "max_delay_minutes": max_delay,
-                            "ok": ok,
-                        }
-                        if not ok:
-                            msg = f"{sym} {tf}: 延迟 {age_min:.1f}min > {max_delay}min"
-                            self.issues.append({"type": "freshness", "msg": msg})
-                            logger.warning(msg)
-                    else:
-                        results[f"{sym}_{tf}"] = {"latest_open_time": None, "age_minutes": None, "ok": False}
-                        msg = f"{sym} {tf}: 无数据"
-                        self.issues.append({"type": "freshness", "msg": msg})
-                        logger.warning(msg)
-        finally:
-            conn.close()
-        return results
-
-    def _check_completeness(self, symbols: List[str], timeframes: List[str]) -> Dict:
-        """检查各 timeframe 数据量是否满足最低要求。"""
-        conn = self._conn()
-        results = {}
-        try:
-            for sym in symbols:
-                for tf in timeframes:
-                    row = conn.execute(
-                        "SELECT COUNT(*) as cnt FROM klines WHERE symbol=? AND timeframe=?",
-                        (sym, tf),
-                    ).fetchone()
-                    count = row["cnt"] if row else 0
-                    min_expected = MIN_BARS.get(tf, 100)
-                    ok = count >= min_expected
-                    results[f"{sym}_{tf}"] = {
-                        "count": count,
-                        "min_expected": min_expected,
-                        "ok": ok,
-                    }
-                    if not ok:
-                        msg = f"{sym} {tf}: 仅有 {count} bars, 需要 >= {min_expected}"
-                        self.issues.append({"type": "completeness", "msg": msg})
-                        logger.warning(msg)
-        finally:
-            conn.close()
-        return results
-
-    def _check_data_ext_sources(self) -> Dict:
-        """检查 data_ext.py 采集的数据源（orderbook_snapshots, funding_rates, open_interest）
-        以及写入速率（检测僵尸进程：进程存活但无数据产出）。"""
-        conn = self._conn()
-        results = {}
-        now_s = time.time()
-        now_ms = int(now_s * 1000)
-        # data_ext 使用无斜杠的 symbol 格式: BTCUSDT, ETHUSDT
-        data_ext_symbols = ["BTCUSDT", "ETHUSDT"]
-
-        try:
-            # ── orderbook_snapshots (秒级时间戳, 期望 < 10 分钟) ──
-            for sym in data_ext_symbols:
-                row = conn.execute(
-                    "SELECT MAX(timestamp) as latest FROM orderbook_snapshots WHERE symbol=?",
-                    (sym,),
-                ).fetchone()
-                key = f"ob_{sym}"
-                if row and row["latest"]:
-                    delay_min = (now_s - row["latest"]) / 60
-                    ok = delay_min < 10
-                    results[key] = {"latest": row["latest"], "delay_min": round(delay_min, 1), "ok": ok}
-                    if not ok:
-                        msg = f"orderbook {sym}: 延迟 {delay_min:.1f}min > 10min"
-                        self.issues.append({"type": "freshness_data_ext", "msg": msg})
-                        logger.warning(msg)
-                else:
-                    results[key] = {"latest": None, "delay_min": None, "ok": False}
-                    msg = f"orderbook {sym}: 无数据"
-                    self.issues.append({"type": "freshness_data_ext", "msg": msg})
-                    logger.warning(msg)
-
-            # ── open_interest (秒级时间戳, 期望 < 10 分钟) ──
-            for sym in data_ext_symbols:
-                row = conn.execute(
-                    "SELECT MAX(timestamp) as latest FROM open_interest WHERE symbol=?",
-                    (sym,),
-                ).fetchone()
-                key = f"oi_{sym}"
-                if row and row["latest"]:
-                    delay_min = (now_s - row["latest"]) / 60
-                    ok = delay_min < 10
-                    results[key] = {"latest": row["latest"], "delay_min": round(delay_min, 1), "ok": ok}
-                    if not ok:
-                        msg = f"open_interest {sym}: 延迟 {delay_min:.1f}min > 10min"
-                        self.issues.append({"type": "freshness_data_ext", "msg": msg})
-                        logger.warning(msg)
-                else:
-                    results[key] = {"latest": None, "delay_min": None, "ok": False}
-                    msg = f"open_interest {sym}: 无数据"
-                    self.issues.append({"type": "freshness_data_ext", "msg": msg})
-                    logger.warning(msg)
-
-            # ── funding_rates (毫秒时间戳, 每8h更新, 期望 < 12h) ──
-            # funding_rates 表同时包含秒级和毫秒级时间戳，需要判断
-            for sym in data_ext_symbols:
-                row = conn.execute(
-                    "SELECT MAX(funding_time) as latest FROM funding_rates WHERE symbol=?",
-                    (sym,),
-                ).fetchone()
-                key = f"fr_{sym}"
-                if row and row["latest"]:
-                    ts_raw = row["latest"]
-                    # 判断是毫秒 (>1e12) 还是秒
-                    if ts_raw > 1e12:
-                        delay_min = (now_ms - ts_raw) / 60000
-                    else:
-                        delay_min = (now_s - ts_raw) / 60
-                    ok = delay_min < 720  # 12小时
-                    results[key] = {"latest": ts_raw, "delay_min": round(delay_min, 1), "ok": ok}
-                    if not ok:
-                        msg = f"funding_rate {sym}: 延迟 {delay_min:.1f}min > 12h"
-                        self.issues.append({"type": "freshness_data_ext", "msg": msg})
-                        logger.warning(msg)
-                else:
-                    results[key] = {"latest": None, "delay_min": None, "ok": False}
-                    msg = f"funding_rate {sym}: 无数据"
-                    self.issues.append({"type": "freshness_data_ext", "msg": msg})
-                    logger.warning(msg)
-
-            # ── 写入速率检查 (过去1小时内记录数, 检测僵尸进程) ──
-            write_rate_checks = {
-                "orderbook_snapshots": ("ob", 300, 8),    # ~5min间隔, 期望≥8条/h
-                "open_interest": ("oi", 300, 8),           # ~5min间隔, 期望≥8条/h
-            }
-            for tbl, (prefix, interval_s, min_per_hour) in write_rate_checks.items():
-                for sym in data_ext_symbols:
-                    key = f"{prefix}_rate_{sym}"
-                    # 兼容秒级和毫秒级 created_at
-                    col = "created_at" if tbl == "orderbook_snapshots" else "timestamp"
-                    cutoff_s = now_s - 3600
-                    count = conn.execute(
-                        f"SELECT COUNT(*) FROM {tbl} WHERE symbol=? AND {col} >= ?",
-                        (sym, cutoff_s),
-                    ).fetchone()[0]
-                    ok = count >= min_per_hour
-                    results[key] = {"records_last_hour": count, "min_expected": min_per_hour, "ok": ok}
-                    if not ok:
-                        msg = f"{tbl} {sym}: 过去1h仅{count}条记录 (期望≥{min_per_hour}) — 可能僵尸进程"
-                        self.issues.append({"type": "write_rate", "msg": msg})
-                        logger.warning(msg)
-
-        finally:
-            conn.close()
-        return results
-
-    def _check_gaps(self, symbols: List[str], timeframes: List[str]) -> Dict:
-        """检查是否有大的数据缺口（连续缺失超过 2 根 K 线）。"""
-        conn = self._conn()
-        results = {}
-        tf_ms = {"15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000}
-        try:
-            for sym in symbols:
-                for tf in timeframes:
-                    step_ms = tf_ms.get(tf, 3600000)
-                    # 用窗口函数找缺口
-                    rows = conn.execute(
-                        """
-                        SELECT open_time,
-                               LEAD(open_time) OVER (ORDER BY open_time) as next_time
-                        FROM klines
-                        WHERE symbol=? AND timeframe=?
-                        ORDER BY open_time
-                        """,
-                        (sym, tf),
-                    ).fetchall()
-
-                    gaps = []
-                    for r in rows:
-                        if r["next_time"] and (r["next_time"] - r["open_time"]) > step_ms * 2.5:
-                            missing = int((r["next_time"] - r["open_time"]) / step_ms) - 1
-                            gaps.append({
-                                "from": r["open_time"],
-                                "to": r["next_time"],
-                                "missing_bars": missing,
-                            })
-
-                    results[f"{sym}_{tf}"] = {
-                        "gap_count": len(gaps),
-                        "gaps": gaps[:10],  # 只报前10个
-                        "ok": len(gaps) == 0,
-                    }
-
-                    if gaps:
-                        total_missing = sum(g["missing_bars"] for g in gaps)
-                        msg = f"{sym} {tf}: {len(gaps)} 个缺口, 共缺失 {total_missing} bars"
-                        self.issues.append({"type": "gap", "msg": msg, "gaps": gaps[:5]})
-                        logger.warning(msg)
-        finally:
-            conn.close()
-        return results
+            row = conn.execute(
+                f"SELECT MAX({ts_col}) FROM \"{table}\""
+            ).fetchone()
+            if not row or row[0] is None:
+                issues.append(f"{table}: 无数据 (data_ext.py 可能未运行)")
+                continue
+            latest = row[0]
+            # Normalise to milliseconds
+            if ts_col == "timestamp":
+                latest_ms = int(float(latest) * 1000)
+            else:
+                latest_ms = int(latest)
+            delay_min = (now_ts - latest_ms) / 60000.0
+            warn_th = AUX_FRESHNESS_WARN.get(table, 30)
+            crit_th = AUX_FRESHNESS_CRIT.get(table, 60)
+            if delay_min > crit_th:
+                issues.append(
+                    f"{table}: 延迟 {delay_min:.0f}min > {crit_th}min CRITICAL"
+                )
+            elif delay_min > warn_th:
+                issues.append(
+                    f"{table}: 延迟 {delay_min:.0f}min > {warn_th}min WARNING"
+                )
+        except Exception as e:
+            issues.append(f"{table}: 检查失败 ({e})")
+    return issues
 
 
-# ── CLI ──
+def full_check():
+    """全量数据质量检查，返回 (status, issues, stats)"""
+    conn = get_market_db()  # PERF-013: WAL + busy_timeout=10s
+    now_ts = int(time.time() * 1000)
+    issues = []
+
+    # 1. 数据新鲜度
+    issues.extend(check_freshness(conn, now_ts))
+
+    # 2. 缺口检查（BTC/ETH 15m 最近 100 条）
+    for symbol in ["BTC/USDT", "ETH/USDT"]:
+        gaps = check_gaps(conn, symbol, "15m", 100)
+        for g in gaps:
+            missing = (g[2] // (g[3])) - 1
+            if missing > 0:
+                issues.append(f"{symbol} 15m: {missing} 条缺口 @ {g[0]} -> {g[1]}")
+
+    # 3. 重复检查
+    dups = check_duplicates(conn)
+    for d in dups:
+        issues.append(f"{d[0]}/{d[1]} @ {d[2]}: {d[3]} 条重复")
+
+    # 4. DB 大小
+    size_issue = check_db_size(conn)
+    if size_issue:
+        issues.append(size_issue)
+
+    # 5. 辅助数据新鲜度 (orderbook, OI, funding_rates — 由 data_ext.py 采集)
+    issues.extend(check_aux_freshness(conn, now_ts))
+
+    # 统计
+    stats = {}
+    for symbol in ["BTC/USDT", "ETH/USDT"]:
+        for tf in ["15m", "1h", "4h", "1d"]:
+            row = conn.execute(
+                "SELECT COUNT(*), MAX(open_time) FROM klines WHERE symbol=? AND timeframe=?",
+                (symbol, tf)
+            ).fetchone()
+            key = f"{symbol}_{tf}"
+            stats[key] = {"count": row[0], "latest": row[1]}
+            if row[1]:
+                stats[key]["delay_min"] = round((now_ts - row[1]) / 60000, 2)
+
+    conn.close()
+
+    if not issues:
+        status = "healthy"
+    elif any("无数据" in i for i in issues):
+        status = "critical"
+    elif len(issues) >= 3:
+        status = "warning"
+    else:
+        status = "healthy"  # 少量延迟属于正常
+
+    return status, issues, stats
+
 if __name__ == "__main__":
-    import sys
-
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [QUALITY] %(message)s")
-
-    checker = DataQualityCheck()
-    results = checker.run_all()
-
-    print(f"\n{'='*50}")
-    print(f"数据质量检查 @ {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"健康状态: {results['health'].upper()}")
-    print(f"{'='*50}")
-
-    # 新鲜度
-    print("\n── 新鲜度 ──")
-    for key, v in results["freshness"].items():
-        if v["age_minutes"] is not None:
-            status = "OK" if v["ok"] else "DELAY"
-            print(f"  {key}: {v['age_minutes']:.1f}min ago [{status}]")
-        else:
-            print(f"  {key}: NO DATA [FAIL]")
-
-    # 完整性
-    print("\n── 完整性 ──")
-    for key, v in results["completeness"].items():
-        status = "OK" if v["ok"] else "LOW"
-        print(f"  {key}: {v['count']} bars (min {v['min_expected']}) [{status}]")
-
-    # 缺口
-    print("\n── 缺口 ──")
-    for key, v in results["gaps"].items():
-        status = "OK" if v["ok"] else f"{v['gap_count']} gaps"
-        print(f"  {key}: [{status}]")
-
-    # data_ext 数据源
-    print("\n── data_ext 数据源 ──")
-    for key, v in results.get("data_ext", {}).items():
-        if key.startswith(("ob_rate_", "oi_rate_")):
-            continue  # skip rate checks, show separately
-        if v["delay_min"] is not None:
-            status = "OK" if v["ok"] else "DELAY"
-            print(f"  {key}: {v['delay_min']:.1f}min ago [{status}]")
-        else:
-            print(f"  {key}: NO DATA [FAIL]")
-
-    # 写入速率
-    print("\n── 写入速率 (过去1h) ──")
-    for key, v in results.get("data_ext", {}).items():
-        if key.startswith(("ob_rate_", "oi_rate_")):
-            status = "OK" if v["ok"] else "LOW"
-            print(f"  {key}: {v['records_last_hour']}条/h (min {v['min_expected']}) [{status}]")
-
-    if results["issues"]:
-        print(f"\n── 共 {len(results['issues'])} 个问题 ──")
-        for i, iss in enumerate(results["issues"]):
-            print(f"  [{i+1}] {iss['type']}: {iss['msg']}")
-
-    sys.exit(0 if results["health"] == "ok" else 1)
+    status, issues, stats = full_check()
+    print(f"Status: {status}")
+    print(f"Issues ({len(issues)}):")
+    for i in issues:
+        print(f"  - {i}")
+    print(f"Stats: {json.dumps(stats, indent=2)}")

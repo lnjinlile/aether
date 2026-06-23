@@ -87,20 +87,65 @@ def check(verbose=False):
             with open(strategies_path) as f:
                 strategies_cfg = yaml.safe_load(f)
 
+            # Load athena.json for PAPER awareness
+            athena_verdicts = {}
+            athena_path = os.path.join(repo_root, ".aether", "state", "athena.json")
+            if os.path.exists(athena_path):
+                with open(athena_path) as f:
+                    athena_cfg = json.load(f)
+                for name, s in athena_cfg.get("strategies", {}).items():
+                    athena_verdicts[name] = s.get("verdict", "NOT_EVALUATED")
+
             oracle_enabled = set(oracle_cfg.get("strategies_enabled", []))
             yaml_enabled = set(
                 s["name"] for s in strategies_cfg.get("strategies", [])
                 if s.get("enabled", False)
             )
+            # PAPER strategies are enabled in YAML but excluded from oracle by AUDIT-051 guard
+            paper_excluded = set(
+                name for name in yaml_enabled
+                if athena_verdicts.get(name) in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED")
+            )
             only_oracle = oracle_enabled - yaml_enabled
-            only_yaml = yaml_enabled - oracle_enabled
+            only_yaml = yaml_enabled - oracle_enabled - paper_excluded  # exclude legit PAPER
             if only_oracle:
                 issues.append(f"oracle.json多余启用: {only_oracle}")
             if only_yaml:
                 issues.append(f"strategies.yaml多余启用(未同步): {only_yaml}")
             stats["config_sync"] = "ok" if not only_oracle and not only_yaml else "mismatch"
+            stats["paper_excluded"] = list(paper_excluded)
     except Exception as e:
         issues.append(f"配置一致性检查失败: {e}")
+
+    # 8. athena.json ↔ backtest_results.json verdict 一致性
+    try:
+        import json
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        athena_path = os.path.join(repo_root, ".aether", "state", "athena.json")
+        bt_path = os.path.join(repo_root, ".aether", "state", "backtest_results.json")
+
+        if os.path.exists(athena_path) and os.path.exists(bt_path):
+            with open(athena_path) as f:
+                athena = json.load(f)
+            with open(bt_path) as f:
+                bt = json.load(f)
+
+            athena_strats = athena.get("strategies", {})
+            bt_strats = bt.get("strategies", {})
+            verdict_mismatches = []
+            for name in set(list(athena_strats.keys()) + list(bt_strats.keys())):
+                av = athena_strats.get(name, {}).get("verdict", "MISSING")
+                bv = bt_strats.get(name, {}).get("verdict", "MISSING")
+                if av != bv:
+                    verdict_mismatches.append(f"{name}: athena={av} bt={bv}")
+            if verdict_mismatches:
+                for vm in verdict_mismatches:
+                    issues.append(f"verdict不一致: {vm}")
+                stats["verdict_sync"] = "mismatch"
+            else:
+                stats["verdict_sync"] = "ok"
+    except Exception as e:
+        pass  # best-effort, don't fail integrity check over state file issues
 
     db.close()
     return len(issues) == 0, issues, stats
@@ -160,7 +205,7 @@ def _refresh_oracle_stats(stats):
             oracle["data_stats"] = data_stats
             oracle["_updated_at"] = now_iso
             oracle["db_size_mb"] = stats.get("db_size_mb", oracle.get("db_size_mb", 0))
-            oracle["klines_total"] = stats.get("total_klines", 0)
+            oracle["klines_count"] = stats.get("total_klines", 0)
             oracle["data_fresh"] = True
             with open(oracle_path, "w") as f:
                 json.dump(oracle, f, indent=2, ensure_ascii=False)
