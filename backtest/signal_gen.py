@@ -252,6 +252,161 @@ def rsi_mr_signals(df: pd.DataFrame, rsi_period: int,
     return pd.Series(signals, index=df.index)
 
 
+def _detect_bullish_divergence(close: np.ndarray, rsi: np.ndarray,
+                                i: int, lookback: int = 30,
+                                rsi_threshold: float = 40.0) -> bool:
+    """Detect bullish RSI divergence: price lower low + RSI higher low.
+
+    Looks back from bar i for two swing lows:
+    - Recent low: lowest close in last lookback//2 bars
+    - Prior low: lowest close in the preceding lookback//2 bars
+    Returns True if price LL but RSI HL (bullish divergence).
+    Only triggers when RSI < rsi_threshold (confirms oversold context).
+    """
+    if i < lookback or np.isnan(rsi[i]):
+        return False
+    if rsi[i] >= rsi_threshold:
+        return False
+
+    half = lookback // 2
+    # Recent window: [i-half, i]
+    recent_start = max(0, i - half)
+    recent_slice = slice(recent_start, i + 1)
+    recent_price_low_idx = recent_start + np.nanargmin(close[recent_slice])
+    recent_rsi_low = rsi[recent_price_low_idx]
+
+    # Prior window: [i-lookback, i-half)
+    prior_start = max(0, i - lookback)
+    prior_end = max(0, i - half)
+    if prior_end <= prior_start:
+        return False
+    prior_slice = slice(prior_start, prior_end)
+    prior_price_low_idx = prior_start + np.nanargmin(close[prior_slice])
+    prior_rsi_low = rsi[prior_price_low_idx]
+
+    price_ll = close[recent_price_low_idx] < close[prior_price_low_idx]
+    rsi_hl = recent_rsi_low > prior_rsi_low
+
+    return bool(price_ll and rsi_hl)
+
+
+def _detect_bearish_divergence(close: np.ndarray, rsi: np.ndarray,
+                                i: int, lookback: int = 30,
+                                rsi_threshold: float = 60.0) -> bool:
+    """Detect bearish RSI divergence: price higher high + RSI lower high."""
+    if i < lookback or np.isnan(rsi[i]):
+        return False
+    if rsi[i] <= rsi_threshold:
+        return False
+
+    half = lookback // 2
+    recent_start = max(0, i - half)
+    recent_slice = slice(recent_start, i + 1)
+    recent_price_high_idx = recent_start + np.nanargmax(close[recent_slice])
+    recent_rsi_high = rsi[recent_price_high_idx]
+
+    prior_start = max(0, i - lookback)
+    prior_end = max(0, i - half)
+    if prior_end <= prior_start:
+        return False
+    prior_slice = slice(prior_start, prior_end)
+    prior_price_high_idx = prior_start + np.nanargmax(close[prior_slice])
+    prior_rsi_high = rsi[prior_price_high_idx]
+
+    price_hh = close[recent_price_high_idx] > close[prior_price_high_idx]
+    rsi_lh = recent_rsi_high < prior_rsi_high
+
+    return bool(price_hh and rsi_lh)
+
+
+def rsi_divergence_mr_signals(df: pd.DataFrame, rsi_period: int,
+                               oversold: float, overbought: float, exit_rsi: float,
+                               sl_pct: float, tp_pct: float,
+                               cooldown_bars: int,
+                               div_lookback: int = 30,
+                               require_divergence: bool = True,
+                               div_rsi_max: float = 40.0) -> pd.Series:
+    """Vectorized RSI Mean Reversion with divergence confirmation.
+
+    Extends rsi_mr_signals with optional RSI divergence filter:
+    - LONG requires bullish divergence (price LL + RSI HL) in oversold zone
+    - SHORT requires bearish divergence (price HH + RSI LH) in overbought zone
+    - When require_divergence=False, falls back to plain RSI MR (divergence adds
+      extra confidence weight but doesn't block entry).
+
+    Signals: 1=LONG, -1=SHORT, 0=FLAT.
+    """
+    close = df['close'].values
+    n = len(close)
+    rsi = _compute_rsi(close, rsi_period)
+
+    cross_below_oversold = (rsi < oversold) & (np.roll(rsi, 1) >= oversold)
+    cross_below_oversold[:1] = False
+    cross_above_overbought = (rsi > overbought) & (np.roll(rsi, 1) <= overbought)
+    cross_above_overbought[:1] = False
+    cross_above_exit = (rsi > exit_rsi) & (np.roll(rsi, 1) <= exit_rsi)
+    cross_above_exit[:1] = False
+    cross_below_exit = (rsi < exit_rsi) & (np.roll(rsi, 1) >= exit_rsi)
+    cross_below_exit[:1] = False
+
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    entry_price = 0.0
+    bars_since_trade = cooldown_bars + 1
+    min_bars = max(rsi_period * 3, div_lookback + 5)
+
+    for i in range(min_bars, n):
+        bars_since_trade += 1
+        price = close[i]
+
+        # Exit logic (same as rsi_mr_signals)
+        if pos == 1:
+            if cross_above_exit[i] or _check_sl_tp(price, entry_price, pos, sl_pct, tp_pct):
+                signals[i] = 0
+                pos = 0
+                bars_since_trade = 0
+                continue
+        elif pos == -1:
+            if cross_below_exit[i] or _check_sl_tp(price, entry_price, pos, sl_pct, tp_pct):
+                signals[i] = 0
+                pos = 0
+                bars_since_trade = 0
+                continue
+
+        if pos != 0:
+            signals[i] = pos
+
+        # Entry logic
+        if pos == 0 and bars_since_trade > cooldown_bars:
+            if cross_below_oversold[i]:
+                if require_divergence:
+                    if _detect_bullish_divergence(close, rsi, i, div_lookback, div_rsi_max):
+                        pos = 1
+                        entry_price = price
+                        signals[i] = 1
+                        bars_since_trade = 0
+                else:
+                    pos = 1
+                    entry_price = price
+                    signals[i] = 1
+                    bars_since_trade = 0
+            elif cross_above_overbought[i]:
+                if require_divergence:
+                    if _detect_bearish_divergence(close, rsi, i, div_lookback,
+                                                  overbought if overbought > 60 else 60.0):
+                        pos = -1
+                        entry_price = price
+                        signals[i] = -1
+                        bars_since_trade = 0
+                else:
+                    pos = -1
+                    entry_price = price
+                    signals[i] = -1
+                    bars_since_trade = 0
+
+    return pd.Series(signals, index=df.index)
+
+
 def dynamic_grid_signals(df: pd.DataFrame, grid_range_pct: float, num_levels: int,
                          qty_per_level: float, rebalance_interval_bars: int,
                          min_spread_pct: float, leverage: int = 3) -> pd.Series:

@@ -17,6 +17,7 @@ from config.settings import get_config
 from data.storage import MarketStorage
 from backtest.engine import BacktestEngine
 from backtest.signal_gen import vol_breakout_signals
+from backtest.sweep_utils import load_data, SweepVerdict, verdict
 
 
 @dataclass
@@ -39,41 +40,6 @@ class SweepResult:
     avg_loss: float
 
 
-def load_data(storage, symbol, timeframe, days):
-    df = storage.load_klines(symbol, timeframe)
-    if df.empty:
-        return None
-    df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
-    df.set_index('open_time', inplace=True)
-    df.sort_index(inplace=True)
-    cutoff = df.index[-1] - pd.Timedelta(days=days)
-    df = df[df.index >= cutoff]
-    return df
-
-
-def verdict(net_pct, sharpe, dsr, max_dd, win_rate, trades):
-    """PASS / CONDITIONAL / DO_NOT_ENABLE."""
-    if trades < 5:
-        return "INSUFFICIENT", "不足5笔交易"
-    reasons = []
-    if net_pct <= 0 and sharpe <= 0:
-        return "DO_NOT_ENABLE", f"净收益{net_pct:+.2f}%+Sharpe{sharpe:+.2f}"
-    passes = 0
-    if sharpe >= 0.5: passes += 1
-    else: reasons.append(f"Sharpe={sharpe:.3f}<0.5")
-    if max_dd <= 20: passes += 1
-    else: reasons.append(f"DD={max_dd:.1f}%>20%")
-    if win_rate >= 40: passes += 1
-    else: reasons.append(f"WR={win_rate:.0f}%<40%")
-    if net_pct > 0: passes += 1
-    else: reasons.append(f"Net={net_pct:+.2f}%")
-    if dsr >= 0.80: passes += 1
-    else: reasons.append(f"DSR={dsr:.4f}<0.80")
-    if passes >= 4: return "PASS", "|".join(reasons) if reasons else ""
-    elif passes >= 2: return "CONDITIONAL", "|".join(reasons)
-    else: return "DO_NOT_ENABLE", "|".join(reasons)
-
-
 if __name__ == '__main__':
     t0 = datetime.now(timezone.utc)
     t_start = _time.time()
@@ -91,7 +57,7 @@ if __name__ == '__main__':
 
     for symbol in ['BTC/USDT', 'ETH/USDT']:
         for days in windows:
-            df = load_data(storage, symbol, timeframe, days)
+            df = load_data(symbol=symbol, timeframe=timeframe, lookback_days=days, storage=storage)
             key = (symbol, days)
             if df is not None and len(df) > 0:
                 data_cache[key] = df
@@ -242,9 +208,9 @@ if __name__ == '__main__':
         r365.sort(key=lambda x: x.sharpe, reverse=True)
         best = r365[0]
 
-        v, reason = verdict(best.net_pct, best.sharpe, best.dsr,
-                            best.max_dd, best.win_rate, best.trades)
-        verdicts[symbol] = (v, reason)
+        sv = verdict(best.net_pct, best.sharpe, max_dd=best.max_dd,
+                     win_rate=best.win_rate, trades=best.trades, dsr=best.dsr)
+        verdicts[symbol] = (sv.verdict, sv.reason)
 
         # Cross-window check for best 365d params
         key = (best.atr_period, best.atr_mult, best.ema_period,
@@ -275,7 +241,7 @@ if __name__ == '__main__':
         else:
             print(f"      90d: (different best params)")
 
-        print(f"     Verdict: {v} ({reason})")
+        print(f"     Verdict: {sv.verdict} ({sv.reason})")
 
         if r180_match and r90_match:
             sr_180 = r180_match[0].sharpe

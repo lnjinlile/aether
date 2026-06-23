@@ -10,12 +10,13 @@ Aether 仪表盘生成器 v4 — 单一数据源，永不失效
 """
 import json, os, yaml
 from datetime import datetime, timezone
-import sqlite3
+
+# Centralized DB access with WAL + busy_timeout
+from data.db import get_market_db
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATE_DIR = os.path.join(BASE, ".aether", "state")
 TASKS_FILE = os.path.join(BASE, ".aether", "tasks.json")
-DB = os.path.join(BASE, "data", "market.db")
 STRATEGIES_YAML = os.path.join(BASE, "config", "strategies.yaml")
 OUTPUT = os.path.join(BASE, "dashboard.html")
 
@@ -29,12 +30,12 @@ def load_json(path):
     except: return {}
 
 def db_query(sql, params=()):
-    if not os.path.exists(DB): return []
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    rows = conn.execute(sql, params).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    db = get_market_db()
+    try:
+        rows = db.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        db.close()
 
 # ====== DATA SOURCES ======
 pipeline = load_json(os.path.join(STATE_DIR, "pipeline.json"))

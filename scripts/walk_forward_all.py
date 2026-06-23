@@ -11,6 +11,7 @@ from data.storage import MarketStorage
 from backtest.engine import BacktestEngine
 from backtest.walk_forward import walk_forward_validate, WFEInterpretation
 from backtest.signal_gen import rsi_mr_signals, donchian_mr_signals, keltner_mr_signals
+from backtest.sweep_utils import load_data
 
 # ── Strategy definitions (from strategies.yaml) ──
 STRATEGIES = {
@@ -88,19 +89,6 @@ def make_signal_wrapper(func, params):
         return func(df, **merged)
     return wrapper
 
-def load_data(symbol, timeframe, lookback_days=365):
-    """Load OHLCV data from market.db with datetime index."""
-    storage = MarketStorage()
-    df = storage.load_klines(symbol, timeframe)
-    if df.empty:
-        return df
-    # Convert open_time (ms) to datetime and set as index
-    df['datetime'] = pd.to_datetime(df['open_time'], unit='ms')
-    df = df.set_index('datetime').sort_index()
-    # Keep last N days
-    cutoff = df.index.max() - pd.Timedelta(days=lookback_days)
-    df = df[df.index >= cutoff]
-    return df[['open', 'high', 'low', 'close', 'volume']]
 
 def main():
     engine = BacktestEngine(initial_capital=10000.0, commission=0.0004, slippage=0.0001)
@@ -113,12 +101,16 @@ def main():
         if key not in data_cache:
             print(f"Loading {key} ...")
             data_cache[key] = load_data(cfg['symbol'], cfg['timeframe'])
-            print(f"  {len(data_cache[key])} bars from {data_cache[key].index.min()} to {data_cache[key].index.max()}")
+            loaded = data_cache[key]
+            if loaded is not None:
+                print(f"  {len(loaded)} bars from {loaded.index.min()} to {loaded.index.max()}")
+            else:
+                print(f"  WARNING: No data for {key}")
 
     for sname, cfg in STRATEGIES.items():
         key = f"{cfg['symbol']}_{cfg['timeframe']}"
         df = data_cache[key]
-        if df.empty:
+        if df is None:
             results[sname] = {"error": "No data"}
             continue
 

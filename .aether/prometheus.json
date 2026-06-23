@@ -46,10 +46,10 @@
       "verdict": "STILL_LOSING"
     }
   },
-  "next": "PERF-075: prometheus.json data quality fix — added best_sharpe/best_sharpe_strategy/portfolio_concentration top-level fields (root cause of AUDIT-111). Fixed RSI_MR_BTC stale SR (-0.8618→0.466). Updated live_count 5→6, recommendation to reflect BandMR_ETH promotion. Next: (1) Fresh 365d backtest for RSI_MR_BTC with current PAPER params. (2) Incremental feature computation for MTF model. (3) Consider TrendFollow_BTC_1h (SR=0.39 DD=28.3%) as trend diversification if regime shifts.",
+  "next": "PERF-083: prometheus.json BandMR_ETH data quality — synced deployed config (SR=0.539 DD=20.7%) alongside full sweep (SR=0.585 DD=30.4%). Fixed recommendation/best_strategies/by_dd to show deployed metrics for risk monitoring. Root cause of Argus AUDIT-123 (Guardian stale DD 30.4%). Next: (1) Fresh 365d backtest for RSI_MR_BTC with current PAPER params. (2) Explore order-flow features to break through 69% regime model ceiling. (3) Consider TrendFollow_BTC_1h (SR=0.39 DD=28.3%) as trend diversification if regime shifts.",
   "best_sharpe": 1.0547,
   "best_sharpe_strategy": "RSI_MR_ETH",
-  "best_sharpe_note": "365d backtest (PERF-069). RSI_MR_ETH SR=1.0547 DD=8.88% WR=87.5% 16t. Guardian must read this field directly, never self-compute.",
+  "best_sharpe_note": "365d backtest (PERF-069). RSI_MR_ETH SR=1.0547 DD=8.88% WR=87.5% 16t. AUTHORITATIVE VALUE — Guardian/Hermes/Argus must read this field directly from prometheus.json. DO NOT self-compute from live_strategy_metrics. DO NOT substitute with KeltnerMR_ETH (0.662) or any other value. This is the single source of truth.",
   "portfolio_concentration": {
     "live_strategies": [
       "RSI_MR_ETH",
@@ -63,8 +63,8 @@
     "trend_count": 0,
     "risk_note": "All 6 LIVE are MR family. Zero trend diversification. ETH-MR pairwise correlation ≈0.87. If regime shifts to strong trending, consider activating TrendFollow_BTC_1h (SR=0.39 DD=28.3% 50t)."
   },
-  "_updated_at": "2026-06-23T11:50:00.000000+00:00",
-  "recommendation": "6 LIVE strategies: RSI_MR_ETH(SR=1.05 DD=8.9%), KeltnerMR_ETH(SR=0.66 DD=17.8%), BandMR_ETH(SR=0.59 DD=30.4% PERF-073), DonchianMR_ETH(SR=0.55 DD=16.2%), KeltnerMR_BTC(SR=0.52 DD=5.6%), DonchianMR_BTC(SR=0.51 DD=11.6%). 1 PAPER: RSI_MR_BTC(SR=0.47 DD=18.7% 90d engine). 1 RETIRED: BandMR_BTC(365d DSR=-0.32 DD=59.6%, PERF-071). All mean-reversion. TRENDING regime (P(Trend)=0.510). No trend-following viable after exhaustive sweeps. ETH-MR correlation=0.878 — RiskManager guards active. MTF regime model deployed (120-feature, 69.0% test acc).",
+  "_updated_at": "2026-06-23T13:39:00.000000+00:00",
+  "recommendation": "6 LIVE strategies: RSI_MR_ETH(SR=1.05 DD=8.9%), KeltnerMR_ETH(SR=0.66 DD=17.8%), BandMR_ETH(SR=0.54 DD=20.7% PERF-073 deployed), DonchianMR_ETH(SR=0.55 DD=16.2%), KeltnerMR_BTC(SR=0.52 DD=5.6%), DonchianMR_BTC(SR=0.51 DD=11.6%). 1 PAPER: RSI_MR_BTC(SR=0.47 DD=18.7% 90d engine). 1 RETIRED: BandMR_BTC(365d DSR=-0.32 DD=59.6%, PERF-071). All mean-reversion. RANGING regime (P(Trend)=0.408). No trend-following viable after exhaustive sweeps. ETH-MR correlation=0.878 — RiskManager guards active. MTF regime model deployed (120-feature, 69.0% test acc). NOTE: BandMR_ETH full sweep (PERF-058) SR=0.585 DD=30.4% 131t; PERF-073 deployed config SR=0.539 DD=20.7% 118t — DD reduced 9.7pp via refined params.",
   "best_strategies": {
     "by_sharpe": [
       {
@@ -83,10 +83,11 @@
       },
       {
         "name": "BandMR_ETH",
-        "sharpe": 0.585,
-        "dd": 30.4,
-        "wr": 61.8,
-        "trades": 131
+        "sharpe": 0.539,
+        "dd": 20.7,
+        "wr": 63.6,
+        "trades": 118,
+        "note": "PERF-073 deployed config. Full sweep (PERF-058): SR=0.585 DD=30.4% 131t."
       },
       {
         "name": "DonchianMR_ETH",
@@ -128,6 +129,12 @@
         "name": "KeltnerMR_ETH",
         "sharpe": 0.662,
         "dd": 17.8
+      },
+      {
+        "name": "BandMR_ETH",
+        "sharpe": 0.539,
+        "dd": 20.7,
+        "note": "PERF-073 deployed config"
       }
     ],
     "best_overall": "KeltnerMR_BTC (SR=0.52, DD=5.6%, WR=85.7%) — best risk-adjusted LIVE strategy",
@@ -344,7 +351,8 @@
       "sharpe": 0.585,
       "win_rate": 61.8,
       "trades": 131,
-      "max_dd": 30.4
+      "max_dd": 30.4,
+      "_note": "PERF-058 FULL SWEEP (research baseline). DEPLOYED CONFIG (PERF-073): return_pct=571.1% sharpe=0.539 dd=20.7% wr=63.6% trades=118. DD reduced 9.7pp. Use deployed config for risk monitoring, full sweep for research."
     },
     "MACD_BTC": {
       "return_pct": 77.1,

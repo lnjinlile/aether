@@ -9,7 +9,7 @@ Usage:
 This script is the single source of truth for reconciling local DB with exchange.
 All agents should call this before reading/writing trades_log.
 """
-import os, sys, json, hmac, hashlib, time, argparse, sqlite3
+import os, sys, json, hmac, hashlib, time, argparse
 from datetime import datetime, timezone
 from pathlib import Path
 from dotenv import load_dotenv
@@ -17,12 +17,14 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# Centralized DB access with WAL + busy_timeout
+from data.db import get_market_db
+
 load_dotenv(PROJECT_ROOT / '.env')
 
 API_KEY = os.getenv('BINANCE_API_KEY')
 API_SECRET = os.getenv('BINANCE_API_SECRET')
 BASE = 'https://testnet.binancefuture.com'
-DB_PATH = PROJECT_ROOT / 'data' / 'market.db'
 
 
 def signed_request(endpoint, params=None):
@@ -70,8 +72,7 @@ def get_exchange_state():
 
 def get_db_state():
     """Return local DB state."""
-    db = sqlite3.connect(str(DB_PATH))
-    db.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access
+    db = get_market_db()
     cur = db.cursor()
     cur.execute("""
         SELECT id, symbol, side, entry_price, quantity, status, entry_time
@@ -130,8 +131,7 @@ def reconcile(dry_run=False):
         print("✅ DB in sync with exchange — no changes needed")
         return
     
-    db = sqlite3.connect(str(DB_PATH))
-    db.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access
+    db = get_market_db()
     cur = db.cursor()
     now = time.time()
 

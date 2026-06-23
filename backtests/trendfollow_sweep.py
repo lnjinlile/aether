@@ -16,6 +16,7 @@ from config.settings import get_config
 from data.storage import MarketStorage
 from backtest.engine import BacktestEngine
 from backtest.signal_gen import trendfollow_signals
+from backtest.sweep_utils import load_data, SweepVerdict, verdict
 
 
 @dataclass
@@ -37,41 +38,6 @@ class SweepResult:
     avg_loss: float
 
 
-def load_data(storage, symbol, timeframe, days):
-    df = storage.load_klines(symbol, timeframe)
-    if df.empty:
-        return None
-    df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
-    df.set_index('open_time', inplace=True)
-    df.sort_index(inplace=True)
-    cutoff = df.index[-1] - pd.Timedelta(days=days)
-    df = df[df.index >= cutoff]
-    return df
-
-
-def verdict(net_pct, sharpe, dsr, max_dd, win_rate, trades):
-    """LIVE / PAPER_READY / DO_NOT_ENABLE."""
-    if trades < 5:
-        return "INSUFFICIENT", "不足5笔交易"
-    reasons = []
-    if net_pct <= 0 and sharpe <= 0:
-        return "DO_NOT_ENABLE", f"净收益{net_pct:+.2f}%+Sharpe{sharpe:+.2f}"
-    passes = 0
-    if sharpe >= 0.5: passes += 1
-    else: reasons.append(f"Sharpe={sharpe:.3f}<0.5")
-    if max_dd <= 20: passes += 1
-    else: reasons.append(f"DD={max_dd:.1f}%>20%")
-    if win_rate >= 40: passes += 1
-    else: reasons.append(f"WR={win_rate:.0f}%<40%")
-    if net_pct > 0: passes += 1
-    else: reasons.append(f"Net={net_pct:+.2f}%")
-    if dsr >= 0.80: passes += 1
-    else: reasons.append(f"DSR={dsr:.4f}<0.80")
-    if passes >= 4: return "PASS", "|".join(reasons) if reasons else ""
-    elif passes >= 2: return "CONDITIONAL", "|".join(reasons)
-    else: return "DO_NOT_ENABLE", "|".join(reasons)
-
-
 if __name__ == '__main__':
     t0 = datetime.now(timezone.utc)
     t_start = _time.time()
@@ -87,7 +53,7 @@ if __name__ == '__main__':
 
     for symbol in ['BTC/USDT', 'ETH/USDT']:
         for days in windows:
-            df = load_data(storage, symbol, timeframe, days)
+            df = load_data(symbol=symbol, timeframe=timeframe, lookback_days=days, storage=storage)
             key = (symbol, days)
             if df is not None and len(df) > 0:
                 data_cache[key] = df
@@ -158,13 +124,13 @@ if __name__ == '__main__':
         print(f"═" * 70)
         top365 = sym_results[sym_results['window_days'] == 365].nlargest(10, 'sharpe')
         for _, r in top365.iterrows():
-            v, reason = verdict(r['net_pct'], r['sharpe'], r['dsr'],
-                                r['max_dd'], r['win_rate'], r['trades'])
+            sv = verdict(r['net_pct'], r['sharpe'], max_dd=r['max_dd'],
+                         win_rate=r['win_rate'], trades=r['trades'], dsr=r['dsr'])
             print(f"  EP={r['ema_period']:3d} SL={r['sl_pct']:.0%} TP={r['tp_pct']:.0%} "
                   f"CD={r['cooldown_bars']:1d} | "
                   f"Net={r['net_pct']:+.2f}% SR={r['sharpe']:.4f} DSR={r['dsr']:.4f} "
                   f"DD={r['max_dd']:.1f}% WR={r['win_rate']:.0f}% T={r['trades']:3d} "
-                  f"| {v}")
+                  f"| {sv.verdict}")
 
         # Best by verdict for each window
         print(f"\n  Best by window:")
@@ -173,12 +139,12 @@ if __name__ == '__main__':
             if len(w) == 0:
                 continue
             r = w.iloc[0]
-            v, reason = verdict(r['net_pct'], r['sharpe'], r['dsr'],
-                                r['max_dd'], r['win_rate'], r['trades'])
+            sv = verdict(r['net_pct'], r['sharpe'], max_dd=r['max_dd'],
+                         win_rate=r['win_rate'], trades=r['trades'], dsr=r['dsr'])
             print(f"    {days:3d}d: EP={r['ema_period']:3d} SL={r['sl_pct']:.0%} TP={r['tp_pct']:.0%} "
                   f"CD={r['cooldown_bars']:1d} → "
                   f"Net={r['net_pct']:+.2f}% SR={r['sharpe']:.4f} DSR={r['dsr']:.4f} "
-                  f"DD={r['max_dd']:.1f}% WR={r['win_rate']:.0f}% T={r['trades']:.0f} | {v}")
+                  f"DD={r['max_dd']:.1f}% WR={r['win_rate']:.0f}% T={r['trades']:.0f} | {sv.verdict}")
 
     # ─── Final verdict ───
     print(f"\n{'═' * 70}")

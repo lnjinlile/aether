@@ -1309,7 +1309,9 @@ def sync_agent_states():
                      "regime_model", "regime_monitor", "regime_classifier", "last_optimization",
                      "strategy_landscape_20260622", "rsi_mr_eth_live_confirmed",
                      "donchian_mr_eth_wf_validation", "donchian_mr_eth_365d",
-                     "donchian_mr_btc_optimized", "portfolio_correlation"):
+                     "donchian_mr_btc_optimized", "portfolio_correlation",
+                     "best_sharpe", "best_sharpe_strategy", "best_sharpe_note", "best_sharpe_source",
+                     "best_strategies", "portfolio_concentration", "active_research"):
             if key in _prom_data:
                 prom_state[key] = _prom_data[key]
         # NOTE: strategies metrics are ENGINE-DERIVED (from backtest_results.json).

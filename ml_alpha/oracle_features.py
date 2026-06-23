@@ -12,12 +12,14 @@ Features:
 """
 
 import os
-import sqlite3
 import logging
 from typing import Optional, Dict
 
 import numpy as np
 import pandas as pd
+
+# Centralized DB access with WAL + busy_timeout
+from data.db import get_market_db
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ def load_orderbook_features(symbol: str, db_path: str = None) -> Optional[pd.Dat
     if not os.path.exists(db_path):
         return None
 
-    conn = sqlite3.connect(db_path)
+    conn = get_market_db(db_path)
     try:
         df = pd.read_sql_query(
             "SELECT timestamp, best_bid, best_ask, spread_pct, imbalance, bid_vol_5, ask_vol_5 "
@@ -85,7 +87,7 @@ def load_funding_features(symbol: str, db_path: str = None) -> Optional[pd.DataF
     if not os.path.exists(db_path):
         return None
 
-    conn = sqlite3.connect(db_path)
+    conn = get_market_db(db_path)
     try:
         df = pd.read_sql_query(
             "SELECT funding_time, funding_rate FROM funding_rates "
@@ -142,7 +144,7 @@ def load_oi_features(symbol: str, db_path: str = None) -> Optional[pd.DataFrame]
     if not os.path.exists(db_path):
         return None
 
-    conn = sqlite3.connect(db_path)
+    conn = get_market_db(db_path)
     try:
         df = pd.read_sql_query(
             "SELECT timestamp, open_interest FROM open_interest "
