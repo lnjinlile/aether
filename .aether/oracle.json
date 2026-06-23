@@ -45,13 +45,13 @@
       "count": 526
     },
     "table_open_interest": {
-      "count": 1113
+      "count": 1115
     },
     "table_orderbook_snapshots": {
-      "count": 928
+      "count": 930
     },
     "table_order_flow": {
-      "count": 2339
+      "count": 2349
     },
     "table_trades_log": {
       "count": 3
@@ -78,7 +78,7 @@
     "RSI_MR_BTC",
     "BandMR_ETH"
   ],
-  "_updated_at": "2026-06-23T11:33:57.201406+00:00",
+  "_updated_at": "2026-06-23T11:38:52.032556+00:00",
   "last_heartbeat": "2026-06-23T11:09:21.022868+00:00",
   "data_health": {
     "duplicates": 0,
@@ -88,7 +88,7 @@
     "checked_at": "2026-06-23T11:09:21.022868+00:00"
   },
   "data_fresh": true,
-  "last_pipeline": "2026-06-23T11:33:57.201406+00:00",
+  "last_pipeline": "2026-06-23T11:38:52.032556+00:00",
   "pipeline_pid": 990789,
   "data_ext_pid": 929007,
   "engine_pid": 1038093,

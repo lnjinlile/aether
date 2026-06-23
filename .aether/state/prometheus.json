@@ -505,8 +505,9 @@
       "max_dd": 17.8
     },
     "BandMR_BTC": {
-      "return_pct": 106.0,
-      "sharpe": 0.333,
+      "return_pct": -18.3,
+      "sharpe": -0.32,
+      "status": "RETIRED",
       "win_rate": 54.5,
       "trades": 75,
       "max_dd": 19.8
