@@ -87,17 +87,19 @@ AUX_FRESHNESS_WARN = {
     "orderbook_snapshots": 15,   # minutes — collected every ~5min, 3 cycles
     "open_interest": 15,          # minutes — collected every ~5min
     "funding_rates": 480,         # minutes (8h) — funding settles every 8h
+    "order_flow": 10,             # minutes — collected every ~5min, 2 cycles (critical for regime detection)
 }
 
 AUX_FRESHNESS_CRIT = {
     "orderbook_snapshots": 30,
     "open_interest": 30,
     "funding_rates": 1440,        # 24h — funding should update at least daily
+    "order_flow": 20,             # 20min — Mercury regime detection needs fresh order flow
 }
 
 
 def check_aux_freshness(conn, now_ts=None):
-    """Check freshness of auxiliary data tables populated by data_ext.py.
+    """Check freshness of auxiliary data tables populated by data_ext.py and pipeline.py.
 
     Returns list of issue strings. Empty list = all healthy.
     """
@@ -108,6 +110,7 @@ def check_aux_freshness(conn, now_ts=None):
         "orderbook_snapshots": "timestamp",   # float seconds
         "open_interest": "timestamp",          # float seconds
         "funding_rates": "funding_time",        # int ms
+        "order_flow": "window_start",           # int ms — critical for Mercury regime detection
     }
     issues = []
     for table, ts_col in TS_COLS.items():
