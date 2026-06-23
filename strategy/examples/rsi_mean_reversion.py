@@ -2,6 +2,7 @@
 
 from typing import List, Optional
 
+import numpy as np
 import pandas as pd
 
 from ..base import BaseStrategy, Signal, SignalType
@@ -81,18 +82,11 @@ class RSIMeanReversionStrategy(BaseStrategy):
         key = (symbol, timeframe)
         ind = self._indicators.get(key)
 
-        if ind is None or len(ind) < self.params["rsi_period"] + 1:
-            return Signal(
-                type=SignalType.HOLD,
-                symbol=symbol,
-                reason="Insufficient data for RSI calculation",
-                strategy_name=self.name,
-            )
+        min_bars = self.params["rsi_period"] + 1
+        if (early := self._check_ready(symbol, min_bars)):
+            return early
 
         df = self._data.get(key)
-        if df is None:
-            return Signal(type=SignalType.HOLD, symbol=symbol, reason="No data", strategy_name=self.name)
-
         # Increment cooldown counter
         self._bars_since_last_trade += 1
 
@@ -128,8 +122,11 @@ class RSIMeanReversionStrategy(BaseStrategy):
                 )
 
         # Entry signals (only if cooldown passed)
+        # Use sustained condition (rsi < oversold) instead of cross_below_oversold
+        # to handle engine restarts where the cross happened before startup.
+        # Cooldown + has_position prevent duplicate entries.
         if not has_pos and self._bars_since_last_trade > cooldown:
-            if latest["cross_below_oversold"]:
+            if not np.isnan(latest["rsi"]) and latest["rsi"] < self.params["oversold"]:
                 self._bars_since_last_trade = 0
                 sl = current_price * (1.0 - sl_pct)
                 tp = current_price * (1.0 + tp_pct)

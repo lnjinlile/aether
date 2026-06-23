@@ -20,9 +20,9 @@
         "avg_loss_pct": 0.89
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-1.201)",
-        "\u26a0\ufe0f LARGE LOSS (-48.79%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (50.0%)"
+        "⚠️ NEGATIVE SHARPE (-1.201)",
+        "⚠️ LARGE LOSS (-48.79%)",
+        "⚠️ HIGH DRAWDOWN (50.0%)"
       ],
       "bars": 2881
     },
@@ -43,9 +43,9 @@
         "avg_loss_pct": 1.35
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-1.013)",
-        "\u26a0\ufe0f LARGE LOSS (-58.99%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (62.6%)"
+        "⚠️ NEGATIVE SHARPE (-1.013)",
+        "⚠️ LARGE LOSS (-58.99%)",
+        "⚠️ HIGH DRAWDOWN (62.6%)"
       ],
       "bars": 2881
     },
@@ -85,10 +85,10 @@
         "avg_loss_pct": 3.74
       },
       "flags": [
-        "\u26a0\ufe0f LOW WINRATE (13% < 30%)",
-        "\u26a0\ufe0f NEGATIVE SHARPE (-1.146)",
-        "\u26a0\ufe0f LARGE LOSS (-31.02%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (37.3%)"
+        "⚠️ LOW WINRATE (13% < 30%)",
+        "⚠️ NEGATIVE SHARPE (-1.146)",
+        "⚠️ LARGE LOSS (-31.02%)",
+        "⚠️ HIGH DRAWDOWN (37.3%)"
       ],
       "bars": 721
     },
@@ -109,10 +109,10 @@
         "avg_loss_pct": 4.61
       },
       "flags": [
-        "\u26a0\ufe0f LOW WINRATE (25% < 30%)",
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.373)",
-        "\u26a0\ufe0f LARGE LOSS (-25.97%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (48.4%)"
+        "⚠️ LOW WINRATE (25% < 30%)",
+        "⚠️ NEGATIVE SHARPE (-0.373)",
+        "⚠️ LARGE LOSS (-25.97%)",
+        "⚠️ HIGH DRAWDOWN (48.4%)"
       ],
       "bars": 721
     },
@@ -133,7 +133,7 @@
         "avg_loss_pct": 1.72
       },
       "flags": [
-        "\u26a0\ufe0f HIGH DRAWDOWN (17.2%)"
+        "⚠️ HIGH DRAWDOWN (17.2%)"
       ],
       "bars": 2881
     },
@@ -154,7 +154,7 @@
         "avg_loss_pct": 3.19
       },
       "flags": [
-        "\u26a0\ufe0f HIGH DRAWDOWN (11.6%)"
+        "⚠️ HIGH DRAWDOWN (11.6%)"
       ],
       "bars": 721
     },
@@ -194,9 +194,9 @@
         "avg_loss_pct": 8.28
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.483)",
-        "\u26a0\ufe0f LARGE LOSS (-15.01%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (26.2%)"
+        "⚠️ NEGATIVE SHARPE (-0.483)",
+        "⚠️ LARGE LOSS (-15.01%)",
+        "⚠️ HIGH DRAWDOWN (26.2%)"
       ],
       "bars": 721
     },
@@ -217,7 +217,7 @@
         "avg_loss_pct": 7.22
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.172)"
+        "⚠️ NEGATIVE SHARPE (-0.172)"
       ],
       "bars": 721
     },
@@ -238,7 +238,7 @@
         "avg_loss_pct": 1.79
       },
       "flags": [
-        "\u26a0\ufe0f HIGH DRAWDOWN (10.0%)"
+        "⚠️ HIGH DRAWDOWN (10.0%)"
       ],
       "bars": 721
     },
@@ -259,7 +259,7 @@
         "avg_loss_pct": 2.04
       },
       "flags": [
-        "\u26a0\ufe0f HIGH DRAWDOWN (10.0%)"
+        "⚠️ HIGH DRAWDOWN (10.0%)"
       ],
       "bars": 721
     },
@@ -280,10 +280,10 @@
         "avg_loss_pct": 7.17
       },
       "flags": [
-        "\u26a0\ufe0f LOW WINRATE (14% < 30%)",
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.866)",
-        "\u26a0\ufe0f LARGE LOSS (-26.46%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (26.5%)"
+        "⚠️ LOW WINRATE (14% < 30%)",
+        "⚠️ NEGATIVE SHARPE (-0.866)",
+        "⚠️ LARGE LOSS (-26.46%)",
+        "⚠️ HIGH DRAWDOWN (26.5%)"
       ],
       "bars": 721
     },
@@ -304,10 +304,10 @@
         "avg_loss_pct": 10.03
       },
       "flags": [
-        "\u26a0\ufe0f LOW WINRATE (20% < 30%)",
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.452)",
-        "\u26a0\ufe0f LARGE LOSS (-20.93%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (34.7%)"
+        "⚠️ LOW WINRATE (20% < 30%)",
+        "⚠️ NEGATIVE SHARPE (-0.452)",
+        "⚠️ LARGE LOSS (-20.93%)",
+        "⚠️ HIGH DRAWDOWN (34.7%)"
       ],
       "bars": 721
     },
@@ -328,9 +328,9 @@
         "avg_loss_pct": 3.51
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-0.339)",
-        "\u26a0\ufe0f LARGE LOSS (-9.54%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (17.9%)"
+        "⚠️ NEGATIVE SHARPE (-0.339)",
+        "⚠️ LARGE LOSS (-9.54%)",
+        "⚠️ HIGH DRAWDOWN (17.9%)"
       ],
       "bars": 721
     },
@@ -351,10 +351,10 @@
         "avg_loss_pct": 7.37
       },
       "flags": [
-        "\u26a0\ufe0f LOW WINRATE (11% < 30%)",
-        "\u26a0\ufe0f NEGATIVE SHARPE (-1.727)",
-        "\u26a0\ufe0f LARGE LOSS (-43.56%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (43.6%)"
+        "⚠️ LOW WINRATE (11% < 30%)",
+        "⚠️ NEGATIVE SHARPE (-1.727)",
+        "⚠️ LARGE LOSS (-43.56%)",
+        "⚠️ HIGH DRAWDOWN (43.6%)"
       ],
       "bars": 721
     },
@@ -375,7 +375,7 @@
         "avg_loss_pct": 0.99
       },
       "flags": [
-        "\u26a0\ufe0f HIGH DRAWDOWN (13.5%)"
+        "⚠️ HIGH DRAWDOWN (13.5%)"
       ],
       "bars": 721
     },
@@ -396,9 +396,9 @@
         "avg_loss_pct": 5.0
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-1.238)",
-        "\u26a0\ufe0f LARGE LOSS (-64.94%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (69.3%)"
+        "⚠️ NEGATIVE SHARPE (-1.238)",
+        "⚠️ LARGE LOSS (-64.94%)",
+        "⚠️ HIGH DRAWDOWN (69.3%)"
       ],
       "bars": 721
     },
@@ -419,7 +419,7 @@
         "avg_loss_pct": 4.17
       },
       "flags": [
-        "\u26a0\ufe0f HIGH DRAWDOWN (34.3%)"
+        "⚠️ HIGH DRAWDOWN (34.3%)"
       ],
       "bars": 721
     },
@@ -440,8 +440,8 @@
         "avg_loss_pct": 2.24
       },
       "flags": [
-        "\u26a0\ufe0f LOW WINRATE (25% < 30%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (21.5%)"
+        "⚠️ LOW WINRATE (25% < 30%)",
+        "⚠️ HIGH DRAWDOWN (21.5%)"
       ],
       "bars": 721
     },
@@ -462,10 +462,10 @@
         "avg_loss_pct": 3.48
       },
       "flags": [
-        "\u26a0\ufe0f LOW WINRATE (13% < 30%)",
-        "\u26a0\ufe0f NEGATIVE SHARPE (-1.155)",
-        "\u26a0\ufe0f LARGE LOSS (-26.83%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (32.9%)"
+        "⚠️ LOW WINRATE (13% < 30%)",
+        "⚠️ NEGATIVE SHARPE (-1.155)",
+        "⚠️ LARGE LOSS (-26.83%)",
+        "⚠️ HIGH DRAWDOWN (32.9%)"
       ],
       "bars": 721
     },
@@ -486,7 +486,7 @@
         "avg_loss_pct": 2.04
       },
       "flags": [
-        "\u26a0\ufe0f HIGH DRAWDOWN (10.7%)"
+        "⚠️ HIGH DRAWDOWN (10.7%)"
       ],
       "bars": 721
     },
@@ -507,9 +507,9 @@
         "avg_loss_pct": 2.57
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-1.183)",
-        "\u26a0\ufe0f LARGE LOSS (-19.52%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (19.9%)"
+        "⚠️ NEGATIVE SHARPE (-1.183)",
+        "⚠️ LARGE LOSS (-19.52%)",
+        "⚠️ HIGH DRAWDOWN (19.9%)"
       ],
       "bars": 721
     },
@@ -530,7 +530,7 @@
         "avg_loss_pct": 3.2
       },
       "flags": [
-        "\u26a0\ufe0f HIGH DRAWDOWN (17.0%)"
+        "⚠️ HIGH DRAWDOWN (17.0%)"
       ],
       "bars": 721
     },
@@ -551,10 +551,10 @@
         "avg_loss_pct": 5.36
       },
       "flags": [
-        "\u26a0\ufe0f LOW WINRATE (21% < 30%)",
-        "\u26a0\ufe0f NEGATIVE SHARPE (-2.244)",
-        "\u26a0\ufe0f LARGE LOSS (-61.26%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (62.9%)"
+        "⚠️ LOW WINRATE (21% < 30%)",
+        "⚠️ NEGATIVE SHARPE (-2.244)",
+        "⚠️ LARGE LOSS (-61.26%)",
+        "⚠️ HIGH DRAWDOWN (62.9%)"
       ],
       "bars": 721
     },
@@ -582,9 +582,9 @@
         "avg_loss_pct": 7.85
       },
       "flags": [
-        "\u26a0\ufe0f NEGATIVE SHARPE (-1.096)",
-        "\u26a0\ufe0f LARGE LOSS (-23.10%)",
-        "\u26a0\ufe0f HIGH DRAWDOWN (26.5%)"
+        "⚠️ NEGATIVE SHARPE (-1.096)",
+        "⚠️ LARGE LOSS (-23.10%)",
+        "⚠️ HIGH DRAWDOWN (26.5%)"
       ],
       "bars": 721
     },
@@ -606,6 +606,48 @@
       },
       "flags": [],
       "bars": 721
+    },
+    {
+      "name": "BandMR_BTC",
+      "enabled": false,
+      "symbol": "BTC/USDT",
+      "tf": "1h",
+      "status": "OK",
+      "metrics": {
+        "total_return_pct": 106.28,
+        "sharpe_ratio": 0.333,
+        "max_drawdown_pct": 19.8,
+        "win_rate": 57.3,
+        "profit_factor": 1.748,
+        "total_trades": 75,
+        "avg_win_pct": 0.0,
+        "avg_loss_pct": 0.0
+      },
+      "flags": [
+        "SHARPE < 0.5 (0.333)"
+      ],
+      "bars": 8761
+    },
+    {
+      "name": "BandMR_ETH",
+      "enabled": false,
+      "symbol": "ETH/USDT",
+      "tf": "1h",
+      "status": "OK",
+      "metrics": {
+        "total_return_pct": 910.08,
+        "sharpe_ratio": 0.585,
+        "max_drawdown_pct": 30.4,
+        "win_rate": 61.8,
+        "profit_factor": 2.064,
+        "total_trades": 131,
+        "avg_win_pct": 0.0,
+        "avg_loss_pct": 0.0
+      },
+      "flags": [
+        "DD > 20% (30.4%)"
+      ],
+      "bars": 8761
     }
   ],
   "ma_cross_sweep_top5": [
@@ -676,9 +718,11 @@
     }
   ],
   "recommendations": [
-    "\u26d4 PAUSE RSI_MR_ETH: Sharpe -0.172 < 0",
-    "\u2713 KEEP DonchianMR_ETH: Sharpe=+0.00 WR=75% Net=-0.31%",
-    "\ud83d\udca1 CONSIDER MA_Cross on BTC 1h: fast=10 slow=30 slm=2.0x tpm=4.0x \u2192 net=+30.38% sharpe=+0.72"
+    "⛔ PAUSE RSI_MR_ETH: Sharpe -0.172 < 0",
+    "✓ KEEP DonchianMR_ETH: Sharpe=+0.00 WR=75% Net=-0.31%",
+    "💡 CONSIDER MA_Cross on BTC 1h: fast=10 slow=30 slm=2.0x tpm=4.0x → net=+30.38% sharpe=+0.72"
   ],
-  "timestamp": "2026-06-22 10:27 UTC"
+  "timestamp": "2026-06-22 10:27 UTC",
+  "_updated_at": "2026-06-23T06:08:28.243850+00:00",
+  "_bandmr_synced": "2026-06-23T06:05:46Z"
 }

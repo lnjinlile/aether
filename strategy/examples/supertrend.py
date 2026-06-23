@@ -145,10 +145,8 @@ class SupertrendStrategy(BaseStrategy):
         df = self._data.get(key)
 
         min_bars = self.params["atr_period"] + 5
-        if ind is None or df is None or len(ind) < min_bars:
-            return Signal(SignalType.HOLD, symbol,
-                          reason=f"Need {min_bars} bars, have {len(ind) if ind is not None else 0}",
-                          strategy_name=self.name)
+        if (early := self._check_ready(symbol, min_bars)):
+            return early
 
         self._bars_since_last_trade += 1
         latest = ind.iloc[-1]

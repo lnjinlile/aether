@@ -92,3 +92,62 @@ def wal_checkpoint(db_path: Optional[str] = None, truncate: bool = True) -> tupl
         return before[0] if before else 0, after[0] if after else 0
     finally:
         conn.close()
+
+
+def cleanup_old_data(db_path: Optional[str] = None, retention_days: int = 30) -> dict:
+    """Remove stale auxiliary data and reclaim disk space.
+
+    Cleans orderbook_snapshots, open_interest, and order_flow older than
+    *retention_days*.  Preserves klines, funding_rates, trades_log
+    (historical reference data).
+
+    Args:
+        db_path: Database path (defaults to market.db).
+        retention_days: Max age in days for auxiliary data (default 30).
+
+    Returns:
+        Dict with {table: rows_deleted} stats and vacuum info.
+    """
+    import time
+    path = db_path or _DEFAULT_DB_PATH
+    cutoff = time.time() - retention_days * 86400.0
+
+    conn = _open_conn(path)
+    stats = {}
+    try:
+        # orderbook_snapshots (timestamp is REAL = Unix seconds)
+        cur = conn.execute(
+            "DELETE FROM orderbook_snapshots WHERE timestamp < ?", (cutoff,)
+        )
+        stats["orderbook_snapshots"] = cur.rowcount
+
+        # open_interest (timestamp is REAL = Unix seconds)
+        cur = conn.execute(
+            "DELETE FROM open_interest WHERE timestamp < ?", (cutoff,)
+        )
+        stats["open_interest"] = cur.rowcount
+
+        # order_flow (window_start is INTEGER = Unix ms)
+        cur = conn.execute(
+            "DELETE FROM order_flow WHERE window_start < ?", (int(cutoff * 1000),)
+        )
+        stats["order_flow"] = cur.rowcount
+
+        conn.commit()
+
+        # Vacuum if fragmentation is significant
+        freelist = conn.execute("PRAGMA freelist_count").fetchone()[0]
+        page_count = conn.execute("PRAGMA page_count").fetchone()[0]
+        frag_pct = freelist / max(page_count, 1) * 100
+        if frag_pct > 20:
+            conn.execute("PRAGMA vacuum")
+            stats["vacuum"] = f"triggered at {frag_pct:.1f}% fragmentation"
+        else:
+            stats["vacuum"] = f"skipped ({frag_pct:.1f}% fragmentation)"
+
+        # Truncate WAL
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    finally:
+        conn.close()
+
+    return stats

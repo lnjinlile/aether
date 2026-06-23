@@ -82,8 +82,9 @@ class ADXTrendStrategy(BaseStrategy):
         ind = self._indicators.get(key)
         df = self._data.get(key)
 
-        if ind is None or df is None or len(ind) < 50:
-            return Signal(SignalType.HOLD, symbol, reason="Insufficient data", strategy_name=self.name)
+        min_bars = 50
+        if (early := self._check_ready(symbol, min_bars)):
+            return early
 
         self._bars_since_last_trade += 1
         latest = ind.iloc[-1]

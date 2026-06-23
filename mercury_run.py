@@ -53,8 +53,11 @@ def debug_log(msg: str):
 # Updated 2026-06-22: RSI_MR_ETH + DonchianMR_ETH both LIVE.
 # DonchianMR_ETH promoted by Prometheus 10:50 UTC (WF 4/4 OOS, 365d +429% SR=0.55 50trades).
 STRATEGY_PRIORITY = {
-    "RSI_MR_ETH":           1.0547 * (16 ** 0.5),   # Sharpe 1.05, 16 trades → 4.22
-    "DonchianMR_ETH":       0.552  * (50 ** 0.5),   # Sharpe 0.55, 50 trades → 3.90
+    "RSI_MR_ETH":           0.782  * (16 ** 0.5),   # Sharpe 0.782, 16 trades → 3.13 (updated from athena.json)
+    "DonchianMR_ETH":       0.552  * (50 ** 0.5),   # Sharpe 0.552, 50 trades → 3.90
+    "DonchianMR_BTC":       0.507  * (38 ** 0.5),   # Sharpe 0.507, 38 trades → 3.12 (Athena-authorized LIVE 2026-06-22)
+    "KeltnerMR_BTC":        0.516  * (21 ** 0.5),   # Sharpe 0.516, 21 trades → 2.36 (Refined Sweep Req#66)
+    "KeltnerMR_ETH":        0.662  * (27 ** 0.5),   # Sharpe 0.662, 27 trades → 3.44 (Refined Sweep Req#66)
 }
 
 def get_strategy_priority(name: str) -> float:
@@ -63,11 +66,27 @@ def get_strategy_priority(name: str) -> float:
 
 def main():
     cfg = get_config()
+    patrol_start = datetime.now(timezone.utc)
     print("=" * 62)
     print("  ☿ Mercury (墨丘利) — Aether 交易执行者")
-    print(f"  启动: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    print(f"  启动: {patrol_start.strftime('%Y-%m-%d %H:%M:%S UTC')}")
     print(f"  网络: {'测试网' if cfg.testnet else '实盘'}")
     print("=" * 62)
+
+    # ── AUDIT-080: Set _updated_at at patrol start so engine liveness
+    # can be monitored even if the run hangs or crashes mid-flight.
+    try:
+        with open(".aether/state/mercury.json", "r") as f:
+            merc_state = json.load(f)
+    except Exception:
+        merc_state = {}
+    merc_state["_updated_at"] = patrol_start.isoformat()
+    try:
+        os.makedirs(".aether/state", exist_ok=True)
+        with open(".aether/state/mercury.json", "w") as f:
+            json.dump(merc_state, f, indent=2)
+    except Exception as e:
+        print(f"  ⚠️  _updated_at 写入失败: {e}")
 
     # ── 1. Initialize modules ─────────────────────────────────
     collector = BinanceDataCollector(cfg.api_key, cfg.api_secret, cfg.testnet)
@@ -80,10 +99,45 @@ def main():
         max_total_position_pct=0.50,
         daily_loss_limit_pct=0.05,
         min_order_usdt=10.0,
-        correlated_groups=[["RSI_MR_ETH", "DonchianMR_ETH"]],
+        correlated_groups=[
+            ["RSI_MR_ETH", "DonchianMR_ETH", "KeltnerMR_ETH"],    # PERF-048: All 3 ETH MR strategies — pairwise corr ≥ 0.85
+            ["KeltnerMR_BTC", "DonchianMR_BTC"],                  # BTC MR strategies — shared symbol
+        ],
         max_correlated_exposure_pct=0.30,
     )
     storage = MarketStorage()
+
+    # ── 1.5 Load position attribution (PERF-025: mutual exclusion fix) ──
+    # Exchange positions lack strategy_name. Track mapping in a state file
+    # so RiskManager.correlated_groups can enforce mutual exclusion.
+    _attrib_path = ".aether/state/position_strategies.json"
+    position_strategies = {}  # {symbol_normalized: strategy_name}
+    try:
+        with open(_attrib_path) as f:
+            position_strategies = json.load(f)
+    except Exception:
+        position_strategies = {}
+
+    def _save_position_strategies():
+        try:
+            os.makedirs(os.path.dirname(_attrib_path), exist_ok=True)
+            with open(_attrib_path, "w") as f:
+                json.dump(position_strategies, f, indent=2)
+        except Exception as e:
+            print(f"  ⚠️  持仓归属保存失败: {e}")
+
+    def _inject_strategy_attribution(pos_list, attribution):
+        """Inject strategy_name into position dicts from attribution map.
+        Normalizes symbols for cross-reference: strips /:USDT suffix."""
+        for p in pos_list:
+            sym = p.get("symbol", "")
+            norm = sym.upper().replace("/", "").replace(":USDT", "")
+            if sym and not p.get("strategy_name"):
+                for attr_sym, strat_name in attribution.items():
+                    attr_norm = attr_sym.upper().replace("/", "").replace(":USDT", "")
+                    if attr_norm == norm or attr_sym in sym or sym in attr_sym:
+                        p["strategy_name"] = strat_name
+                        break
 
     # ── 2. Get account snapshot ───────────────────────────────
     # ── 2. Get account snapshot ───────────────────────────────
@@ -140,6 +194,11 @@ def main():
     if balance is None:
         balance = {"balance": 0, "available": 0, "unrealized_pnl": 0}
 
+    # ── Inject strategy attribution into exchange positions ──
+    # PERF-025: Exchange positions lack strategy_name. Without this,
+    # RiskManager.correlated_groups mutual exclusion is dead code.
+    _inject_strategy_attribution(positions, position_strategies)
+
     print(f"  余额:     {balance['balance']:,.2f} USDT")
     print(f"  可用:     {balance['available']:,.2f} USDT")
     print(f"  未实现盈亏: {fmt_pnl(balance['unrealized_pnl'])} USDT")
@@ -167,10 +226,13 @@ def main():
             ps = json.load(f)
         strategies_metrics = ps.get('strategies', {})
         for sname, sm in strategies_metrics.items():
+            wr = sm.get('win_rate', 0)
             backtest_stats[sname] = {
-                'win_rate': sm.get('win_rate', 0) / 100.0 if sm.get('win_rate', 0) > 1 else sm.get('win_rate', 0),
+                'win_rate': wr / 100.0 if wr > 1 else wr,
                 'avg_win': sm.get('avg_win_pct', sm.get('return_pct', 0) / max(sm.get('trades', 1), 1)),
                 'avg_loss': sm.get('avg_loss_pct', 2.0),
+                'dsr': sm.get('dsr', 0.5),        # PERF-068: DSR for Kelly confidence
+                'sharpe': sm.get('sharpe', 0),     # for logging
             }
     except Exception:
         pass  # If prometheus.json unavailable, just use vol-targeted sizing
@@ -298,6 +360,48 @@ def main():
     print("\n🎯 信号生成")
     print("-" * 40)
 
+    # ── PERF-049: Regime-aware position multiplier ────────────
+    # Read regime_monitor.json to compute a continuous position
+    # multiplier for MR strategies. Instead of binary PERF-031 gating,
+    # position size decays as P(Trend) increases, preventing the
+    # system from going completely dead during TRENDING regimes.
+    _p_trend = 0.0
+    _regime_label = "UNKNOWN"
+    try:
+        with open(".aether/state/regime_monitor.json") as f:
+            _regime_data = json.load(f)
+        _p_trend = _regime_data.get("p_trending", 0)
+        _regime_label = _regime_data.get("regime", "UNKNOWN")
+    except Exception:
+        pass
+
+    def _compute_regime_multiplier(strat_name: str, p_trend: float) -> float:
+        """PERF-049: Continuous regime-aware position multiplier for MR strategies.
+
+        MR strategies thrive in RANGING and bleed in TRENDING. Instead of binary
+        gating (all-or-nothing), this reduces position size proportionally as
+        P(Trend) rises. Non-MR strategies always get 1.0.
+
+        Formula: linear decay from MR_NEUTRAL to MR_MAX_REDUCE, floor at MR_FLOOR.
+        """
+        mr_patterns = ("_MR_", "MR_", "RSI_", "DonchianMR", "KeltnerMR",
+                       "BBandRSI", "StochRSI", "BBand", "MeanRev")
+        is_mr = any(pat in strat_name for pat in mr_patterns)
+        if not is_mr:
+            return 1.0
+
+        MR_NEUTRAL = 0.45   # P below this: full size (clearly ranging)
+        MR_MAX_REDUCE = 0.65  # P above this: max reduction (clear trend)
+        MR_FLOOR = 0.10     # Never go to absolute zero; keep minimal exposure
+
+        if p_trend <= MR_NEUTRAL:
+            return 1.0
+        if p_trend >= MR_MAX_REDUCE:
+            return MR_FLOOR
+
+        # Linear interpolation: full→floor as P goes from 0.45→0.65
+        return 1.0 - (1.0 - MR_FLOOR) * (p_trend - MR_NEUTRAL) / (MR_MAX_REDUCE - MR_NEUTRAL)
+
     all_signals: List[Signal] = []
     signal_details: List[Dict] = []
 
@@ -348,6 +452,17 @@ def main():
                 sig_dict["_sizing_method"] = pos_size.sizing_method
                 sig_dict["_risk_amount"] = pos_size.risk_amount
                 sig_dict["_account_pct"] = pos_size.account_pct
+
+                # ── PERF-049: Apply regime-aware position multiplier ──
+                _rmult = _compute_regime_multiplier(strategy_name, _p_trend)
+                if _rmult < 1.0:
+                    sig_dict["quantity"] = pos_size.quantity * _rmult
+                    sig_dict["_sizing_method"] = pos_size.sizing_method + f"+regime(x{_rmult:.2f})"
+                    sig_dict["_risk_amount"] = pos_size.risk_amount * _rmult
+                    sig_dict["_account_pct"] = pos_size.account_pct * _rmult
+                sig_dict["_regime_multiplier"] = _rmult
+                sig_dict["_regime"] = _regime_label
+                sig_dict["_p_trend"] = round(_p_trend, 3)
             else:
                 price_val = 0
 
@@ -365,7 +480,23 @@ def main():
                 "reason": sig.reason,
                 "confidence": sig.confidence,
                 "sizing": sig_dict.get("_sizing_method", "fixed"),
+                "regime_mult": sig_dict.get("_regime_multiplier", 1.0),
             })
+
+    # Print regime banner
+    regime_mult_avg = 1.0
+    mr_count = 0
+    for sd in signal_details:
+        if sd["signal"] != "HOLD" and sd.get("regime_mult", 1.0) < 1.0:
+            mr_count += 1
+            regime_mult_avg = min(regime_mult_avg, sd["regime_mult"])
+    if _regime_label != "UNKNOWN":
+        gate_note = ""
+        if _p_trend > 0.45 and mr_count > 0:
+            gate_note = f" | ⚠️ MR仓位×{regime_mult_avg:.2f}（PERF-049连续衰减）"
+        elif _p_trend > 0.45:
+            gate_note = f" | PERF-049就绪（P(Trend)={_p_trend:.3f}，有信号时自动衰减）"
+        print(f"  🌊 大盘: {_regime_label} (P(Trend)={_p_trend:.3f}){gate_note}")
 
     # Print all signal details
     if not signal_details:
@@ -578,9 +709,19 @@ def main():
                     }
                     positions.append(new_pos)
                     account_info["positions"] = positions
+                    # ── PERF-025: Persist position attribution ──
+                    position_strategies[bin_sym] = strategy_name
+                    _save_position_strategies()
                 elif sig_type in (SignalType.CLOSE_LONG, SignalType.CLOSE_SHORT):
                     positions = [p for p in positions if p.get("symbol","").replace("/","").replace(":USDT","").upper() != bin_sym.upper()]
                     account_info["positions"] = positions
+                    # ── PERF-025: Clear position attribution on close ──
+                    # Remove all normalized-key variants of this symbol
+                    to_remove = [k for k in position_strategies
+                                 if k.upper().replace("/", "").replace(":USDT", "") == bin_sym.upper()]
+                    for k in to_remove:
+                        del position_strategies[k]
+                    _save_position_strategies()
             else:
                 error_msg = result.get("error", "Unknown error")
                 print(f"    ❌ 失败: {error_msg}")

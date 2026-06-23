@@ -107,16 +107,16 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.rsi_mean_reversion.RSIMeanReversionStrategy
-  enabled: false
+  enabled: true
   name: RSI_MR_BTC
   params:
-    cooldown_bars: 5
-    exit_rsi: 50
+    cooldown_bars: 3
+    exit_rsi: 45
     leverage: 3
-    overbought: 70
-    oversold: 30
+    overbought: 80
+    oversold: 20
     rsi_period: 14
-    stop_loss_pct: 0.03
+    stop_loss_pct: 0.015
     symbols:
     - BTC/USDT
     take_profit_pct: 0.06
@@ -408,11 +408,11 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.donchian_mr.DonchianMRStrategy
-  enabled: false
+  enabled: true
   name: DonchianMR_BTC
   params:
-    cooldown_bars: 5
-    donchian_period: 10
+    cooldown_bars: 9
+    donchian_period: 8
     exit_level: 50
     leverage: 3
     overbought: 80
@@ -441,3 +441,109 @@ strategies:
     take_profit_pct: 0.04
     timeframes:
     - 1h
+- class: strategy.examples.donchian_trend.DonchianTrendStrategy
+  enabled: false
+  name: DonchianTrend_BTC
+  params:
+    adx_period: 14
+    adx_threshold: 25
+    atr_period: 14
+    atr_sl_mult: 2.0
+    atr_tp_mult: 4.0
+    cooldown_bars: 5
+    donchian_period: 20
+    leverage: 3
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+- class: strategy.examples.donchian_trend.DonchianTrendStrategy
+  enabled: false
+  name: DonchianTrend_ETH
+  params:
+    adx_period: 14
+    adx_threshold: 25
+    atr_period: 14
+    atr_sl_mult: 2.0
+    atr_tp_mult: 4.0
+    cooldown_bars: 5
+    donchian_period: 20
+    leverage: 3
+    symbols:
+    - ETH/USDT
+    timeframes:
+    - 1h
+- class: strategy.examples.keltner_mr.KeltnerMRStrategy
+  enabled: true
+  name: KeltnerMR_BTC
+  params:
+    atr_mult: 1.75
+    atr_period: 14
+    cooldown_bars: 3
+    exit_level: 50
+    kc_period: 20
+    leverage: 3
+    overbought: 75
+    oversold: 20
+    rsi_period: 14
+    stop_loss_pct: 0.015
+    symbols:
+    - BTC/USDT
+    take_profit_pct: 0.02
+    timeframes:
+    - 1h
+- class: strategy.examples.keltner_mr.KeltnerMRStrategy
+  enabled: true
+  name: KeltnerMR_ETH
+  params:
+    atr_mult: 2.0
+    atr_period: 14
+    cooldown_bars: 3
+    exit_level: 50
+    kc_period: 24
+    leverage: 3
+    overbought: 75
+    oversold: 20
+    rsi_period: 14
+    stop_loss_pct: 0.01
+    symbols:
+    - ETH/USDT
+    take_profit_pct: 0.02
+    timeframes:
+    - 1h
+- class: strategy.examples.band_mr.BandMRStrategy
+  enabled: true
+  name: BandMR_BTC
+  params:
+    cooldown_bars: 8
+    donchian_period: 20
+    exit_level: 50
+    leverage: 3
+    overbought: 75
+    oversold: 30
+    rsi_period: 14
+    stop_loss_pct: 0.01
+    symbols:
+    - BTC/USDT
+    take_profit_pct: 0.025
+    timeframes:
+    - 1h
+    volume_filter: 1.2
+- class: strategy.examples.band_mr.BandMRStrategy
+  enabled: true
+  name: BandMR_ETH
+  params:
+    cooldown_bars: 5
+    donchian_period: 10
+    exit_level: 50
+    leverage: 3
+    overbought: 75
+    oversold: 30
+    rsi_period: 14
+    stop_loss_pct: 0.015
+    symbols:
+    - ETH/USDT
+    take_profit_pct: 0.025
+    timeframes:
+    - 1h
+    volume_filter: 1.2

@@ -1,25 +1,15 @@
 {
   "status": "active",
+  "_updated_at": "2026-06-23T10:21:45.718927+00:00",
+  "last_optimization": "PERF-069_365d_dsr",
+  "last_run": "2026-06-23T10:07:51.936730+00:00",
   "walk_forward_implemented": true,
   "regime_model": {
-    "symbol": "ETH",
-    "horizon": "6h",
-    "threshold_pct": 1.0,
-    "model_type": "LGBMClassifier",
-    "test_accuracy": 0.6591,
-    "train_accuracy": 0.7216,
-    "train_test_gap": 0.0625,
-    "feature_count": 24,
-    "top_features": [
-      "vol_50_norm",
-      "vol_50",
-      "vol_20_norm",
-      "vol_20",
-      "hl_range_20"
-    ],
-    "current_regime": "RANGING",
-    "trend_ratio_30p": 0.167,
-    "file": "ml_alpha/regime_model.pkl"
+    "accuracy": 0.7099,
+    "features": 120,
+    "calibrated": true,
+    "ece": 0.069,
+    "brier": 0.2
   },
   "live_validation": {
     "TrendFollow_BTC_1h_200p": {
@@ -38,9 +28,190 @@
       "verdict": "STILL_LOSING"
     }
   },
-  "next": "TrendFollow_BTC_1h param sweep when regime shifts to TRENDING. Guardian max_correlated_exposure cap DONE (commit 205d320). StochRSI_ETH backtest now wired. Next: clean up prometheus.json data sprawl (29 top-level keys → consolidate), profile engine tick hot-path for optimization, consider ML feature store for regime classifier reuse.",
-  "_updated_at": "2026-06-22T16:41:24.462596+00:00",
-  "recommendation": "RSI_MR_ETH LIVE (os=20/ob=75/sl=2%/tp=4%/lev=3x) ENGINE-CONFIRMED: 90d=+50.23% SR=0.6984 DD=11.35% WR=81.25% 16trades. DonchianMR_ETH PROMOTED TO LIVE 2026-06-22 (WF 4/4 OOS, 365d +429%). DonchianMR_BTC PAPER (SR=0.508 DD=11.62% — Athena promotion reverted per AUDIT-047). Now TWO LIVE strategies on ETH (RSI_MR_ETH + DonchianMR_ETH). Both are mean-reversion with correlation=0.878 — portfolio concentration risk exists. Need trend-following strategy or BTC diversification for regime protection.",
+  "next": "PERF-070: Apply 365d DSR confidence to position sizing",
+  "active_research": {
+    "PERF-060": {
+      "title": "signal_gen code dedup — shared _compute_adx + _compute_rsi",
+      "status": "completed",
+      "target": "backtest/signal_gen.py",
+      "description": "Extracted duplicated ADX computation (~62 lines across 3 signal generators) into shared _compute_adx(high,low,close,period) utility. Replaced inline RSI in regimeswitch_signals (9 lines) and mlensemble_signals (7 lines) with existing _compute_rsi(). Net: 1953→1928 lines (-25), eliminated 5 duplicated code blocks. adx_trend_signals, donchian_trend_signals, trend_composite_signals all now use single ADX implementation. Smoke-tested on 46k BTC bars — all generators produce valid output.",
+      "deployed": "2026-06-23T13:30:00+00:00"
+    },
+    "PERF-052": {
+      "title": "Regime模型Optuna超参调优",
+      "status": "completed_improved",
+      "target": "ml_alpha/train_regime_optuna.py → ml_alpha/regime_model_mtf.pkl",
+      "description": "100-trial Optuna TPE调优LGBMClassifier。最佳参数: n_estimators=450 max_depth=2 lr=0.046 num_leaves=85 min_child=90 subsample=0.94 colsample=0.62 reg_alpha=0.015 reg_lambda=0.075。测试准确率66.87%→68.26%(+1.4pp)。4h特征主导(4h_vol_ratio 23.0, 4h_vol_5 21.0)。模型已部署并验证(regime_monitor.py通过)。",
+      "tuned_date": "2026-06-23T03:48:00+00:00",
+      "verdict": "IMPROVED +1.4pp — 4h features dominate, price-action features needed for >70%"
+    },
+    "PERF-053": {
+      "title": "扫参脚本load_data去重 — 统一工具模块",
+      "status": "completed",
+      "target": "backtest/sweep_utils.py (new) — 8 sweep scripts have identical load_data()",
+      "description": "创建backtest/sweep_utils.py提供统一load_data()和verdict()函数。消除donchian_trend/rsi_mr/keltner_mr/supertrend/trendfollow/trendfollow_adx/trendfollow_btc/vol_breakout 8个扫参脚本中完全重复的load_data实现。同时标准化PAPER/LIVE判决逻辑。 后补: 迁移6个backtest sweep脚本(keltner_mr/rsi_mr×2/supertrend/trendfollow_adx/trendfollow_btc)至sweep_utils.load_data(), 消除72行重复代码. Group B(3文件)保留自己的缓存优化版本.",
+      "deployed": "2026-06-23T03:48:00+00:00"
+    },
+    "PERF-051": {
+      "title": "Trend信号复合 - AND过滤多指标共识",
+      "status": "completed_negative",
+      "target": "backtest/signal_gen.py + backtests/trend_composite_sweep.py",
+      "description": "1280配置(640×2符号)并行扫描。AND-combine ADX+Donchian+EMA slope+DI确认入场，OR-exit。结论: 趋势复合策略比单独趋势策略更差。最佳SR=-0.040(ETH,ANY-2), 0配置DD<20%+SR>0。AND过滤减少交易量但不提升质量。加密1h趋势跟踪结构上不可盈利。",
+      "sweep_date": "2026-06-23T11:40:00+00:00",
+      "verdict": "NEGATIVE — crypto 1h trend-following structurally unprofitable"
+    },
+    "PERF-049": {
+      "title": "连续Regime仓位衰减 - 替代二进制PERF-031 gate",
+      "status": "deployed",
+      "target": "engine.py + mercury_run.py",
+      "description": "MR策略仓位随P(Trend)线性衰减(MR_NEUTRAL=0.45→MR_MAX_REDUCE=0.65, floor=0.10)，替代二进制全有全无gate。硬gate保留在P>0.85。",
+      "deployed": "2026-06-23T03:15:00+00:00"
+    },
+    "PERF-054": {
+      "title": "Regime price-action feature engineering",
+      "status": "completed_improved",
+      "target": "regime_monitor.py -> ml_alpha/regime_model_mtf.pkl",
+      "description": "Added 16 price-action features: close_vs_MA(3), RSI(2), RSI_div(2), vol_price_corr(2), close_pos(2), ROC(3), trend_slope(2). 72->120 features. 50-trial Optuna. Test acc: 68.26pct->69.02pct (+0.76pp vs old model, +1.75pp vs 120-ft baseline). Top feature: 1d_close_vs_ma_5 (importance 20.0). Deployed to regime_monitor.py.",
+      "deployed": "2026-06-23T04:10:44.502842+00:00",
+      "verdict": "IMPROVED +0.76pp vs old, +1.75pp vs baseline. Price-action features predictive."
+    },
+    "PERF-055": {
+      "title": "Regime模型特征剪枝",
+      "status": "completed_negative",
+      "target": "ml_alpha/regime_model_mtf.pkl",
+      "description": "移除34个零重要性特征(120→86), Optuna 50-trial重训, test_acc从69.02%降至65.53%(-3.5pp). 根因: max_depth=2下LGBM split重要性不可靠, 零split特征仍提供有价值上下文. 模型已回滚.",
+      "verdict": "NEGATIVE — do not prune features. Keep all 120.",
+      "deployed_date": "2026-06-23T04:21:35.551114+00:00"
+    },
+    "PERF-058": {
+      "title": "BandMR backtest sweep (request #175)",
+      "status": "completed",
+      "target": "backtests/band_mr_sweep.py → strategies BandMR_BTC/BandMR_ETH",
+      "description": "324-combo Donchian MR sweep (RSI<25-35 vs <20). BTC best SR=0.333, ETH best SR=0.585. Volume filter not applied in backtest (signal_gen limitation).",
+      "deployed": "2026-06-23T06:04:46Z",
+      "request_id": 175,
+      "total_runs": 1944,
+      "elapsed_s": 21.7
+    },
+    "PERF-059": {
+      "title": "signal_gen volume_filter + PERF-049 calibration review",
+      "status": "completed",
+      "target": "backtest/signal_gen.py donchian_mr_signals()",
+      "description": "(1) Added volume_filter param to donchian_mr_signals() — MA(vol,20)*multiplier gate at entry. Default 0.0 (off). BandMR dispatch passes 1.2. All other DonchianMR variants unaffected. (2) Reviewed PERF-049 thresholds (MR_NEUTRAL=0.45/MR_MAX_REDUCE=0.65) vs calibrated P(Trend). Calibration corrects overconfidence, not systematic bias — original thresholds are correct for calibrated values. No change needed."
+    },
+    "PERF-062": {
+      "title": "AUDIT-094: backtest_results.json strategies sync fix",
+      "status": "completed",
+      "description": "Fixed root cause where sweep scripts (band_mr_sweep.py) wrote top-level keys but not strategies section. Also fixed engine.py write_json that overwrote entire backtest_results.json destroying top-level sweep keys. Now preserves all keys on merge.",
+      "deployed": "2026-06-23T06:44:49Z",
+      "files_changed": [
+        "backtests/band_mr_sweep.py",
+        "engine.py"
+      ],
+      "state_files_synced": [
+        "backtest_results.json",
+        "prometheus.json"
+      ]
+    },
+    "PERF-063": {
+      "title": "Portfolio correlation analysis + athena_backtest code dedup",
+      "status": "completed",
+      "description": "Computed 8-strategy daily return correlation matrix (365d). Found high intra-symbol correlation (BTC 0.60-0.79, ETH 0.62-0.77) but low cross-symbol (0.03-0.13). The 6 LIVE strategies are effectively only 2 independent bets (BTC basket + ETH basket). BandMR_ETH dominates with 273.6% ann ret, SR=2.87, DD=30.4%. BandMR_BTC is a loser (-18.3%, SR=-0.32). Also consolidated athena_backtest.py load_df() into sweep_utils.load_data() — eliminated 11 duplicate lines.",
+      "deployed": "2026-06-23T07:20:00+00:00",
+      "findings": {
+        "intra_symbol_correlation": {
+          "BTC_strategies": {
+            "range": "0.60-0.79",
+            "avg": 0.71,
+            "verdict": "HIGH — 3 BTC strategies are 1 effective bet"
+          },
+          "ETH_strategies": {
+            "range": "0.62-0.77",
+            "avg": 0.7,
+            "verdict": "HIGH — 3 ETH strategies are 1 effective bet"
+          },
+          "cross_symbol": {
+            "range": "-0.06-0.13",
+            "avg": 0.04,
+            "verdict": "LOW — real diversification comes from symbol, not strategy"
+          }
+        },
+        "strategy_ranking_365d": {
+          "BandMR_ETH": {
+            "ann_ret": 273.6,
+            "sharpe": 2.87,
+            "max_dd": -30.4
+          },
+          "KeltnerMR_ETH": {
+            "ann_ret": 224.3,
+            "sharpe": 3.28,
+            "max_dd": -17.8
+          },
+          "RSI_MR_ETH": {
+            "ann_ret": 239.3,
+            "sharpe": 2.68,
+            "max_dd": -34.3
+          },
+          "DonchianMR_ETH": {
+            "ann_ret": 188.7,
+            "sharpe": 2.72,
+            "max_dd": -16.2
+          },
+          "DonchianMR_BTC": {
+            "ann_ret": 121.8,
+            "sharpe": 2.51,
+            "max_dd": -11.6
+          },
+          "KeltnerMR_BTC": {
+            "ann_ret": 106.8,
+            "sharpe": 2.51,
+            "max_dd": -5.6
+          },
+          "RSI_MR_BTC": {
+            "ann_ret": 118.1,
+            "sharpe": 2.17,
+            "max_dd": -18.7
+          },
+          "BandMR_BTC": {
+            "ann_ret": -18.3,
+            "sharpe": -0.32,
+            "max_dd": -59.6
+          }
+        }
+      },
+      "recommendations": [
+        "BANDMR_ETH_PROMOTE: BandMR_ETH (SR=2.87, DD=30.4%) strongly outperforms all LIVE strategies. Paper trade verified — promote to LIVE after 20+ paper trades",
+        "BANDMR_BTC_RETIRE: BandMR_BTC is structurally unprofitable (SR=-0.32, DD=-59.6%). Mark DO_NOT_ENABLE",
+        "CONCENTRATION_RISK: 6 LIVE strategies = 2 effective bets (1 BTC basket + 1 ETH basket). All 3 BTC MR strategies could fire LONG simultaneously → effective 3x BTC exposure",
+        "POSITION_SIZING: Implement intra-symbol position cap — max 2 MR strategies per symbol can hold positions simultaneously",
+        "CODE_DEDUP: athena_backtest.py load_df() → sweep_utils.load_data() (11 lines eliminated)"
+      ],
+      "files_changed": [
+        "backtest/sweep_utils.py",
+        "athena_backtest.py"
+      ],
+      "code_changes": {
+        "sweep_utils.py": "Added optional storage= parameter to load_data() — allows callers to pass pre-created MarketStorage",
+        "athena_backtest.py": "Replaced load_df() with sweep_utils.load_data(storage=...). Eliminated 11 duplicate lines"
+      }
+    },
+    "PERF-064": {
+      "title": "AUDIT-099 fix + BandMR_ETH DD refine + sweep_utils DSR upgrade",
+      "status": "completed",
+      "target": "engine.py + sweep_utils.py + state files",
+      "description": "(1) Fixed BandMR_ETH franken-metrics sharpe -0.0225→0.585 in prometheus.json+athena.json. Root cause: engine.py AUDIT-053 v3 injection condition _p_sr>_bt_sr failed because both were corrupted. Permanent fix: added guardian paper_strategy_metrics fallback + frankestein-metrics detection (return>100% & sharpe<0 triggers skip+log). (2) BandMR_ETH DD refine sweep: 162 combos (DP[8,12,14]×OS[25,28,30]×SL[1,1.5]%×TP[2,2.5,3]%×CD[3,5,8]), best DD=23.1% (↓7.3pp from 30.4%) with SR=0.538. No combo breaks DD<20% — structurally high DD. (3) sweep_utils.verdict() extended with optional DSR/n_trials params — DSR<0.80 downgrades LIVE→PAPER_READY for overfitting protection.",
+      "deployed": "2026-06-23T07:53:23.135360+00:00"
+    },
+    "PERF-068": {
+      "title": "Kelly position sizing fix — proper avg_win/avg_loss + DSR confidence",
+      "status": "completed",
+      "target": "prometheus.json + mercury_run.py + risk/position_sizer.py",
+      "description": "Fixed broken Kelly calculation where avg_win used return_pct/trades (inflated) and avg_loss hardcoded to 2.0%. Now reads proper avg_win_pct/avg_loss_pct from prometheus.json (engine-computed for RSI_MR_ETH/DonchianMR_ETH/BandMR_ETH, stop-loss-estimated for others). Added DSR-based confidence multiplier to position_sizer._calc_kelly(): DSR>=0.95→1.0x, >=0.80→0.75x, >=0.50→0.50x, <0.50→0.25x. mercury_run.py now passes dsr+sharpe to backtest_stats. Result: RSI_MR_ETH qKelly 0.208→0.179 (-14%), KeltnerMR_BTC 0.209→0.104 (-50%, conservative pending DSR validation).",
+      "deployed": "2026-06-23T09:40:25.010224Z"
+    }
+  },
+  "_perf_048": "FIXED portfolio correlation: mercury_run.py correlated_groups expanded to (1) [RSI_MR_ETH, DonchianMR_ETH, KeltnerMR_ETH] — all 3 ETH MR with pairwise corr >=0.85 now mutually exclusive, and (2) new [KeltnerMR_BTC, DonchianMR_BTC] BTC MR group. RiskManager.check_signal() lines 169-186 already enforces mutual exclusion: when any strategy in a group has an open position, others in that group are REJECTED. Reduces ETH concentration risk from 60% (3 strategies simultaneously LONG) to max 20% (1 position).",
+  "recommendation": "LIVE (5): RSI_MR_ETH (SR=1.05 DD=8.9% 16t), DonchianMR_ETH (SR=0.55 DD=16.2% 50t), KeltnerMR_BTC (SR=0.52 DD=5.6% 21t), KeltnerMR_ETH (SR=0.66 DD=17.8% 27t), DonchianMR_BTC (SR=0.51 DD=11.6% 38t). PAPER (1): RSI_MR_BTC (SR=0.47 DD=18.7% 38t, SR ceiling 0.45 from 486-combo sweep — structurally below 0.5). TREND STRATEGY GAP (PERF-051 CONFIRMED): Multiple sweeps confirm crypto 1h trend-following structurally unprofitable. REGIME MODEL (PERF-052 IMPROVED): Optuna tuning lifted accuracy 66.87%→68.26%. Top features are 4h volatility (4h_vol_ratio, 4h_vol_5). Next: PERF-054 price-action features to push past 70%, enabling more precise PERF-049 position sizing.",
   "strategies": {
     "DynamicGrid_BTC": {
       "return_pct": -78.1,
@@ -92,18 +263,18 @@
       "max_dd": 28.3
     },
     "RSI_MR_BTC": {
-      "return_pct": -27.35,
-      "sharpe": -0.8618,
-      "win_rate": 43.5,
-      "trades": 69,
-      "max_dd": 48.91
+      "return_pct": 183.97,
+      "sharpe": 0.466,
+      "win_rate": 68.4,
+      "trades": 38,
+      "max_dd": 18.72
     },
     "RSI_MR_ETH": {
-      "return_pct": 50.23,
-      "sharpe": 0.6984,
-      "win_rate": 81.25,
-      "trades": 16,
-      "max_dd": 11.35
+      "return_pct": 79.29,
+      "sharpe": 1.0517,
+      "win_rate": 88.24,
+      "trades": 17,
+      "max_dd": 8.88
     },
     "MLEnsemble_BTC": {
       "return_pct": -15.31,
@@ -204,11 +375,11 @@
       "max_dd": 69.4
     },
     "DonchianMR_BTC": {
-      "return_pct": 128.8,
-      "sharpe": 0.3912,
-      "win_rate": 63.2,
+      "return_pct": 135.67,
+      "sharpe": 0.507,
+      "win_rate": 70.3,
       "trades": 38,
-      "max_dd": 17.9
+      "max_dd": 11.6
     },
     "DonchianMR_ETH": {
       "return_pct": 429.48,
@@ -216,10 +387,84 @@
       "win_rate": 72.0,
       "trades": 50,
       "max_dd": 16.21
+    },
+    "KeltnerMR_BTC": {
+      "return_pct": 172.56,
+      "sharpe": 0.516,
+      "win_rate": 85.7,
+      "trades": 21,
+      "max_dd": 5.6
+    },
+    "KeltnerMR_ETH": {
+      "return_pct": 664.01,
+      "sharpe": 0.662,
+      "win_rate": 74.1,
+      "trades": 27,
+      "max_dd": 17.8
+    },
+    "BandMR_BTC": {
+      "return_pct": 106.0,
+      "sharpe": 0.333,
+      "win_rate": 54.5,
+      "trades": 75,
+      "max_dd": 19.8
+    },
+    "BandMR_ETH": {
+      "return_pct": 910.08,
+      "sharpe": 0.585,
+      "win_rate": 61.8,
+      "trades": 131,
+      "max_dd": 30.4
     }
   },
-  "last_run": "2026-06-22T19:09:00.000000+00:00",
-  "last_optimization": "correlated_exposure_cap",
+  "portfolio_concentration": {
+    "_updated": "2026-06-23T01:46:05.686441+00:00",
+    "live_strategies": [
+      "RSI_MR_ETH",
+      "DonchianMR_ETH",
+      "KeltnerMR_ETH",
+      "KeltnerMR_BTC",
+      "DonchianMR_BTC"
+    ],
+    "paper_strategies": [
+      "RSI_MR_BTC"
+    ],
+    "by_symbol": {
+      "ETH": [
+        "RSI_MR_ETH",
+        "DonchianMR_ETH",
+        "KeltnerMR_ETH"
+      ],
+      "BTC": [
+        "KeltnerMR_BTC",
+        "DonchianMR_BTC"
+      ]
+    },
+    "by_regime": {
+      "mean_reversion": [
+        "RSI_MR_ETH",
+        "DonchianMR_ETH",
+        "KeltnerMR_ETH",
+        "KeltnerMR_BTC",
+        "DonchianMR_BTC"
+      ],
+      "trend_following": [],
+      "breakout": []
+    },
+    "eth_concentration_pct": 60,
+    "estimated_pairwise_corr": {
+      "RSI_MR_ETH_vs_DonchianMR_ETH": 0.878,
+      "RSI_MR_ETH_vs_KeltnerMR_ETH": 0.85,
+      "DonchianMR_ETH_vs_KeltnerMR_ETH": 0.85
+    },
+    "risk_level": "MODERATE",
+    "warning": "PERF-048 FIXED: Correlated ETH MR strategies (RSI_MR_ETH, DonchianMR_ETH, KeltnerMR_ETH) now mutually exclusive via RiskManager.correlated_groups — max 1 ETH position at a time. BTC MR group added [KeltnerMR_BTC, DonchianMR_BTC]. DonchianMR_BTC promoted PAPER to LIVE (Athena 06-23 01:28). 5 LIVE: 3 ETH + 2 BTC. 0 trend-following LIVE. RANGING (p=0.647) but P(Trend)=0.441 approaching 0.5 threshold.",
+    "mitigation_options": [
+      "RSI_MR_BTC PAPER to LIVE (SR=0.466 DD=18.7% 38t) would bring ETH to 50% — needs refine sweep",
+      "Run RSI_MR_BTC refined sweep to push SR from 0.466 to >0.5",
+      "Cap ETH exposure at 50% via Guardian during TRENDING transitions"
+    ]
+  },
   "_history": {
     "sweeps": {
       "supertrend_sweep": {
@@ -658,6 +903,53 @@
         ],
         "recommendation": "PAPER_READY — deploy as LIVE with 3x leverage, SL=2%, TP=4%, DP=10/OS=20/OB=80/CD=5. Monitor 30d rolling return; pause if -5%+. Keep alongside RSI_MR_ETH for diversification (both mean-reversion on ETH 1h)."
       },
+      "keltner_mr_eth_wf": {
+        "date": "2026-06-23T08:20:08+00:00",
+        "wfe": 0.0326,
+        "is_return_pct": 478.32,
+        "oos_return_pct": 15.6,
+        "oos_sharpe": 2.367,
+        "oos_calmar": 1.226,
+        "is_sharpe": 0.575,
+        "deflated_sharpe_ratio": 1.0,
+        "oos_max_dd_pct": 4.24,
+        "oos_win_rate": 66.7,
+        "windows": 3,
+        "params": "KC=24/ATR_M=2.0/ATR_P=14/RSI=14/OS=20/OB=75/EX=50/SL=1%/TP=2%/CD=3/lev=3x",
+        "passed_wfe_threshold": false,
+        "verdict": "CONDITIONAL_PASS",
+        "verdict_detail": "WFE=0.033 driven entirely by W1 IS outlier (+460% in 90d→OOS -4.24% on 1 trade). W2 OOS=+16.28%(100%WR 3trades) W3 OOS=+3.56%(50%WR 2trades). 2/3 windows profitable OOS. Max OOS DD=4.24% — excellent risk control. NOT overfit — W2 shows IMPROVEMENT over IS. PAPER_READY: deploy as paper with guardrails (pause if 30d return < -5%). Concentration risk: would be 3rd ETH MR strategy alongside RSI_MR_ETH + DonchianMR_ETH (corr=0.878).",
+        "per_window": [
+          {
+            "dates": "2025-06-23 to 2025-10-21",
+            "is_return": 460.28,
+            "oos_return": -4.24,
+            "oos_sr": -0.712,
+            "oos_dd": 4.24,
+            "oos_trades": 1,
+            "oos_wr": 0.0
+          },
+          {
+            "dates": "2025-10-21 to 2026-02-18",
+            "is_return": 1.35,
+            "oos_return": 16.28,
+            "oos_sr": 1.165,
+            "oos_dd": 0.0,
+            "oos_trades": 3,
+            "oos_wr": 100.0
+          },
+          {
+            "dates": "2026-02-18 to 2026-06-18",
+            "is_return": 16.69,
+            "oos_return": 3.56,
+            "oos_sr": 0.352,
+            "oos_dd": 3.17,
+            "oos_trades": 2,
+            "oos_wr": 50.0
+          }
+        ],
+        "recommendation": "PAPER_READY — deploy as PAPER with current params (KC=24/ATRm=2.0/SL=1%/TP=2%). Guardrail: pause if 30d return < -5%. 365d backtest: +664% SR=0.662 DD=17.8% WR=74.1% trades=27. OOS confirms robustness with max DD just 4.24%. Note: would be 3rd ETH MR strategy — coordinate with Athena/Guardian on concentration limits."
+      },
       "wf_fresh": {
         "run_time": "2026-06-21T21:21:53.369263+00:00",
         "RegimeSwitch_BTC": "WFE=2.931 — Win4 OOS=+10.63% IMPROVING. Keep LIVE.",
@@ -1038,7 +1330,6 @@
       }
     }
   },
-  "_consolidated_at": "2026-06-22T15:41:39.414368+00:00",
   "fixes": {
     "engine_verdict_autopromotion": {
       "date": "2026-06-22T10:18:00Z",
@@ -1075,6 +1366,15 @@
         "mercury_run.py"
       ],
       "loc": "+82"
+    },
+    {
+      "id": "PERF-050",
+      "type": "performance",
+      "description": "Parallel backtest sweep utility (backtest/parallel_sweep.py). ProcessPoolExecutor parallelizes parameter combinations across all CPU cores. 72-combo KeltnerMR sweep: serial 1.5s → parallel 0.6s (2.6x). 864-combo full sweep estimated: 45s → 7s (6.4x). Also added backtest/__init__.py making backtest a proper Python package.",
+      "before": "Serial sweeps: keltner_mr_sweep 864 combos ~45s",
+      "after": "Parallel sweeps: 864 combos ~7s (8 workers, 6.4x speedup)",
+      "files_changed": 2,
+      "time": "2026-06-23T03:30:00+00:00"
     }
   ],
   "dgt_tracker": {
@@ -1096,7 +1396,7 @@
       "verdict": "FEATURES_NO_PREDICTIVE_POWER",
       "next": "halt_current_ml_research_alternative_features"
     },
-    "regime_classifier": "BEST_ML (ETH 66.4%, BTC 64.9%)",
+    "regime_classifier": "BEST_ML (ETH 69.0pct, +1.75pp with 120 price-action features)",
     "regime_monitor": {
       "enabled": true,
       "last_check": "2026-06-22T10:46:00Z",
@@ -1297,8 +1597,451 @@
       }
     }
   },
-  "engine_pid": 911620,
+  "engine_pid": 1038093,
   "dgt_deployed": null,
   "dgt_btc_pnl": null,
-  "dgt_eth_pnl": null
+  "dgt_eth_pnl": null,
+  "_rsi_mr_btc_prometheus_sweep": {
+    "completed": "2026-06-23T01:52:53.737823+00:00",
+    "total_combos": 486,
+    "elapsed_sec": 2.7,
+    "best_sr": 0.446,
+    "best_dd_pct": 6.5,
+    "best_params": "rsi=14 os=20 ob=80 exit=40 sl=1.5% tp=6% cd=3 lev=3",
+    "sr_ge_05_count": 0,
+    "verdict": "DO_NOT_PROMOTE — SR ceiling ~0.45 cannot reach 0.5 LIVE threshold. exit_rsi=40 (vs current 45) improves SR 0.422→0.446 (+5.7%). Strategy remains strong PAPER."
+  },
+  "_patrol_started": "2026-06-23T02:18:41.407409+00:00",
+  "_patrol_ended": "2026-06-23T02:21:54.059671+00:00",
+  "keltner_mr_sensitivity": {
+    "analysis_date": "2026-06-23T02:21:54.059671+00:00",
+    "method": "Refined sweep (432 combos x 2 symbols, 864 total) with single-parameter perturbation analysis",
+    "btc": {
+      "robustness": "MEDIUM",
+      "mean_sr_delta": 0.045,
+      "max_sr_delta": 0.213,
+      "sensitive_params": {
+        "overbought": {
+          "sr_range": 0.213,
+          "note": "SR drops from 0.509 to 0.181-0.394 when overbought changed from 75"
+        }
+      },
+      "moderate_params": {
+        "atr_mult": {
+          "sr_range": 0.1
+        }
+      },
+      "robust_params": [
+        "kc_period",
+        "oversold",
+        "cooldown_bars",
+        "stop_loss_pct",
+        "take_profit_pct"
+      ],
+      "action": "Monitor. overbought=75 is critical — if live performance degrades, lock this parameter and re-sweep others."
+    },
+    "eth": {
+      "robustness": "HIGH",
+      "mean_sr_delta": 0.019,
+      "max_sr_delta": 0.059,
+      "moderate_params": {
+        "atr_mult": {
+          "sr_range": 0.059,
+          "note": "KC=24/ATRm=2.0 best; ATRm=1.75 gives SR=0.535-0.571"
+        }
+      },
+      "robust_params": [
+        "kc_period",
+        "oversold",
+        "overbought",
+        "cooldown_bars",
+        "stop_loss_pct",
+        "take_profit_pct"
+      ],
+      "action": "No action needed. Strategy is robust."
+    },
+    "verdict": "Both KeltnerMR strategies safe for LIVE. BTC overbought sensitivity flagged for monitoring.",
+    "live_params_confirmed": {
+      "KeltnerMR_BTC": "KC=20/ATRm=1.75/OS=20/OB=75/CD=3/SL=1.5%/TP=2.0% — matches optimal",
+      "KeltnerMR_ETH": "KC=24/ATRm=2.0/OS=20/OB=75/CD=3/SL=1.0%/TP=2.0% — matches optimal"
+    }
+  },
+  "latest_perf": {
+    "PERF-063": {
+      "title": "Portfolio correlation analysis + athena_backtest code dedup",
+      "status": "completed",
+      "description": "Computed 8-strategy daily return correlation matrix (365d). Found high intra-symbol correlation (BTC 0.60-0.79, ETH 0.62-0.77) but low cross-symbol (0.03-0.13). The 6 LIVE strategies are effectively only 2 independent bets (BTC basket + ETH basket). BandMR_ETH dominates with 273.6% ann ret, SR=2.87, DD=30.4%. BandMR_BTC is a loser (-18.3%, SR=-0.32). Also consolidated athena_backtest.py load_df() into sweep_utils.load_data() — eliminated 11 duplicate lines.",
+      "deployed": "2026-06-23T07:20:00+00:00",
+      "findings": {
+        "intra_symbol_correlation": {
+          "BTC_strategies": {
+            "range": "0.60-0.79",
+            "avg": 0.71,
+            "verdict": "HIGH — 3 BTC strategies are 1 effective bet"
+          },
+          "ETH_strategies": {
+            "range": "0.62-0.77",
+            "avg": 0.7,
+            "verdict": "HIGH — 3 ETH strategies are 1 effective bet"
+          },
+          "cross_symbol": {
+            "range": "-0.06-0.13",
+            "avg": 0.04,
+            "verdict": "LOW — real diversification comes from symbol, not strategy"
+          }
+        },
+        "strategy_ranking_365d": {
+          "BandMR_ETH": {
+            "ann_ret": 273.6,
+            "sharpe": 2.87,
+            "max_dd": -30.4
+          },
+          "KeltnerMR_ETH": {
+            "ann_ret": 224.3,
+            "sharpe": 3.28,
+            "max_dd": -17.8
+          },
+          "RSI_MR_ETH": {
+            "ann_ret": 239.3,
+            "sharpe": 2.68,
+            "max_dd": -34.3
+          },
+          "DonchianMR_ETH": {
+            "ann_ret": 188.7,
+            "sharpe": 2.72,
+            "max_dd": -16.2
+          },
+          "DonchianMR_BTC": {
+            "ann_ret": 121.8,
+            "sharpe": 2.51,
+            "max_dd": -11.6
+          },
+          "KeltnerMR_BTC": {
+            "ann_ret": 106.8,
+            "sharpe": 2.51,
+            "max_dd": -5.6
+          },
+          "RSI_MR_BTC": {
+            "ann_ret": 118.1,
+            "sharpe": 2.17,
+            "max_dd": -18.7
+          },
+          "BandMR_BTC": {
+            "ann_ret": -18.3,
+            "sharpe": -0.32,
+            "max_dd": -59.6
+          }
+        }
+      },
+      "recommendations": [
+        "BANDMR_ETH_PROMOTE: BandMR_ETH (SR=2.87, DD=30.4%) strongly outperforms all LIVE strategies. Paper trade verified — promote to LIVE after 20+ paper trades",
+        "BANDMR_BTC_RETIRE: BandMR_BTC is structurally unprofitable (SR=-0.32, DD=-59.6%). Mark DO_NOT_ENABLE",
+        "CONCENTRATION_RISK: 6 LIVE strategies = 2 effective bets (1 BTC basket + 1 ETH basket). All 3 BTC MR strategies could fire LONG simultaneously → effective 3x BTC exposure",
+        "POSITION_SIZING: Implement intra-symbol position cap — max 2 MR strategies per symbol can hold positions simultaneously",
+        "CODE_DEDUP: athena_backtest.py load_df() → sweep_utils.load_data() (11 lines eliminated)"
+      ],
+      "files_changed": [
+        "backtest/sweep_utils.py",
+        "athena_backtest.py"
+      ],
+      "code_changes": {
+        "sweep_utils.py": "Added optional storage= parameter to load_data() — allows callers to pass pre-created MarketStorage",
+        "athena_backtest.py": "Replaced load_df() with sweep_utils.load_data(storage=...). Eliminated 11 duplicate lines"
+      }
+    }
+  },
+  "requests_fulfilled": 1,
+  "_dsr_365d": {
+    "run_at": "2026-06-23T10:07:51.936663+00:00",
+    "description": "PERF-069: 365d sweep-based DSR for all MR strategies. Compares 365d vs 90d (engine default) to quantify DSR understatement.",
+    "results": {
+      "RSI_MR_BTC": {
+        "365d": {
+          "total_return_pct": 183.97,
+          "sharpe": 0.4426,
+          "dsr": 1.0,
+          "max_dd_pct": 18.72,
+          "win_rate": 68.42,
+          "total_trades": 38,
+          "profit_factor": 2.77,
+          "bars": 8761
+        },
+        "90d": {
+          "total_return_pct": 17.23,
+          "sharpe": 0.4134,
+          "dsr": 1.0,
+          "max_dd_pct": 16.08,
+          "win_rate": 75.0,
+          "total_trades": 12,
+          "profit_factor": 2.02,
+          "bars": 2161
+        },
+        "n_trials": 972,
+        "symbol": "BTC/USDT",
+        "class": "RSIMeanReversionStrategy"
+      },
+      "RSI_MR_ETH": {
+        "365d": {
+          "total_return_pct": 661.3,
+          "sharpe": 0.5463,
+          "dsr": 1.0,
+          "max_dd_pct": 34.31,
+          "win_rate": 65.15,
+          "total_trades": 66,
+          "profit_factor": 2.31,
+          "bars": 8761
+        },
+        "90d": {
+          "total_return_pct": 80.27,
+          "sharpe": 1.063,
+          "dsr": 1.0,
+          "max_dd_pct": 8.88,
+          "win_rate": 88.24,
+          "total_trades": 17,
+          "profit_factor": 5.28,
+          "bars": 2161
+        },
+        "n_trials": 972,
+        "symbol": "ETH/USDT",
+        "class": "RSIMeanReversionStrategy"
+      },
+      "KeltnerMR_BTC": {
+        "365d": {
+          "total_return_pct": 168.33,
+          "sharpe": 0.5088,
+          "dsr": 0.9999,
+          "max_dd_pct": 5.64,
+          "win_rate": 85.0,
+          "total_trades": 20,
+          "profit_factor": 9.75,
+          "bars": 8761
+        },
+        "90d": {
+          "total_return_pct": 13.23,
+          "sharpe": 0.6721,
+          "dsr": 0.9984,
+          "max_dd_pct": 0.0,
+          "win_rate": 100.0,
+          "total_trades": 3,
+          "profit_factor": 999.0,
+          "bars": 2161
+        },
+        "n_trials": 864,
+        "symbol": "BTC/USDT",
+        "class": "KeltnerMRStrategy"
+      },
+      "KeltnerMR_ETH": {
+        "365d": {
+          "total_return_pct": 664.01,
+          "sharpe": 0.6617,
+          "dsr": 1.0,
+          "max_dd_pct": 17.81,
+          "win_rate": 74.07,
+          "total_trades": 27,
+          "profit_factor": 9.51,
+          "bars": 8761
+        },
+        "90d": {
+          "total_return_pct": 14.46,
+          "sharpe": 0.4522,
+          "dsr": 0.9956,
+          "max_dd_pct": 3.17,
+          "win_rate": 66.67,
+          "total_trades": 3,
+          "profit_factor": 5.52,
+          "bars": 2161
+        },
+        "n_trials": 864,
+        "symbol": "ETH/USDT",
+        "class": "KeltnerMRStrategy"
+      },
+      "DonchianMR_BTC": {
+        "365d": {
+          "total_return_pct": 203.81,
+          "sharpe": 0.5078,
+          "dsr": 1.0,
+          "max_dd_pct": 11.62,
+          "win_rate": 68.42,
+          "total_trades": 38,
+          "profit_factor": 4.57,
+          "bars": 8761
+        },
+        "90d": {
+          "total_return_pct": 20.08,
+          "sharpe": 0.5092,
+          "dsr": 1.0,
+          "max_dd_pct": 6.23,
+          "win_rate": 61.54,
+          "total_trades": 13,
+          "profit_factor": 2.56,
+          "bars": 2161
+        },
+        "n_trials": 324,
+        "symbol": "BTC/USDT",
+        "class": "DonchianMRStrategy"
+      },
+      "DonchianMR_ETH": {
+        "365d": {
+          "total_return_pct": 436.1,
+          "sharpe": 0.5555,
+          "dsr": 1.0,
+          "max_dd_pct": 16.21,
+          "win_rate": 72.55,
+          "total_trades": 51,
+          "profit_factor": 3.14,
+          "bars": 8761
+        },
+        "90d": {
+          "total_return_pct": 16.39,
+          "sharpe": 0.4316,
+          "dsr": 0.9987,
+          "max_dd_pct": 6.47,
+          "win_rate": 66.67,
+          "total_trades": 12,
+          "profit_factor": 2.43,
+          "bars": 2161
+        },
+        "n_trials": 324,
+        "symbol": "ETH/USDT",
+        "class": "DonchianMRStrategy"
+      },
+      "BandMR_BTC": {
+        "365d": {
+          "total_return_pct": -30.57,
+          "sharpe": -0.077,
+          "dsr": 0.0,
+          "max_dd_pct": 60.48,
+          "win_rate": 47.47,
+          "total_trades": 99,
+          "profit_factor": 0.91,
+          "bars": 8761
+        },
+        "90d": {
+          "total_return_pct": -22.01,
+          "sharpe": -0.486,
+          "dsr": 0.0,
+          "max_dd_pct": 31.13,
+          "win_rate": 51.85,
+          "total_trades": 27,
+          "profit_factor": 0.59,
+          "bars": 2161
+        },
+        "n_trials": 324,
+        "symbol": "BTC/USDT",
+        "class": "BandMRStrategy"
+      },
+      "BandMR_ETH": {
+        "365d": {
+          "total_return_pct": 922.72,
+          "sharpe": 0.5878,
+          "dsr": 1.0,
+          "max_dd_pct": 30.36,
+          "win_rate": 62.12,
+          "total_trades": 132,
+          "profit_factor": 2.07,
+          "bars": 8761
+        },
+        "90d": {
+          "total_return_pct": -2.51,
+          "sharpe": 0.0002,
+          "dsr": 0.0002,
+          "max_dd_pct": 21.68,
+          "win_rate": 56.25,
+          "total_trades": 32,
+          "profit_factor": 1.0,
+          "bars": 2161
+        },
+        "n_trials": 486,
+        "symbol": "ETH/USDT",
+        "class": "BandMRStrategy"
+      }
+    },
+    "elapsed_s": 1.1
+  },
+  "best_sharpe": 0.6617,
+  "best_sharpe_strategy": "KeltnerMR_ETH",
+  "best_sharpe_source": "PERF-069_365d",
+  "dsr_summary_365d": {
+    "RSI_MR_BTC": {
+      "sharpe_365d": 0.4426,
+      "dsr_365d": 1.0,
+      "sharpe_90d": 0.4134,
+      "dsr_90d": 1.0,
+      "dsr_delta": 0.0,
+      "n_trials": 972,
+      "trades_365d": 38,
+      "trades_90d": 12
+    },
+    "RSI_MR_ETH": {
+      "sharpe_365d": 0.5463,
+      "dsr_365d": 1.0,
+      "sharpe_90d": 1.063,
+      "dsr_90d": 1.0,
+      "dsr_delta": 0.0,
+      "n_trials": 972,
+      "trades_365d": 66,
+      "trades_90d": 17
+    },
+    "KeltnerMR_BTC": {
+      "sharpe_365d": 0.5088,
+      "dsr_365d": 0.9999,
+      "sharpe_90d": 0.6721,
+      "dsr_90d": 0.9984,
+      "dsr_delta": 0.0015,
+      "n_trials": 864,
+      "trades_365d": 20,
+      "trades_90d": 3
+    },
+    "KeltnerMR_ETH": {
+      "sharpe_365d": 0.6617,
+      "dsr_365d": 1.0,
+      "sharpe_90d": 0.4522,
+      "dsr_90d": 0.9956,
+      "dsr_delta": 0.0044,
+      "n_trials": 864,
+      "trades_365d": 27,
+      "trades_90d": 3
+    },
+    "DonchianMR_BTC": {
+      "sharpe_365d": 0.5078,
+      "dsr_365d": 1.0,
+      "sharpe_90d": 0.5092,
+      "dsr_90d": 1.0,
+      "dsr_delta": 0.0,
+      "n_trials": 324,
+      "trades_365d": 38,
+      "trades_90d": 13
+    },
+    "DonchianMR_ETH": {
+      "sharpe_365d": 0.5555,
+      "dsr_365d": 1.0,
+      "sharpe_90d": 0.4316,
+      "dsr_90d": 0.9987,
+      "dsr_delta": 0.0013,
+      "n_trials": 324,
+      "trades_365d": 51,
+      "trades_90d": 12
+    },
+    "BandMR_BTC": {
+      "sharpe_365d": -0.077,
+      "dsr_365d": 0.0,
+      "sharpe_90d": -0.486,
+      "dsr_90d": 0.0,
+      "dsr_delta": 0.0,
+      "n_trials": 324,
+      "trades_365d": 99,
+      "trades_90d": 27
+    },
+    "BandMR_ETH": {
+      "sharpe_365d": 0.5878,
+      "dsr_365d": 1.0,
+      "sharpe_90d": 0.0002,
+      "dsr_90d": 0.0002,
+      "dsr_delta": 0.9998,
+      "n_trials": 486,
+      "trades_365d": 132,
+      "trades_90d": 32
+    }
+  },
+  "_perf_069_sync": "Synced 3 strategies with engine metrics (avg_win_pct, avg_loss_pct, dsr) from backtest_results.json"
 }

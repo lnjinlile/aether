@@ -257,6 +257,14 @@ class DynamicPositionSizer:
         Kelly formula: f* = win_rate - (1 - win_rate) / (avg_win / avg_loss)
 
         Requires: win_rate, avg_win, avg_loss.
+        Optional: dsr (Deflated Sharpe Ratio) — used as confidence multiplier.
+
+        PERF-068: When dsr is provided, the raw Kelly is multiplied by a
+        DSR-based confidence factor to penalize potentially overfit strategies:
+          dsr >= 0.95 → 1.00x (statistically significant)
+          dsr >= 0.80 → 0.75x (good confidence)
+          dsr >= 0.50 → 0.50x (moderate confidence)
+          dsr <  0.50 → 0.25x (low confidence / potential overfitting)
         """
         win_rate = stats.get("win_rate", 0)
         avg_win = stats.get("avg_win", 0)
@@ -271,7 +279,22 @@ class DynamicPositionSizer:
 
         payoff_ratio = avg_win / avg_loss
         kelly = win_rate - (1 - win_rate) / payoff_ratio
-        return max(kelly, 0.0)  # Never negative
+        kelly = max(kelly, 0.0)  # Never negative
+
+        # PERF-068: DSR-based confidence multiplier
+        dsr = stats.get("dsr")
+        if dsr is not None:
+            if dsr >= 0.95:
+                dsr_mult = 1.00
+            elif dsr >= 0.80:
+                dsr_mult = 0.75
+            elif dsr >= 0.50:
+                dsr_mult = 0.50
+            else:
+                dsr_mult = 0.25
+            kelly *= dsr_mult
+
+        return kelly
 
 
 # ------------------------------------------------------------------

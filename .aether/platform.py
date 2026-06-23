@@ -95,7 +95,7 @@ def cmd_read_bulletin(lines):
 
 
 def cmd_check_oracle_config():
-    """检查 oracle.json 与 strategies.yaml 策略一致性。「Unknown」修复 — PERF-020"""
+    """检查 oracle.json 与 strategies.yaml 策略一致性。PAPER策略由pipeline.py排除属正常。「Unknown」修复 — PERF-020"""
     import yaml
     oracle_path = os.path.join(BASE, "oracle.json")
     yaml_path = os.path.join(BASE, "..", "config", "strategies.yaml")
@@ -112,16 +112,42 @@ def cmd_check_oracle_config():
     except Exception as e:
         print(f"YAML_ERROR: {e}")
         return
-    if o_enabled == y_enabled:
-        print(f"CONFIG_CONSISTENT: {sorted(o_enabled)}")
+    # Cross-check athena.json/backtest_results.json for PAPER strategies excluded by pipeline.py
+    paper_excluded = set()
+    try:
+        athena_path = os.path.join(STATE_DIR, "athena.json")
+        bt_path = os.path.join(STATE_DIR, "backtest_results.json")
+        for _path in [athena_path, bt_path]:
+            try:
+                with open(_path) as _f:
+                    _data = json.load(_f)
+                _strats = _data.get("strategies", {})
+                for _name in y_enabled:
+                    _s = _strats.get(_name, {})
+                    _v = _s.get("verdict", "")
+                    if _v in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED"):
+                        paper_excluded.add(_name)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    # Effective yaml enabled = y_enabled minus paper-excluded
+    y_effective = y_enabled - paper_excluded
+    if o_enabled == y_effective:
+        if paper_excluded:
+            print(f"CONFIG_CONSISTENT: {sorted(o_enabled)} (PAPER excluded: {sorted(paper_excluded)})")
+        else:
+            print(f"CONFIG_CONSISTENT: {sorted(o_enabled)}")
         return
-    only_o = o_enabled - y_enabled
-    only_y = y_enabled - o_enabled
+    only_o = o_enabled - y_effective
+    only_y = y_effective - o_enabled
     if only_o:
         print(f"ORACLE_ONLY: {sorted(only_o)}")
     if only_y:
         print(f"YAML_ONLY: {sorted(only_y)}")
-    print(f"CONFIG_MISMATCH: oracle={sorted(o_enabled)} yaml={sorted(y_enabled)}")
+    if paper_excluded:
+        print(f"PAPER_EXCLUDED: {sorted(paper_excluded)}")
+    print(f"CONFIG_MISMATCH: oracle={sorted(o_enabled)} yaml_effective={sorted(y_effective)}")
 
 
 def cmd_check_positions():

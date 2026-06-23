@@ -14,7 +14,7 @@ def trojan_connect(host, port):
     raw = socket.create_connection((SERVER, PORT), timeout=15)
     tls = ctx.wrap_socket(raw, server_hostname=SNI)
 
-    pwd_hash = hashlib.sha224(PASSWORD.encode()).hexdigest()
+    pwd_hash = hashlib.sha256(PASSWORD.encode()).hexdigest()
     header = (pwd_hash + "\r\n").encode()
     addr_bytes = host.encode()
     header += struct.pack('!BBB', 0x01, 0x03, len(addr_bytes)) + addr_bytes + struct.pack('!H', port) + b"\r\n"

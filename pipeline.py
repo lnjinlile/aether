@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Aether 数据管道 — 后台自动运行，无需专员干预"""
 import sys, os, time, json, logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime, timezone
 
 # PERF-009: Module-level base directory — eliminates 6 redundant
@@ -10,7 +11,16 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 from dotenv import load_dotenv; load_dotenv(os.path.join(BASE_DIR, ".env"))
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [DATA] %(message)s")
+LOG_FILE = os.path.join(BASE_DIR, "logs", "pipeline.log")
+def _setup_logging():
+    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+    handler = RotatingFileHandler(LOG_FILE, maxBytes=10*1024*1024, backupCount=5)
+    handler.setFormatter(logging.Formatter("%(asctime)s [DATA] %(message)s"))
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.handlers.clear()
+    root.addHandler(handler)
+_setup_logging()
 logger = logging.getLogger("pipeline")
 
 SYMBOLS = ["BTC/USDT", "ETH/USDT"]
@@ -88,6 +98,9 @@ def run():
     # ── First boot: backfill 365 days of historical data ──
     _backfill_all(collector, storage)
 
+    _prev_cross_warnings = None  # dedup AUDIT-051 guard logging
+    _last_cross_warning_ts = 0   # rate-limit: max 1 warning burst per 30 min
+
     while True:
         try:
             stats = {}
@@ -117,21 +130,32 @@ def run():
             # ── Periodic ANALYZE (every 6 hours) ──
             if int(time.time()) % 21600 < INTERVAL:
                 try:
-                    storage._get_conn().execute("ANALYZE")
+                    _maint_conn = storage._get_conn()
+                    _maint_conn.execute("ANALYZE")
                     logger.info("ANALYZE complete — query planner stats refreshed")
+                    # WAL checkpoint (truncate to keep WAL file small)
+                    _maint_conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                    logger.info("WAL checkpoint complete")
+                    _maint_conn.close()
+                    # Cleanup old auxiliary data (30d retention, with vacuum if fragmented)
+                    from data.db import cleanup_old_data
+                    _cleanup_stats = cleanup_old_data(retention_days=30)
+                    _deleted = sum(v for k, v in _cleanup_stats.items() if k != "vacuum")
+                    if _deleted > 0:
+                        logger.info("Data cleanup: %d rows pruned across orderbook/OI/order_flow. %s",
+                                   _deleted, _cleanup_stats.get("vacuum", ""))
                 except Exception:
                     pass
 
             # ── Periodic data quality check (every hour) ──
             if int(time.time()) % 3600 < INTERVAL:
                 try:
-                    from data.quality import DataQualityCheck
-                    qc = DataQualityCheck()
-                    results = qc.run_all(SYMBOLS, TIMEFRAMES)
-                    if results["health"] != "ok":
-                        logger.warning("Quality check DEGRADED: %d issues", len(results["issues"]))
-                        for iss in results["issues"][:3]:
-                            logger.warning("  [%s] %s", iss["type"], iss["msg"])
+                    from data.quality import full_check
+                    qstatus, qissues, qstats = full_check()
+                    if qstatus != "healthy":
+                        logger.warning("Quality check DEGRADED: %d issues", len(qissues))
+                        for iss in qissues[:3]:
+                            logger.warning("  %s", iss)
                 except Exception as e:
                     logger.warning("Quality check failed: %s", e)
 
@@ -182,10 +206,32 @@ def run():
                 finally:
                     _conn.close()
                 _my_pid = os.getpid()  # actual python process PID, not the bash wrapper
+                # ── Find data_ext PID (same approach as engine._find_pid) ──
+                _data_ext_pid = None
+                try:
+                    import subprocess as _sp
+                    _r = _sp.run(["pgrep", "-f", "python3 data_ext.py"], capture_output=True, text=True, timeout=5)
+                    _pids = [int(x) for x in _r.stdout.strip().split("\n") if x]
+                    for _pid in _pids:
+                        try:
+                            _comm = open(f"/proc/{_pid}/comm").read().strip()
+                            if _comm != "python3":
+                                continue
+                            _cl = open(f"/proc/{_pid}/cmdline").read()
+                            _parts = _cl.replace("\x00", " ").strip().split()
+                            if len(_parts) >= 2 and _parts[1].endswith("data_ext.py"):
+                                _data_ext_pid = _pid
+                                break
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
                 # Pre-compute strategies_enabled from strategies.yaml (AUDIT-047 guard)
                 # Prevents drift between .aether/oracle.json and .aether/state/oracle.json
                 _synced_enabled = None
                 _synced_disabled = None
+                _synced_live = None   # AUDIT-098: strategies_live field
+                _synced_paper = None  # AUDIT-098: strategies_paper field
                 _cross_file_warnings = []  # AUDIT-051: track PAPER→enabled violations
                 try:
                     import yaml
@@ -202,20 +248,57 @@ def run():
                         with open(_athena_path) as _af:
                             _athena = json.load(_af)
                         _athena_strats = _athena.get("strategies", {})
+                        # AUDIT-051-L2: also check backtest_results.json as secondary truth source
+                        _bt_strats = {}
+                        try:
+                            _bt_path = os.path.join(BASE_DIR, ".aether", "state", "backtest_results.json")
+                            with open(_bt_path) as _btf:
+                                _bt = json.load(_btf)
+                            _bt_strats = _bt.get("strategies", {})
+                        except Exception:
+                            pass
                         _filtered = []
                         for _name in _synced_enabled:
                             _as = _athena_strats.get(_name, {})
-                            _verdict = _as.get("verdict", "NOT_EVALUATED")
-                            if _verdict in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED"):
-                                _cross_file_warnings.append(f"{_name} enabled=True in YAML but verdict={_verdict} in athena.json → EXCLUDED")
+                            _a_verdict = _as.get("verdict", "NOT_EVALUATED")
+                            _bs = _bt_strats.get(_name, {})
+                            _b_verdict = _bs.get("verdict", _a_verdict)
+                            # Use the more conservative verdict between athena and backtest_results
+                            _conservative = _a_verdict
+                            if _b_verdict in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED"):
+                                _conservative = _b_verdict
+                            if _a_verdict in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED"):
+                                _conservative = _a_verdict
+                            if _conservative in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED"):
+                                _cross_file_warnings.append(f"{_name} enabled=True in YAML but verdict={_conservative} (athena={_a_verdict}, bt={_b_verdict}) → EXCLUDED")
                                 _synced_disabled += 1
                             else:
                                 _filtered.append(_name)
                         _synced_enabled = _filtered
-                    except Exception:
-                        pass  # best-effort cross-check
-                except Exception:
-                    pass  # best-effort
+                        # AUDIT-098 guard: compute strategies_live and strategies_paper
+                        # from the cross-check results (prevents field regression)
+                        _synced_live = list(_filtered)
+                        _synced_paper = []
+                        for _name in [s["name"] for s in _strats if s.get("enabled", False)]:
+                            _as = _athena_strats.get(_name, {})
+                            _a_verdict = _as.get("verdict", "NOT_EVALUATED")
+                            _bs = _bt_strats.get(_name, {})
+                            _b_verdict = _bs.get("verdict", _a_verdict)
+                            _conservative = _a_verdict
+                            if _b_verdict in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED"):
+                                _conservative = _b_verdict
+                            if _a_verdict in ("PAPER", "DO_NOT_ENABLE", "RETIRED", "PAUSED"):
+                                _conservative = _a_verdict
+                            if _conservative == "PAPER":
+                                _synced_paper.append(_name)
+                    except Exception as _e:
+                        # AUDIT-051-L3: fail-safe — on guard failure, preserve previous state
+                        # instead of falling through to raw YAML list
+                        logger.warning("AUDIT-051 guard failed (cross-check error): %s — preserving previous strategies_enabled", _e)
+                        _synced_enabled = None  # prevent raw YAML override; keep previous oracle.json state
+                except Exception as _e:
+                    logger.warning("AUDIT-051 guard failed (YAML/init error): %s — preserving previous strategies_enabled", _e)
+                    _synced_enabled = None  # prevent raw YAML override; keep previous oracle.json state
                 # Update both state/oracle.json AND main oracle.json
                 for oracle_path in [
                     os.path.join(BASE_DIR, ".aether", "state", "oracle.json"),
@@ -231,22 +314,37 @@ def run():
                     oracle["last_klines_ts"] = _last_klines_ts
                     oracle["klines_count"] = _klines_count
                     oracle["pipeline_pid"] = _my_pid
+                    if _data_ext_pid:
+                        oracle["data_ext_pid"] = _data_ext_pid
+                    # AUDIT-092: purge stale duplicate field (klines_total regressed from AUDIT-090)
+                    oracle.pop("klines_total", None)
                     oracle["_updated_at"] = _now_iso
                     if _data_stats:
                         oracle["data_stats"] = _data_stats
                     if _synced_enabled is not None:
                         oracle["strategies_enabled"] = _synced_enabled
                         oracle["strategies_disabled"] = _synced_disabled
-                    if _cross_file_warnings:
-                        oracle["_cross_file_warnings"] = _cross_file_warnings
+                        oracle["strategies_live"] = _synced_live if _synced_live is not None else _synced_enabled
+                        oracle["strategies_paper"] = _synced_paper if _synced_paper is not None else []
+                    # Always sync _cross_file_warnings — clear stale warnings when empty
+                    oracle["_cross_file_warnings"] = _cross_file_warnings
                     with open(oracle_path, "w") as f:
                         json.dump(oracle, f, indent=2, ensure_ascii=False)
             except Exception:
                 pass  # best-effort, don't block pipeline tick
 
             if _cross_file_warnings:
-                for _w in _cross_file_warnings:
-                    logger.warning("AUDIT-051 guard: %s", _w)
+                # Rate-limit: log at most once per 30 minutes unless warnings change
+                _now_ts = time.time()
+                if _cross_file_warnings != _prev_cross_warnings or (_now_ts - _last_cross_warning_ts) > 1800:
+                    for _w in _cross_file_warnings:
+                        logger.warning("AUDIT-051 guard: %s", _w)
+                    _prev_cross_warnings = list(_cross_file_warnings)
+                    _last_cross_warning_ts = _now_ts
+            elif _prev_cross_warnings:
+                logger.info("AUDIT-051 guard: all PAPER violations cleared")
+                _prev_cross_warnings = None
+                _last_cross_warning_ts = 0
             if errors:
                 logger.warning("Tick: %s — %d feed(s) failed", stats, len(errors))
             else:
