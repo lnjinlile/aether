@@ -45,13 +45,13 @@
       "count": 526
     },
     "table_open_interest": {
-      "count": 1115
+      "count": 1117
     },
     "table_orderbook_snapshots": {
-      "count": 930
+      "count": 932
     },
     "table_order_flow": {
-      "count": 2349
+      "count": 2359
     },
     "table_trades_log": {
       "count": 3
@@ -72,13 +72,14 @@
     "DonchianMR_BTC",
     "DonchianMR_ETH",
     "KeltnerMR_BTC",
-    "KeltnerMR_ETH"
+    "KeltnerMR_ETH",
+    "BandMR_ETH"
   ],
   "strategies_paper": [
     "RSI_MR_BTC",
     "BandMR_ETH"
   ],
-  "_updated_at": "2026-06-23T11:38:52.032556+00:00",
+  "_updated_at": "2026-06-23T11:43:47.558304+00:00",
   "last_heartbeat": "2026-06-23T11:09:21.022868+00:00",
   "data_health": {
     "duplicates": 0,
@@ -88,16 +89,15 @@
     "checked_at": "2026-06-23T11:09:21.022868+00:00"
   },
   "data_fresh": true,
-  "last_pipeline": "2026-06-23T11:38:52.032556+00:00",
+  "last_pipeline": "2026-06-23T11:43:47.558304+00:00",
   "pipeline_pid": 990789,
   "data_ext_pid": 929007,
   "engine_pid": 1038093,
-  "strategies_disabled": 29,
+  "strategies_disabled": 28,
   "last_klines_ts": 1782214200000,
   "klines_count": 93046,
   "_cross_file_warnings": [
-    "RSI_MR_BTC enabled=True in YAML but verdict=PAPER (athena=PAPER, bt=PAPER) → EXCLUDED",
-    "BandMR_ETH enabled=True in YAML but verdict=PAPER (athena=PAPER, bt=PAPER) → EXCLUDED"
+    "RSI_MR_BTC enabled=True in YAML but verdict=PAPER (athena=PAPER, bt=PAPER) → EXCLUDED"
   ],
   "strategies_live": [
     "DonchianMR_BTC",

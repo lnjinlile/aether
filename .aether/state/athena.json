@@ -335,14 +335,14 @@
       "signals": 239,
       "status": "ok",
       "return_pct": 910.08,
-      "sharpe": 0.585,
-      "win_rate": 61.8,
-      "trades": 131,
-      "max_dd": 30.4,
-      "verdict": "PAPER"
+      "sharpe": 0.539,
+      "win_rate": 63.6,
+      "trades": 118,
+      "max_dd": 20.7,
+      "verdict": "LIVE"
     }
   },
-  "_updated_at": "2026-06-23T11:36:13.674514+00:00",
+  "_updated_at": "2026-06-23T11:46:01.776963+00:00",
   "_athena_patrol": "2026-06-23T19:22:00.000000+00:00",
   "_last_run": "2026-06-23T19:22:00.000000+00:00",
   "_bandmr_btc_retired": {

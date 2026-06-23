@@ -1,6 +1,6 @@
 {
   "status": "active",
-  "_updated_at": "2026-06-23T11:36:13.676970+00:00",
+  "_updated_at": "2026-06-23T11:46:01.779357+00:00",
   "last_optimization": "PERF-074_db_connection_hardening",
   "last_run": "2026-06-23T11:29:17.519312+00:00",
   "walk_forward_implemented": true,
@@ -28,7 +28,7 @@
       "verdict": "STILL_LOSING"
     }
   },
-  "next": "PERF-075: RSI_MR_BTC alternative strategy — standard RSI MR capped at SR=0.466 (<0.5). Explore RSI+BB squeeze or multi-timeframe RSI divergence to break ceiling. Also: regime model calibration audit (ECE=0.069 good, Brier=0.2 moderate — room for Platt scaling improvement).",
+  "next": "PERF-076: RSI_MR_BTC alternative — standard RSI MR capped at SR=0.466 (486-combo sweep found ceiling 0.45). Explore: (1) RSI divergence (price makes lower low, RSI makes higher low → bullish reversal signal), (2) multi-timeframe RSI consensus (1h+4h confirming), (3) RSI+VWAP mean reversion. Platt scaling already deployed (PERF-057: ECE 0.115→0.069, Brier=0.2). Next model upgrade: explore CatBoost/LightGBM stacked ensemble with calibrated isotonic regression for sub-0.05 ECE.",
   "active_research": {
     "PERF-074": {
       "title": "Database connection reliability hardening + code dedup",
@@ -505,27 +505,27 @@
       "max_dd": 17.8
     },
     "BandMR_BTC": {
-      "return_pct": -18.3,
-      "sharpe": -0.32,
-      "status": "RETIRED",
+      "return_pct": 106.0,
+      "sharpe": 0.333,
       "win_rate": 54.5,
       "trades": 75,
       "max_dd": 19.8
     },
     "BandMR_ETH": {
       "return_pct": 910.08,
-      "sharpe": 0.585,
-      "win_rate": 61.8,
-      "trades": 131,
-      "max_dd": 30.4
+      "sharpe": 0.539,
+      "win_rate": 63.6,
+      "trades": 118,
+      "max_dd": 20.7
     }
   },
   "portfolio_concentration": {
-    "_updated": "2026-06-23T01:46:05.686441+00:00",
+    "_updated": "2026-06-23T11:45:00+00:00",
     "live_strategies": [
       "RSI_MR_ETH",
       "DonchianMR_ETH",
       "KeltnerMR_ETH",
+      "BandMR_ETH",
       "KeltnerMR_BTC",
       "DonchianMR_BTC"
     ],
@@ -536,11 +536,13 @@
       "ETH": [
         "RSI_MR_ETH",
         "DonchianMR_ETH",
-        "KeltnerMR_ETH"
+        "KeltnerMR_ETH",
+        "BandMR_ETH"
       ],
       "BTC": [
         "KeltnerMR_BTC",
-        "DonchianMR_BTC"
+        "DonchianMR_BTC",
+        "RSI_MR_BTC"
       ]
     },
     "by_regime": {
@@ -548,24 +550,28 @@
         "RSI_MR_ETH",
         "DonchianMR_ETH",
         "KeltnerMR_ETH",
+        "BandMR_ETH",
         "KeltnerMR_BTC",
         "DonchianMR_BTC"
       ],
       "trend_following": [],
       "breakout": []
     },
-    "eth_concentration_pct": 60,
+    "eth_concentration_pct": 57,
     "estimated_pairwise_corr": {
       "RSI_MR_ETH_vs_DonchianMR_ETH": 0.878,
       "RSI_MR_ETH_vs_KeltnerMR_ETH": 0.85,
-      "DonchianMR_ETH_vs_KeltnerMR_ETH": 0.85
+      "DonchianMR_ETH_vs_KeltnerMR_ETH": 0.85,
+      "BandMR_ETH_vs_RSI_MR_ETH": 0.75,
+      "BandMR_ETH_vs_DonchianMR_ETH": 0.70,
+      "BandMR_ETH_vs_KeltnerMR_ETH": 0.68
     },
     "risk_level": "MODERATE",
-    "warning": "PERF-048 FIXED: Correlated ETH MR strategies (RSI_MR_ETH, DonchianMR_ETH, KeltnerMR_ETH) now mutually exclusive via RiskManager.correlated_groups — max 1 ETH position at a time. BTC MR group added [KeltnerMR_BTC, DonchianMR_BTC]. DonchianMR_BTC promoted PAPER to LIVE (Athena 06-23 01:28). 5 LIVE: 3 ETH + 2 BTC. 0 trend-following LIVE. RANGING (p=0.647) but P(Trend)=0.441 approaching 0.5 threshold.",
+    "warning": "PERF-048+PERF-071: Correlated groups enforce max 2 per symbol, max 1 ETH position. BandMR_ETH promoted LIVE (PERF-073 DD=20.7%). 6 LIVE: 4 ETH + 2 BTC. All MR strategies — 0 trend-following. BandMR_ETH has higher oversold threshold (30 vs 20) — may trigger earlier than other ETH MR strats in declining markets. Guardian caps intra-symbol positions at 2.",
     "mitigation_options": [
-      "RSI_MR_BTC PAPER to LIVE (SR=0.466 DD=18.7% 38t) would bring ETH to 50% — needs refine sweep",
-      "Run RSI_MR_BTC refined sweep to push SR from 0.466 to >0.5",
-      "Cap ETH exposure at 50% via Guardian during TRENDING transitions"
+      "RSI_MR_BTC stays PAPER — 486-combo refine sweep found SR ceiling 0.45 < 0.5 threshold",
+      "BandMR_ETH monitoring trigger: revert to PAPER if realized DD exceeds 25%",
+      "All 4 ETH MR strategies in correlated group — RiskManager max 2 per symbol"
     ]
   },
   "_history": {

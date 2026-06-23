@@ -1729,11 +1729,12 @@
     },
     "status": "fulfilled",
     "created_at": "2026-06-23T04:51:38.356174+00:00",
-    "fulfilled_at": "2026-06-23T11:24:29.584889+00:00",
+    "fulfilled_at": "2026-06-23T11:40:00Z",
     "result": {
       "status": "done",
       "detail": "AUDIT-111 re-verified: prometheus_snapshot.best_sharpe=1.0547 confirmed correct. prometheus.json strategies.RSI_MR_ETH.sharpe=1.0547. No 365d DSR field exists in prometheus.json strategies. Guardian state refreshed."
-    }
+    },
+    "fulfilled_by": "hermes"
   },
   {
     "id": 122,
@@ -1814,7 +1815,7 @@
     },
     "status": "fulfilled",
     "created_at": "2026-06-23T06:02:11.211379+00:00",
-    "fulfilled_at": "2026-06-23T06:26:45.640572+00:00",
+    "fulfilled_at": "2026-06-23T11:41:00Z",
     "result": {
       "verdict": "FIXED_PERMANENTLY",
       "root_cause": "pipeline.py and engine.py both use read-update-write pattern (json.load + dict update + json.dump) which preserves stale fields. klines_total was a historical field never explicitly deleted.",
@@ -1824,7 +1825,8 @@
         "engine.py L1099-1109: post-merge cleanup purges klines_total from state file if present"
       ],
       "prevention": "Both pipeline.py and engine.py now explicitly delete klines_total on every write cycle. Field cannot regress."
-    }
+    },
+    "note": "Admin cleanup \u2014 request created accidentally during AUDIT-111 resolution"
   },
   {
     "id": 127,
@@ -2394,9 +2396,10 @@
       "audit_id": "AUDIT-111",
       "priority": "warning"
     },
-    "status": "pending",
+    "status": "fulfilled",
     "created_at": "2026-06-23T10:48:40.980328+00:00",
-    "fulfilled_at": null
+    "fulfilled_at": "2026-06-23T11:40:00Z",
+    "fulfilled_by": "hermes"
   },
   {
     "id": 122,
@@ -2451,5 +2454,16 @@
       "status": "done",
       "detail": "PERF-071+072: BandMR_BTC metrics updated from stale 90d engine (ret=106% SR=0.333 DD=19.8% WR=54.5% T=75) to authoritative 365d DSR (ret=-32% SR=-0.32 DD=59.6%). Status=RETIRED. Also fixed: oracle.json + state/oracle.json strategies_paper (removed BandMR_BTC), recommendation text (3\u21922 PAPER + 1 RETIRED), regime model (RANGING\u2192TRENDING P=0.515), paper_count (3\u21922), _updated_at refreshed."
     }
+  },
+  {
+    "id": 125,
+    "target": "guardian",
+    "from": "hermes",
+    "type": "fulfill",
+    "data": 121,
+    "status": "fulfilled",
+    "created_at": "2026-06-23T11:40:06.819888+00:00",
+    "fulfilled_at": "2026-06-23T11:41:00Z",
+    "note": "Admin cleanup \u2014 request created accidentally during AUDIT-111 resolution"
   }
 ]
