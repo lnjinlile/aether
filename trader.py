@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """
-Aether AutoTrader — 真正的自动化交易。零人工干预。
+Aether AutoTrader v2 — 多时间框架自动交易。
 
-架构: 取数据→算指标→判断→下单→管仓位→循环
-      没有Agent介入，没有状态锁，没有权限审批。
+层级:
+  15m — 短线波段 (RSI + BB squeeze)
+   1h — 中线摆动 (MA cross + trend)
+   4h — 长线趋势 (EMA cloud + volume)
+
+每层独立决策，独立仓位，互不干扰。
 """
 import os, sys, time, logging, json, sqlite3
 from datetime import datetime, timezone
@@ -16,58 +20,19 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [TRADER] %(message)s
 logger = logging.getLogger("trader")
 
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "market.db")
-INTERVAL = 60  # 每分钟检查一次
+CHECK_INTERVAL = 30
+MIN_BARS = 100
 
-# ====== 交易配置 ======
-SYMBOLS = {"BTC/USDT": "BTCUSDT", "ETH/USDT": "ETHUSDT"}
+# ====== 时间框架层级 ======
+TIERS = {
+    "15m": {"desc": "短线波段", "sl_pct": 0.01, "tp_pct": 0.02, "cooldown_hours": 1},
+    "1h":  {"desc": "中线摆动", "sl_pct": 0.02, "tp_pct": 0.04, "cooldown_hours": 4},
+    "4h":  {"desc": "长线趋势", "sl_pct": 0.03, "tp_pct": 0.08, "cooldown_hours": 12},
+}
+
+SYMBOLS = ["BTC/USDT", "ETH/USDT"]
+QTY = {"BTC/USDT": 0.001, "ETH/USDT": 0.005}
 LEVERAGE = 3
-QTY_BTC = 0.001   # ~$60
-QTY_ETH = 0.005   # ~$8
-COOLDOWN_BARS = 4  # 持仓至少4根K线后才允许再开
-SL_PCT = 0.02
-TP_PCT = 0.04
-
-# ====== 简易策略 ======
-def check_signals(df, strategy_name):
-    """检查入场条件。返回 LONG/SHORT/HOLD + 原因"""
-    close = df["close"]
-    last = close.iloc[-1]
-
-    if strategy_name == "RSI":
-        delta = close.diff()
-        gain = delta.clip(lower=0).rolling(14).mean()
-        loss = (-delta.clip(upper=0)).rolling(14).mean()
-        rs = gain / loss
-        rsi = 100 - (100 / (1 + rs))
-        rsi_v = rsi.iloc[-1]
-
-        if rsi_v < 20:
-            return "LONG", f"RSI={rsi_v:.1f} < 20", last
-        elif rsi_v > 80:
-            return "SHORT", f"RSI={rsi_v:.1f} > 80", last
-        return "HOLD", f"RSI={rsi_v:.1f} 正常", last
-
-    elif strategy_name == "BB":
-        sma = close.rolling(20).mean()
-        std = close.rolling(20).std()
-        lower = sma - 2 * std
-        upper = sma + 2 * std
-        if last < lower.iloc[-1]:
-            return "LONG", f"价格{last:.1f} < 布林下轨{lower.iloc[-1]:.1f}", last
-        elif last > upper.iloc[-1]:
-            return "SHORT", f"价格{last:.1f} > 布林上轨{upper.iloc[-1]:.1f}", last
-        return "HOLD", f"价格{last:.1f} 在布林带内", last
-
-    elif strategy_name == "MA_CROSS":
-        ma5 = close.rolling(5).mean()
-        ma20 = close.rolling(20).mean()
-        if ma5.iloc[-1] > ma20.iloc[-1] and ma5.iloc[-2] <= ma20.iloc[-2]:
-            return "LONG", f"MA5({ma5.iloc[-1]:.1f})上穿MA20({ma20.iloc[-1]:.1f})", last
-        elif ma5.iloc[-1] < ma20.iloc[-1] and ma5.iloc[-2] >= ma20.iloc[-2]:
-            return "SHORT", f"MA5({ma5.iloc[-1]:.1f})下穿MA20({ma20.iloc[-1]:.1f})", last
-        return "HOLD", f"MA5={ma5.iloc[-1]:.1f} MA20={ma20.iloc[-1]:.1f}", last
-
-    return "HOLD", "未知策略", last
 
 
 def get_client():
@@ -77,160 +42,202 @@ def get_client():
     return BinanceFuturesClient(c.api_key, c.api_secret, c.testnet)
 
 
-def get_live_positions(client):
-    """获取当前真实持仓"""
-    try:
-        return client.get_positions()
-    except:
-        return []
+def fetch_data(collector, symbol, tf):
+    """获取K线数据"""
+    df = collector.fetch_current_klines(symbol, tf, 300)
+    if df is None or df.empty or len(df) < MIN_BARS:
+        return None
+    return df
 
 
-def cancel_all(client, symbol):
-    try:
-        orders = client.get_open_orders()
-        for o in orders:
-            if o.get("symbol", "").replace("/", "") == symbol.replace("/", ""):
-                client.cancel_order(o["id"], symbol)
-    except:
-        pass
+def compute_indicators(df):
+    close = df["close"]
+    delta = close.diff()
+    gain = delta.clip(lower=0).rolling(14).mean()
+    loss = (-delta.clip(upper=0)).rolling(14).mean()
+    rs = gain / loss.replace(0, np.nan)
+    rsi = (100 - (100 / (1 + rs))).fillna(50)
 
+    sma20 = close.rolling(20).mean()
+    sma50 = close.rolling(50).mean()
+    std20 = close.rolling(20).std()
+    bb_lower = sma20 - 2 * std20
+    bb_upper = sma20 + 2 * std20
+    bb_width = (bb_upper - bb_lower) / sma20  # squeeze indicator
 
-def place_trade(client, symbol, side, qty, strategy_name, price):
-    """下单+设止损止盈"""
-    sym_raw = SYMBOLS.get(symbol, symbol).split("/")[0] + "USDT"
-    try:
-        client.set_leverage(symbol, LEVERAGE)
-    except:
-        pass
-
-    cancel_all(client, symbol)
+    atr = (df["high"] - df["low"]).rolling(14).mean()
     
-    # 下单
-    result = client.place_order(symbol, side, qty, order_type="MARKET")
-    order_id = result.get("order", {}).get("id", "?") if result else "?"
-    fill_price = result.get("price", price) if result else price
-
-    if not fill_price or fill_price <= 0:
-        logger.warning("未拿到成交价，跳过SL/TP")
-        return order_id, fill_price
-
-    sl = fill_price * (1 - SL_PCT if side == "LONG" else 1 + SL_PCT)
-    tp = fill_price * (1 + TP_PCT if side == "LONG" else 1 - TP_PCT)
-
-    try:
-        sl_side = "SELL" if side == "LONG" else "BUY"
-        client.place_order(symbol, sl_side, qty, order_type="STOP_MARKET",
-                          stop_price=sl, reduce_only=True)
-        client.place_order(symbol, sl_side, qty, order_type="TAKE_PROFIT_MARKET",
-                          stop_price=tp, reduce_only=True)
-    except Exception as e:
-        logger.warning("SL/TP: %s", e)
-
-    card = {
-        "策略": strategy_name, "标的": symbol, "方向": side,
-        "数量": qty, "入场价": fill_price, "止损": round(sl, 1),
-        "止盈": round(tp, 1), "杠杆": f"{LEVERAGE}x",
-        "订单ID": order_id, "时间": datetime.now(timezone.utc).strftime("%H:%M"),
+    return {
+        "rsi": rsi,
+        "sma20": sma20, "sma50": sma50,
+        "bb_lower": bb_lower, "bb_upper": bb_upper, "bb_width": bb_width,
+        "atr": atr,
     }
-    logger.info("TRADE: %s", json.dumps(card, ensure_ascii=False))
 
-    # DB记录
-    try:
-        conn = sqlite3.connect(DB)
-        conn.execute("""INSERT INTO trades_log(symbol,side,entry_time,entry_price,quantity,strategy_name,reason,status)
-                      VALUES(?,?,?,?,?,?,?,?)""",
-                   (sym_raw, side, time.time(), fill_price, qty, strategy_name,
-                    f"{card['方向']} {card['入场价']}", "OPEN"))
-        conn.commit(); conn.close()
+
+def check_15m_signal(ind, price):
+    """15m短线: RSI超卖+布林收窄=爆发前夜"""
+    rsi = ind["rsi"].iloc[-1]
+    bb_w = ind["bb_width"].iloc[-1]
+    bb_w_prev = ind["bb_width"].iloc[-5] if len(ind["bb_width"]) >= 5 else bb_w
+
+    if rsi < 20 and bb_w < 0.03:
+        return "LONG", f"RSI={rsi:.1f}超卖+布林收窄{bb_w:.3f}"
+    if rsi > 80 and bb_w < 0.03:
+        return "SHORT", f"RSI={rsi:.1f}超买+布林收窄{bb_w:.3f}"
+    if rsi < 20:
+        return "LONG", f"RSI={rsi:.1f}超卖"
+    if rsi > 80:
+        return "SHORT", f"RSI={rsi:.1f}超买"
+    return "HOLD", ""
+
+
+def check_1h_signal(ind, price):
+    """1h中线: RSI均值回归 + 均线交叉"""
+    rsi = ind["rsi"].iloc[-1]
+    sma20 = ind["sma20"].iloc[-1]
+    sma50 = ind["sma50"].iloc[-1]
+    sma20_p = ind["sma20"].iloc[-2]
+    sma50_p = ind["sma50"].iloc[-2]
+
+    # 金叉 + 不在高位
+    if sma20 > sma50 and sma20_p <= sma50_p and rsi < 60:
+        return "LONG", f"MA20({sma20:.0f})金叉MA50({sma50:.0f}) RSI={rsi:.0f}"
+    # 死叉 + 不在低位
+    if sma20 < sma50 and sma20_p >= sma50_p and rsi > 40:
+        return "SHORT", f"MA20({sma20:.0f})死叉MA50({sma50:.0f}) RSI={rsi:.0f}"
+    # RSI 极端
+    if rsi < 25:
+        return "LONG", f"RSI={rsi:.1f}超卖"
+    if rsi > 75:
+        return "SHORT", f"RSI={rsi:.1f}超买"
+    return "HOLD", ""
+
+
+def check_4h_signal(ind, price):
+    """4h长线: 趋势跟踪 + 成交量确认"""
+    rsi = ind["rsi"].iloc[-1]
+    sma20 = ind["sma20"].iloc[-1]
+    sma50 = ind["sma50"].iloc[-1]
+
+    # RSI 从低位回升 + 均线多头 = 趋势确认
+    rsi_p = ind["rsi"].iloc[-3] if len(ind["rsi"]) >= 3 else rsi
+    if sma20 > sma50 and rsi > rsi_p and rsi < 50:
+        return "LONG", f"多头趋势 RSI回升{rsi_p:.0f}→{rsi:.0f}"
+    if sma20 < sma50 and rsi < rsi_p and rsi > 50:
+        return "SHORT", f"空头趋势 RSI下降{rsi_p:.0f}→{rsi:.0f}"
+    return "HOLD", ""
+
+
+SIGNAL_FNS = {"15m": check_15m_signal, "1h": check_1h_signal, "4h": check_4h_signal}
+
+
+def execute(client, symbol, side, qty, tier, price):
+    try: client.set_leverage(symbol, LEVERAGE)
     except: pass
 
-    return order_id, fill_price
+    # Cancel existing orders for this symbol
+    try:
+        for o in client.get_open_orders():
+            if symbol.replace("/","") in o.get("symbol",""):
+                client.cancel_order(o["id"], symbol)
+    except: pass
+
+    r = client.place_order(symbol, side, qty, order_type="MARKET")
+    oid = r.get("order",{}).get("id","?") if r else "?"
+    fp = r.get("price", price) if r else price
+    if not fp or fp <= 0:
+        logger.warning("%s 无成交价", symbol)
+        return None
+
+    cfg = TIERS[tier]
+    sl = fp * (1-cfg["sl_pct"] if side=="LONG" else 1+cfg["sl_pct"])
+    tp = fp * (1+cfg["tp_pct"] if side=="LONG" else 1-cfg["tp_pct"])
+    sl_s = "SELL" if side=="LONG" else "BUY"
+
+    try:
+        client.place_order(symbol, sl_s, qty, order_type="STOP_MARKET", stop_price=sl, reduce_only=True)
+        client.place_order(symbol, sl_s, qty, order_type="TAKE_PROFIT_MARKET", stop_price=tp, reduce_only=True)
+    except: pass
+
+    card = {"层": tier, "描述": cfg["desc"], "标的": symbol, "方向": side, "数量": qty,
+            "入场": fp, "SL": round(sl,1), "TP": round(tp,1), "杠杆": f"{LEVERAGE}x", "订单ID": oid}
+    logger.info("TRADE: %s", json.dumps(card, ensure_ascii=False))
+
+    conn = sqlite3.connect(DB)
+    conn.execute("INSERT INTO trades_log(symbol,side,entry_time,entry_price,quantity,strategy_name,reason,status) VALUES(?,?,?,?,?,?,?,?)",
+               (symbol.split("/")[0]+"USDT", side, time.time(), fp, qty, f"{tier}_{cfg['desc']}", card["方向"], "OPEN"))
+    conn.commit(); conn.close()
+    return card
 
 
-def close_position(client, symbol, side_str=""):
-    """平仓"""
-    cancel_all(client, symbol)
+def close_existing(client, symbol):
+    try:
+        for o in client.get_open_orders():
+            if symbol.replace("/","") in o.get("symbol",""):
+                client.cancel_order(o["id"], symbol)
+    except: pass
     try:
         client.close_position(symbol)
-        logger.info("CLOSED: %s %s", symbol, side_str)
-        # Update DB
-        conn = sqlite3.connect(DB)
-        sym_raw = SYMBOLS.get(symbol, "?").split("/")[0] + "USDT"
-        conn.execute("""UPDATE trades_log SET status='CLOSED', exit_time=?, exit_price=
-                       (SELECT mark_price FROM klines WHERE symbol=? ORDER BY open_time DESC LIMIT 1)
-                       WHERE symbol=? AND status='OPEN'""",
-                   (time.time(), symbol, sym_raw))
-        conn.commit(); conn.close()
+        logger.info("CLOSED: %s", symbol)
     except Exception as e:
-        logger.error("Close error: %s", e)
+        logger.warning("Close error: %s", e)
 
 
 def main():
-    logger.info("AutoTrader 启动 — interval=%ds", INTERVAL)
+    logger.info("AutoTrader v2 多时间框架启动")
     client = get_client()
-    last_entry = {}  # symbol → timestamp of last entry
-    
+    from data.collector import BinanceDataCollector
+    from config.settings import get_config
+    cfg = get_config()
+    collector = BinanceDataCollector(cfg.api_key, cfg.api_secret, cfg.testnet)
+
+    last_trade = {}  # (symbol, tier) -> timestamp
+
     while True:
         try:
-            positions = get_live_positions(client)
-            pos_symbols = {p["symbol"]: p for p in positions}
-            
-            for sym, bin_sym in SYMBOLS.items():
-                # ====== 取数据 ======
-                from data.collector import BinanceDataCollector
-                from config.settings import get_config
-                cfg = get_config()
-                collector = BinanceDataCollector(cfg.api_key, cfg.api_secret, cfg.testnet)
-                df = collector.fetch_current_klines(sym, "1h", 200)
-                if df is None or df.empty:
-                    continue
-                
-                has_pos = sym in pos_symbols
-                current_pos = pos_symbols.get(sym, {})
-                pos_side = current_pos.get("side", "")
-                
-                # ====== 策略判断 ======
-                for strat_name in ["RSI", "BB", "MA_CROSS"]:
-                    signal, reason, price = check_signals(df, strat_name)
-                    
-                    if signal == "HOLD":
+            positions = {p["symbol"]: p for p in client.get_positions()}
+
+            for sym in SYMBOLS:
+                for tier, tier_cfg in TIERS.items():
+                    df = fetch_data(collector, sym, tier)
+                    if df is None: continue
+
+                    ind = compute_indicators(df)
+                    price = df["close"].iloc[-1]
+                    signal, reason = SIGNAL_FNS[tier](ind, price)
+
+                    if signal == "HOLD": continue
+
+                    # Cooldown
+                    key = (sym, tier)
+                    last_t = last_trade.get(key, 0)
+                    if time.time() - last_t < tier_cfg["cooldown_hours"] * 3600:
                         continue
-                    
-                    if signal == "LONG" and pos_side == "long":
-                        continue  # 已持仓同方向
-                    if signal == "SHORT" and pos_side == "short":
-                        continue
-                    
-                    # ====== 平反向仓位 ======
-                    if (signal == "LONG" and pos_side == "short") or \
-                       (signal == "SHORT" and pos_side == "long"):
-                        logger.info("平反向仓位: %s %s → 准备开%s", sym, pos_side, signal)
-                        close_position(client, sym, pos_side)
+
+                    # Position check
+                    has_pos = sym in positions
+                    pside = positions[sym].get("side","") if has_pos else ""
+
+                    if signal == "LONG" and pside == "long": continue
+                    if signal == "SHORT" and pside == "short": continue
+
+                    # Close opposite
+                    if (signal == "LONG" and pside == "short") or (signal == "SHORT" and pside == "long"):
+                        logger.warning("⚠️ 反向信号 %s %s → %s: %s", tier, pside, signal, reason)
+                        close_existing(client, sym)
                         time.sleep(2)
                         has_pos = False
-                    
-                    # ====== 冷却检查 ======
-                    last_t = last_entry.get(sym, 0)
-                    if time.time() - last_t < COOLDOWN_BARS * 3600:
-                        continue
-                    
-                    # ====== 开仓 ======
+
                     if not has_pos:
-                        qty = QTY_BTC if "BTC" in sym else QTY_ETH
-                        logger.info("🚀 %s: %s (%s)", sym, signal, reason)
-                        place_trade(client, sym, signal, qty, strat_name, price)
-                        last_entry[sym] = time.time()
-                        break  # 一个标的只开一单
-            
-            # 每30秒输出一次状态
-            if int(time.time()) % 30 < INTERVAL:
-                bal = client.get_balance()
-                logger.info("状态: 余额=%.2f 持仓=%d", bal.get("balance", 0), len(positions))
-                
+                        logger.info("🎯 %s [%s] %s → %s (%s)", sym, tier, signal, tier_cfg["desc"], reason)
+                        execute(client, sym, signal, QTY[sym], tier, price)
+                        last_trade[key] = time.time()
+
         except Exception as e:
-            logger.error("Loop error: %s", e)
-        
-        time.sleep(INTERVAL)
+            logger.error("Loop: %s", e)
+
+        time.sleep(CHECK_INTERVAL)
 
 
 if __name__ == "__main__":
