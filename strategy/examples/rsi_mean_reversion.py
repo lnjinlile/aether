@@ -131,45 +131,34 @@ class RSIMeanReversionStrategy(BaseStrategy):
                     timestamp=df.index[-1],
                 )
 
-        # Entry signals (only if cooldown passed)
-        # Use sustained condition (rsi < oversold) instead of cross_below_oversold
-        # to handle engine restarts where the cross happened before startup.
-        # Cooldown + has_position prevent duplicate entries.
+        # Entry signals — simple: if oversold, LONG. If overbought, SHORT.
+        # Cooldown prevents overtrading. Has_position prevents doubling.
         if not has_pos and self._bars_since_last_trade > cooldown:
-            if not np.isnan(latest["rsi"]) and latest["rsi"] < self.params["oversold"]:
-                self._bars_since_last_trade = 0
-                sl = current_price * (1.0 - sl_pct)
-                tp = current_price * (1.0 + tp_pct)
-                return Signal(
-                    type=SignalType.LONG,
-                    symbol=symbol,
-                    price=current_price,
-                    quantity=0.001,
-                    stop_loss=sl,
-                    take_profit=tp,
-                    reason=f"RSI({self.params['rsi_period']})={latest['rsi']:.1f} crossed below {self.params['oversold']} (oversold)",
-                    confidence=0.65,
-                    leverage=self.params.get("leverage", 3),
-                    strategy_name=self.name,
-                    timestamp=df.index[-1],
-                )
-            elif latest["cross_above_overbought"]:
-                self._bars_since_last_trade = 0
-                sl = current_price * (1.0 + sl_pct)
-                tp = current_price * (1.0 - tp_pct)
-                return Signal(
-                    type=SignalType.SHORT,
-                    symbol=symbol,
-                    price=current_price,
-                    quantity=0.001,
-                    stop_loss=sl,
-                    take_profit=tp,
-                    reason=f"RSI({self.params['rsi_period']})={latest['rsi']:.1f} crossed above {self.params['overbought']} (overbought)",
-                    confidence=0.65,
-                    leverage=self.params.get("leverage", 3),
-                    strategy_name=self.name,
-                    timestamp=df.index[-1],
-                )
+            if not np.isnan(latest["rsi"]):
+                if latest["rsi"] < self.params["oversold"]:
+                    self._bars_since_last_trade = 0
+                    sl = current_price * (1.0 - sl_pct)
+                    tp = current_price * (1.0 + tp_pct)
+                    return Signal(
+                        type=SignalType.LONG,
+                        symbol=symbol, price=current_price, quantity=0.001,
+                        stop_loss=sl, take_profit=tp,
+                        reason=f"RSI={latest['rsi']:.1f} < {self.params['oversold']} (oversold)",
+                        confidence=0.65, leverage=self.params.get("leverage", 3),
+                        strategy_name=self.name, timestamp=df.index[-1],
+                    )
+                elif latest["rsi"] > self.params["overbought"]:
+                    self._bars_since_last_trade = 0
+                    sl = current_price * (1.0 + sl_pct)
+                    tp = current_price * (1.0 - tp_pct)
+                    return Signal(
+                        type=SignalType.SHORT,
+                        symbol=symbol, price=current_price, quantity=0.001,
+                        stop_loss=sl, take_profit=tp,
+                        reason=f"RSI={latest['rsi']:.1f} > {self.params['overbought']} (overbought)",
+                        confidence=0.65, leverage=self.params.get("leverage", 3),
+                        strategy_name=self.name, timestamp=df.index[-1],
+                    )
 
         return Signal(
             type=SignalType.HOLD,
