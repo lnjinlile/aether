@@ -174,8 +174,8 @@ def execute(client, symbol, side, qty, tier, price):
     sl_s = "SELL" if side=="LONG" else "BUY"
 
     try:
-        client.place_sl_order(symbol, sl_s, quantity=qty, stop_price=sl, order_type="STOP_MARKET")
-        client.place_sl_order(symbol, sl_s, quantity=qty, stop_price=tp, order_type="TAKE_PROFIT_MARKET")
+        client.place_sl_order(symbol, sl_s, quantity=qty, stop_price=sl)
+        client.place_sl_order(symbol, sl_s, quantity=qty, stop_price=tp)
     except Exception as e:
         logger.warning("SL/TP %s: %s", symbol, e)
 

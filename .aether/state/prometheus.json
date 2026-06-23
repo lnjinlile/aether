@@ -1,6 +1,6 @@
 {
   "status": "active",
-  "_updated_at": "2026-06-23T17:51:07.816371+00:00",
+  "_updated_at": "2026-06-23T17:55:55.451831+00:00",
   "last_optimization": "PERF-094_spread_mr_discovery",
   "last_run": "2026-06-24T00:50:00.000000+00:00",
   "walk_forward_implemented": true,

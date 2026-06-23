@@ -45,13 +45,13 @@
       "count": 528
     },
     "table_open_interest": {
-      "count": 1261
+      "count": 1263
     },
     "table_orderbook_snapshots": {
-      "count": 1076
+      "count": 1078
     },
     "table_order_flow": {
-      "count": 3089
+      "count": 3098
     },
     "table_trades_log": {
       "count": 3
@@ -78,20 +78,20 @@
   "strategies_paper": [
     "RSI_MR_BTC"
   ],
-  "_updated_at": "2026-06-23T17:48:56.715679+00:00",
-  "last_heartbeat": "2026-06-23T17:48:56.715679+00:00",
+  "_updated_at": "2026-06-23T17:53:42.982535+00:00",
+  "last_heartbeat": "2026-06-23T17:53:42.982535+00:00",
   "data_health": {
     "duplicates": 0,
     "gaps": 0,
     "db_size_mb": 16.2,
     "journal_mode": "wal",
     "order_flow_lag_min": 1.1,
-    "checked_at": "2026-06-23T17:48:56.715679+00:00",
+    "checked_at": "2026-06-23T17:53:42.982535+00:00",
     "klines_count": 93112,
-    "klines_delay_minutes": -11.1
+    "klines_delay_minutes": -6.3
   },
   "data_fresh": true,
-  "last_pipeline": "2026-06-23T17:48:56.715679+00:00",
+  "last_pipeline": "2026-06-23T17:53:42.982535+00:00",
   "pipeline_pid": 1097895,
   "data_ext_pid": 1072131,
   "engine_pid": 1058679,
@@ -112,5 +112,5 @@
   "duplicates": 0,
   "gaps": 0,
   "db_integrity": "ok",
-  "last_check": "2026-06-23T17:48:56.715679+00:00"
+  "last_check": "2026-06-23T17:53:42.982535+00:00"
 }
