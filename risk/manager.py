@@ -27,18 +27,19 @@ class RiskManager:
     """Validates signals against configurable position and loss limits.
 
     Configurable limits (set at init or via configure()):
-        max_positions:         Maximum concurrent open positions (default 5)
-        max_leverage:          Maximum allowed leverage (default 10)
-        max_per_symbol_pct:    Max notional per symbol as fraction of balance (0.10 = 10%)
-        max_total_position_pct: Max total notional as fraction of balance (0.50 = 50%)
-        daily_loss_limit_pct:   Max daily realized loss as fraction of starting balance (0.05 = 5%)
-        min_order_usdt:         Minimum order value in USDT (default 10)
-        correlated_groups:      List of strategy name groups that are mutually exclusive
-                                (e.g. [['RSI_MR_ETH', 'DonchianMR_ETH']])
+        max_positions:              Maximum concurrent open positions (default 5)
+        max_leverage:               Maximum allowed leverage (default 10)
+        max_per_symbol_pct:         Max notional per symbol as fraction of balance (0.10 = 10%)
+        max_total_position_pct:     Max total notional as fraction of balance (0.50 = 50%)
+        daily_loss_limit_pct:       Max daily realized loss as fraction of starting balance (0.05 = 5%)
+        min_order_usdt:             Minimum order value in USDT (default 10)
+        correlated_groups:          List of strategy name groups that share a symbol.
+                                    (e.g. [['RSI_MR_ETH', 'DonchianMR_ETH']])
         max_correlated_exposure_pct: Max combined notional for all positions in a correlated
-                                      group, as fraction of balance (0.30 = 30%). Prevents
-                                      correlated strategies from collectively over-allocating
-                                      even when only one has an open position.
+                                      group, as fraction of balance (0.30 = 30%).
+        max_strategies_per_symbol:   Max concurrent strategies allowed per correlated group
+                                      (default 2). PERF-063/PERF-071: prevents 3x BTC exposure
+                                      from all 3 BTC MR strats firing simultaneously.
     """
 
     def __init__(
@@ -51,6 +52,7 @@ class RiskManager:
         min_order_usdt: float = 10.0,
         correlated_groups: Optional[List[List[str]]] = None,
         max_correlated_exposure_pct: float = 0.30,
+        max_strategies_per_symbol: int = 2,   # PERF-063/PERF-071: cap concurrent MR strats per symbol
     ):
         self.max_positions = max_positions
         self.max_leverage = max_leverage
@@ -60,6 +62,7 @@ class RiskManager:
         self.min_order_usdt = min_order_usdt
         self.correlated_groups: List[List[str]] = correlated_groups or []
         self.max_correlated_exposure_pct = max_correlated_exposure_pct
+        self.max_strategies_per_symbol = max_strategies_per_symbol
 
         # Build reverse lookup: strategy_name → group index
         self._correlated_map: Dict[str, int] = {}
@@ -166,24 +169,29 @@ class RiskManager:
                 reason=f"Max positions ({self.max_positions}) reached: {len(positions)} open",
             )
 
-        # ---- Check 2.5: Correlated strategy mutual exclusion ----
+        # ---- Check 2.5: Per-symbol strategy count cap (PERF-063/PERF-071) ----
         strategy_name = signal.get("strategy") or signal.get("strategy_name")
-        if strategy_name and self._correlated_map:
+        if strategy_name and self._correlated_map and self.max_strategies_per_symbol > 0:
             group_idx = self._correlated_map.get(strategy_name)
             if group_idx is not None:
                 group = self.correlated_groups[group_idx]
-                # Check if any open position belongs to a correlated strategy
+                # Count unique strategies in this group that already have positions
+                active_strategies_in_group = set()
                 for p in positions:
                     pos_strat = p.get("strategy_name") or p.get("strategy")
-                    if pos_strat and pos_strat in group and pos_strat != strategy_name:
-                        return RiskCheckResult(
-                            action="REJECT",
-                            reason=(
-                                f"Correlated strategy '{pos_strat}' already has an open "
-                                f"position on {p.get('symbol', '?')}. "
-                                f"Mutual exclusion group: {group}"
-                            ),
-                        )
+                    if pos_strat and pos_strat in group:
+                        active_strategies_in_group.add(pos_strat)
+                # If adding this strategy would exceed the per-symbol cap → REJECT
+                if len(active_strategies_in_group) >= self.max_strategies_per_symbol \
+                        and strategy_name not in active_strategies_in_group:
+                    return RiskCheckResult(
+                        action="REJECT",
+                        reason=(
+                            f"Per-symbol strategy cap ({self.max_strategies_per_symbol}) reached: "
+                            f"{len(active_strategies_in_group)} strategies in group {group} "
+                            f"already have positions ({sorted(active_strategies_in_group)})"
+                        ),
+                    )
 
                 # ---- Check 2.6: Correlated exposure cap ----
                 # Calculate total notional from all positions in this correlated group

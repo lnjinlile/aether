@@ -13,38 +13,7 @@ import numpy as np
 from datetime import datetime, timezone
 from backtest.sweep_utils import load_data
 from backtest.engine import BacktestEngine
-
-def _compute_adx(high, low, close, period=14):
-    """Compute ADX indicator."""
-    n = len(close)
-    tr = np.zeros(n)
-    plus_dm = np.zeros(n)
-    minus_dm = np.zeros(n)
-    
-    for i in range(1, n):
-        tr[i] = max(high[i] - low[i],
-                    abs(high[i] - close[i-1]),
-                    abs(low[i] - close[i-1]))
-        up = high[i] - high[i-1]
-        down = low[i-1] - low[i]
-        if up > down and up > 0:
-            plus_dm[i] = up
-        if down > up and down > 0:
-            minus_dm[i] = down
-    
-    # Wilder's smoothing
-    atr = pd.Series(tr).ewm(alpha=1/period, adjust=False).mean().values
-    plus_di = 100 * pd.Series(plus_dm).ewm(alpha=1/period, adjust=False).mean().values / atr
-    minus_di = 100 * pd.Series(minus_dm).ewm(alpha=1/period, adjust=False).mean().values / atr
-    
-    dx = np.zeros(n)
-    for i in range(n):
-        denom = plus_di[i] + minus_di[i]
-        if denom > 0:
-            dx[i] = 100 * abs(plus_di[i] - minus_di[i]) / denom
-    
-    adx = pd.Series(dx).ewm(alpha=1/period, adjust=False).mean().values
-    return adx, plus_di, minus_di
+from backtest.signal_gen import _compute_adx  # PERF-074: dedup — use centralized ADX
 
 def _check_sl_tp(price, entry, pos, sl_pct, tp_pct):
     if pos == 1:  # Long

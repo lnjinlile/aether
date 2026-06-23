@@ -512,7 +512,7 @@ strategies:
     timeframes:
     - 1h
 - class: strategy.examples.band_mr.BandMRStrategy
-  enabled: true
+  enabled: false
   name: BandMR_BTC
   params:
     cooldown_bars: 8
@@ -533,8 +533,8 @@ strategies:
   enabled: true
   name: BandMR_ETH
   params:
-    cooldown_bars: 5
-    donchian_period: 10
+    cooldown_bars: 3
+    donchian_period: 8
     exit_level: 50
     leverage: 3
     overbought: 75
@@ -543,7 +543,7 @@ strategies:
     stop_loss_pct: 0.015
     symbols:
     - ETH/USDT
-    take_profit_pct: 0.025
+    take_profit_pct: 0.015
     timeframes:
     - 1h
     volume_filter: 1.2

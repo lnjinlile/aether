@@ -132,23 +132,13 @@
       "symbol": "ETH/USDT",
       "timeframe": "1h",
       "data_rows": 2161,
-      "signals_count": 235,
+      "signals_count": 239,
       "latest_signal": {
-        "time": "2026-06-23 09:00:00",
+        "time": "2026-06-23 11:00:00",
         "signal": "LONG",
-        "price": 1649.7
+        "price": 1659.11
       },
       "last_5_signals": [
-        {
-          "time": "2026-06-15 08:00:00",
-          "signal": "SHORT",
-          "price": 1719.69
-        },
-        {
-          "time": "2026-06-15 09:00:00",
-          "signal": "SHORT",
-          "price": 1717.43
-        },
         {
           "time": "2026-06-15 10:00:00",
           "signal": "SHORT",
@@ -162,28 +152,38 @@
         {
           "time": "2026-06-23 09:00:00",
           "signal": "LONG",
-          "price": 1649.7
+          "price": 1649.94
+        },
+        {
+          "time": "2026-06-23 10:00:00",
+          "signal": "LONG",
+          "price": 1651.79
+        },
+        {
+          "time": "2026-06-23 11:00:00",
+          "signal": "LONG",
+          "price": 1659.11
         }
       ],
-      "total_return_pct": 79.29,
-      "sharpe_ratio": 1.0517,
+      "total_return_pct": 81.75,
+      "sharpe_ratio": 1.0748,
       "max_drawdown_pct": 8.88,
       "win_rate": 88.24,
       "total_trades": 17,
-      "profit_factor": 5.2379,
+      "profit_factor": 5.3329,
       "backtest_period": "90d",
       "verdict": "LIVE",
       "metrics": {
-        "total_return_pct": 79.29,
-        "sharpe_ratio": 1.0517,
+        "total_return_pct": 81.75,
+        "sharpe_ratio": 1.0748,
         "deflated_sharpe_ratio": 1.0,
         "max_drawdown_pct": 8.88,
         "win_rate": 88.24,
-        "profit_factor": 5.2379,
+        "profit_factor": 5.3329,
         "total_trades": 17,
-        "avg_win_pct": 5.04,
+        "avg_win_pct": 5.13,
         "avg_loss_pct": 7.22,
-        "final_equity": 17928.52
+        "final_equity": 18175.16
       }
     },
     "MLEnsemble_BTC": {
@@ -588,8 +588,8 @@
       }
     },
     "BandMR_BTC": {
-      "status": "ok",
-      "enabled": true,
+      "status": "disabled",
+      "enabled": false,
       "symbol": "BTC/USDT",
       "timeframe": "1h",
       "total_return_pct": 106.0,
@@ -597,7 +597,6 @@
       "max_drawdown_pct": 19.8,
       "win_rate": 54.5,
       "total_trades": 75,
-      "profit_factor": 1.35,
       "backtest_period": "365d",
       "verdict": "PAPER",
       "retired_reason": "SR=0.333<0.5 threshold for LIVE, DD=19.8% acceptable. PAPER trading enabled by Athena 2026-06-23 07:25."
@@ -663,5 +662,5 @@
       }
     }
   },
-  "_updated_at": "2026-06-23T09:51:45.197389+00:00"
+  "_updated_at": "2026-06-23T11:31:18.820409+00:00"
 }

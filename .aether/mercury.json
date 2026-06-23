@@ -1,14 +1,38 @@
 {
   "status": "ok",
-  "timestamp": "2026-06-22T09:04:26.202938+00:00",
-  "btc_price": 64164.0,
-  "balance": 4995.41952638,
+  "timestamp": "2026-06-23T11:16:13.407497+00:00",
+  "btc_price": 62349.0,
+  "balance": 4995.42,
   "available": 4995.41952638,
   "positions": 0,
   "open_orders": 0,
   "action": "MONITORING",
-  "signals": {},
+  "signals": {
+    "summary": "0 signals. 5 LIVE + 2 PAPER all HOLD. Regime TRENDING P=0.515. PERF-049 mult=0.71. BandMR_BTC RETIRED.",
+    "RSI_MR_ETH": "HOLD LIVE",
+    "DonchianMR_BTC": "HOLD LIVE",
+    "DonchianMR_ETH": "HOLD LIVE",
+    "KeltnerMR_BTC": "HOLD LIVE",
+    "KeltnerMR_ETH": "HOLD LIVE",
+    "RSI_MR_BTC": "HOLD PAPER",
+    "BandMR_ETH": "HOLD PAPER"
+  },
   "executed": [],
   "exits": [],
-  "current_positions": []
+  "current_positions": [],
+  "market_regime": "TRENDING",
+  "p_trend": 0.515,
+  "mr_multiplier": 0.71,
+  "strategies_live": [
+    "RSI_MR_ETH",
+    "DonchianMR_BTC",
+    "DonchianMR_ETH",
+    "KeltnerMR_BTC",
+    "KeltnerMR_ETH"
+  ],
+  "strategies_paper": [
+    "RSI_MR_BTC",
+    "BandMR_ETH"
+  ],
+  "last_heartbeat": "2026-06-23T11:16:13.407497+00:00"
 }

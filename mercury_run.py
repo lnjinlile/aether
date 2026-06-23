@@ -101,7 +101,7 @@ def main():
         min_order_usdt=10.0,
         correlated_groups=[
             ["RSI_MR_ETH", "DonchianMR_ETH", "KeltnerMR_ETH"],    # PERF-048: All 3 ETH MR strategies — pairwise corr ≥ 0.85
-            ["KeltnerMR_BTC", "DonchianMR_BTC"],                  # BTC MR strategies — shared symbol
+            ["KeltnerMR_BTC", "DonchianMR_BTC", "RSI_MR_BTC"],    # PERF-071: All BTC MR strategies — max 2 concurrent
         ],
         max_correlated_exposure_pct=0.30,
     )

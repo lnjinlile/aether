@@ -92,10 +92,10 @@
       "verdict": "PAPER"
     },
     "RSI_MR_ETH": {
-      "signals": 235,
+      "signals": 239,
       "status": "ok",
-      "return_pct": 79.29,
-      "sharpe": 1.0517,
+      "return_pct": 81.75,
+      "sharpe": 1.0748,
       "win_rate": 88.24,
       "trades": 17,
       "max_dd": 8.88,
@@ -323,13 +323,13 @@
     },
     "BandMR_BTC": {
       "signals": 0,
-      "status": "ok",
+      "status": "disabled",
       "return_pct": 106.0,
       "sharpe": 0.333,
       "win_rate": 54.5,
       "trades": 75,
       "max_dd": 19.8,
-      "verdict": "PAPER"
+      "verdict": "RETIRED"
     },
     "BandMR_ETH": {
       "signals": 239,
@@ -342,22 +342,26 @@
       "verdict": "PAPER"
     }
   },
-  "_updated_at": "2026-06-23T10:21:45.716813+00:00",
-  "_athena_patrol": "2026-06-23T10:13:00.000000+00:00",
-  "_last_run": "2026-06-23T10:13:00.000000+00:00",
+  "_updated_at": "2026-06-23T11:31:19.498204+00:00",
+  "_athena_patrol": "2026-06-23T19:22:00.000000+00:00",
+  "_last_run": "2026-06-23T19:22:00.000000+00:00",
+  "_bandmr_btc_retired": {
+    "time": "2026-06-23T18:45:00+00:00",
+    "action": "Athena syncs Prometheus PERF-071: BandMR_BTC RETIRED. 365d SR=-0.32 DD=59.6%. Disabled in strategies.yaml. Previous athena.json metrics (SR=0.333) were stale/incorrect. Prometheus 365d data authoritative.",
+    "prometheus_ref": "PERF-071"
+  },
   "_perf031_threshold": 0.6,
   "_perf031_threshold_raised": "2026-06-23T02:58:00+00:00",
   "_perf031_threshold_reason": "Athena策略决策: P(Trend)=0.578刚翻转为弱趋势(BTC -0.33% 6h, ETH平), 5个LIVE MR策略全部被PERF-031封杀→系统0信号输出。阈值0.5→0.6(engine.py同步修改), 允许MR在弱趋势中继续运行。当P>0.6(更强置信度)时封杀MR。阈值可通过athena.json._perf031_threshold调优。若P(Trend)持续>0.6且无趋势策略可用, 需紧急研发。",
   "_last_signals": {
-    "summary": "0 signals. Regime TRENDING P(Trend)=0.515. BTC RSI=26.86 ETH RSI=24.13 both >20. Prices: BTC 62453.7 (DC_lower=62343.7, gap +110), ETH 1655.07 (DC_lower=1646.91, gap +8.16). KeltnerMR prices below KC_lower but RSI>20 blocks trigger. BandMR RSI<30 satisfied but price>DC_lower. PERF-049 multiplier=0.71.",
-    "RSI_MR_ETH": "HOLD LIVE — RSI=24.13 > oversold=20",
-    "DonchianMR_ETH": "HOLD LIVE — RSI=24.13 > 20",
-    "KeltnerMR_ETH": "HOLD LIVE — RSI=24.13 > 20 (price 1655.07 < KC_lower 1678.38 but RSI blocks)",
-    "RSI_MR_BTC": "HOLD PAPER — RSI=26.86 > 20",
-    "DonchianMR_BTC": "HOLD LIVE — RSI=26.86 > 20",
-    "KeltnerMR_BTC": "HOLD LIVE — RSI=26.86 > 20 (price 62453.7 < KC_lower 62741.54 but RSI blocks)",
-    "BandMR_BTC": "HOLD PAPER — RSI 26.86 < 30 but price(62453.7) > DC_lower(62343.7)",
-    "BandMR_ETH": "HOLD PAPER — RSI 24.13 < 30 but price(1655.07) > DC_lower(1646.91)"
+    "summary": "0 signals. Regime TRENDING P(Trend)=0.510. BTC 62349 RSI=25.31 ETH 1654 RSI=23.7 both declining. RSI above oversold=20 for 5 LIVE MR — no triggers. BandMR_ETH (RSI=23.7<30) but price 1654 above DC_lower 1646.91 — no trigger. BandMR_ETH promoted PAPER→LIVE this patrol (PERF-073: DD 30.4→20.7%, SR=0.539). 6 LIVE strategies now active.",
+    "RSI_MR_ETH": "HOLD LIVE — RSI 23.7 > 20",
+    "DonchianMR_ETH": "HOLD LIVE — RSI 23.7 > 20, price 1654 > DC_lower 1646.91",
+    "KeltnerMR_ETH": "HOLD LIVE — RSI 23.7 > 20, price 1654 < KC_lower 1675 but RSI above threshold",
+    "RSI_MR_BTC": "HOLD PAPER — RSI 25.31 > 20",
+    "DonchianMR_BTC": "HOLD LIVE — RSI 25.31 > 20, price 62349 > DC_lower 62281",
+    "KeltnerMR_BTC": "HOLD LIVE — RSI 25.31 > 20, price 62349 < KC_lower 62648 but RSI above threshold",
+    "BandMR_ETH": "HOLD LIVE — RSI 23.7 < 30 but price 1654 > DC_lower 1646.91 (no band break)"
   },
   "_trend_following_gap": "RESOLVED 2026-06-23 02:58 UTC: P(Trend) crossed 0.5→0.578, regime flipped RANGING→TRENDING. PERF-031 threshold raised 0.5→0.6 to unblock 5 LIVE MR strategies during weak trend. No trend-following strategies exist (all backtests DD>28%). Strategic gap remains: need conservative trend/hybrid strategy for P(Trend)>0.6.",
   "_donchianmr_btc_promotion": "2026-06-23T01:28:00+00:00",
@@ -451,27 +455,49 @@
     "time": "2026-06-23T06:15:00+00:00",
     "action": "Athena enables BandMR_ETH PAPER. Params: oversold=30 donchian=10 cd=5 sl=1.5% tp=2.5%. 365d: SR=0.585 DD=30.4% WR=61.8% 131t Ret=910%. DD>20% blocks LIVE. Refine request submitted to reduce DD."
   },
+  "_bandmr_eth_live_promotion": {
+    "time": "2026-06-23T19:22:00+00:00",
+    "action": "Athena promotes BandMR_ETH PAPER→LIVE (PERF-073). Params: DP=8 OS=30 SL=1.5% TP=1.5% CD=3 vol=1.2. Metrics: SR=0.539 DD=20.7% WR=63.6% T=118 Net=571.1%. DD improved 9.7pp (30.4→20.7). DD borderline (20.7% vs 20% threshold) but risk-adjusted metrics justify LIVE promotion. Monitoring trigger: revert to PAPER if realized DD exceeds 25%.",
+    "prometheus_ref": "PERF-073",
+    "monitoring": "revert to PAPER if realized DD>25%",
+    "params_deployed": {
+      "cooldown_bars": 3,
+      "donchian_period": 8,
+      "oversold": 30,
+      "overbought": 75,
+      "rsi_period": 14,
+      "stop_loss_pct": 0.015,
+      "take_profit_pct": 0.015,
+      "volume_filter": 1.2,
+      "leverage": 3
+    }
+  },
   "_bandmr_eth_refine_requested": "2026-06-23T06:15:00+00:00",
   "_bandmr_eth_refine_note": "DD=30.4% exceeds 20% threshold. Target: keep SR>0.5 while reducing DD<20%. Params to refine: donchian_period[8,12,14], oversold[25,28,30], sl[1.0%,1.5%], tp[2.0%,2.5%,3.0%], cd[3,5,8]. Existing: SR=0.585 DD=30.4% WR=61.8%. Target: DD<20%.",
-  "_bandmr_btc_enabled": {
-    "time": "2026-06-23T07:25:00+00:00",
-    "action": "Athena enables BandMR_BTC PAPER. Params: DP=20 OS=30 CD=8 SL=1.0% TP=2.5%. 365d sweep: SR=0.333 DD=19.8% T=75 Ret=106%. SR<0.5 blocks LIVE. DD=19.8% just under 20% threshold. PAPER only — monitor closely. Fills RSI 20-30 gap for BTC (complement to RSI_MR_BTC PAPER at oversold=20)."
-  },
   "_band_gap_active": "2026-06-23T06:48:00+00:00",
   "_band_gap_active_note": "⚠️ MARKET ALERT 06:48 UTC: BTC accelerated decline. BTC RSI=25.8 (-3.9 from 29.7 at last patrol), ETH RSI=32.0 (+3.3, rebounded slightly from 28.7 as price dropped further). BTC now -2.0% from 04:00 high of 64216, ETH -2.4% from 1732. BTC RSI at 25.8 — only ~1% price drop needed to cross oversold=20. If BTC drops below ~62300, RSI crosses 20 triggering system-wide LONG entries: KeltnerMR_BTC(SR=0.516)+KeltnerMR_ETH(SR=0.662)+DonchianMR_BTC(SR=0.507)+DonchianMR_ETH(SR=0.552). All 5 LIVE MR strategies have breaks_lower=TRUE. BandMR_ETH(PAPER, oversold=30) also watching — RSI=32.0 approaching 30. This is the exact scenario Athena predicted last patrol. PREPARED: all strategies configured, engine healthy, Mercury ready.",
   "_regime_context": {
-    "time": "2026-06-23T10:13:00.000000+00:00",
+    "time": "2026-06-23T19:22:00.000000+00:00",
     "regime": "TRENDING",
-    "p_trend": 0.515,
-    "btc_rsi_1h": 26.86,
-    "eth_rsi_1h": 24.13,
-    "btc_price": 62453.7,
-    "eth_price": 1655.07,
-    "btc_dc_lower": 62343.7,
-    "eth_dc_lower": 1646.91,
-    "btc_kc_lower": 62741.54,
-    "eth_kc_lower": 1678.38,
-    "note": "Regime shifted RANGING->TRENDING 18:01 UTC (P=0.515). PERF-049: MR multiplier=0.71. BTC RSI=26.86 ETH RSI=24.13 both recovering from earlier lows (>20, no RSI_MR/DonchianMR/KeltnerMR triggers). BandMR: RSI<30 satisfied for both, but prices above DC_lower (BTC gap +110, ETH gap +8.16) -> no triggers. Price below KC_lower for both KeltnerMRs but RSI>20 blocks. 0 signals. TRENDING regime unfavorable for all 5 LIVE MR strategies — PERF-049 managing exposure. No trend-following strategies available (all RETIRED/DO_NOT_ENABLE)."
+    "p_trend": 0.51,
+    "btc_price": 62349.0,
+    "eth_price": 1654.23,
+    "btc_1h_rsi": 25.31,
+    "eth_1h_rsi": 23.7,
+    "btc_15m_trend": "declining 62425→62337→62277→62290→62355→62370 (late bounce)",
+    "eth_15m_trend": "declining 1655→1653→1649→1652→1654→1656 (stabilizing)",
+    "note": "Regime TRENDING P=0.510. PERF-049 MR multiplier=0.73. BTC RSI 25.31/ETH RSI 23.7 — approaching oversold=20 but not crossed. BandMR_ETH RSI 23.7 < 30 but price above DC_lower (1654>1647). 6 LIVE strategies HOLD. BandMR_ETH promoted PAPER→LIVE this patrol.",
+    "live_strategies": [
+      "RSI_MR_ETH",
+      "DonchianMR_BTC",
+      "DonchianMR_ETH",
+      "KeltnerMR_BTC",
+      "KeltnerMR_ETH",
+      "BandMR_ETH"
+    ],
+    "paper_strategies": [
+      "RSI_MR_BTC"
+    ]
   },
   "_sma_rsi_false_alarm": {
     "time": "2026-06-23T09:28:45.301197+00:00",

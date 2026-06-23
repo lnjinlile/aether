@@ -2,56 +2,56 @@
   "status": "running",
   "data_stats": {
     "BTC/USDT_15m": {
-      "count": 35162,
-      "latest_ts": 1782209700000,
-      "latest": "2026-06-23T10:15:00"
+      "count": 35167,
+      "latest_ts": 1782214200000,
+      "latest": "2026-06-23T19:30:00"
     },
     "BTC/USDT_1h": {
-      "count": 8791,
-      "latest_ts": 1782208800000,
-      "latest": "2026-06-23T10:00:00"
+      "count": 8792,
+      "latest_ts": 1782212400000,
+      "latest": "2026-06-23T19:00:00"
     },
     "BTC/USDT_4h": {
       "count": 2198,
       "latest_ts": 1782201600000,
-      "latest": "2026-06-23T08:00:00"
+      "latest": "2026-06-23T16:00:00"
     },
     "BTC/USDT_1d": {
       "count": 366,
       "latest_ts": 1782172800000,
-      "latest": "2026-06-23T00:00:00"
+      "latest": "2026-06-23T08:00:00"
     },
     "ETH/USDT_15m": {
-      "count": 35162,
-      "latest_ts": 1782209700000,
-      "latest": "2026-06-23T10:15:00"
+      "count": 35167,
+      "latest_ts": 1782214200000,
+      "latest": "2026-06-23T19:30:00"
     },
     "ETH/USDT_1h": {
-      "count": 8791,
-      "latest_ts": 1782208800000,
-      "latest": "2026-06-23T10:00:00"
+      "count": 8792,
+      "latest_ts": 1782212400000,
+      "latest": "2026-06-23T19:00:00"
     },
     "ETH/USDT_4h": {
       "count": 2198,
       "latest_ts": 1782201600000,
-      "latest": "2026-06-23T08:00:00"
+      "latest": "2026-06-23T16:00:00"
     },
     "ETH/USDT_1d": {
       "count": 366,
       "latest_ts": 1782172800000,
-      "latest": "2026-06-23T00:00:00"
+      "latest": "2026-06-23T08:00:00"
     },
     "table_funding_rates": {
       "count": 526
     },
     "table_open_interest": {
-      "count": 1083
+      "count": 1113
     },
     "table_orderbook_snapshots": {
-      "count": 898
+      "count": 928
     },
     "table_order_flow": {
-      "count": 2191
+      "count": 2339
     },
     "table_trades_log": {
       "count": 3
@@ -76,28 +76,27 @@
   ],
   "strategies_paper": [
     "RSI_MR_BTC",
-    "BandMR_BTC",
     "BandMR_ETH"
   ],
-  "_updated_at": "2026-06-23T10:19:48.307052+00:00",
-  "last_heartbeat": "2026-06-23 10:19:48+00:00",
+  "_updated_at": "2026-06-23T11:33:57.201406+00:00",
+  "last_heartbeat": "2026-06-23T11:09:21.022868+00:00",
   "data_health": {
     "duplicates": 0,
     "gaps": 0,
-    "db_integrity": "ok",
-    "last_check": "2026-06-23T10:19:48.307052+00:00"
+    "db_size_mb": 13.4,
+    "journal_mode": "wal",
+    "checked_at": "2026-06-23T11:09:21.022868+00:00"
   },
   "data_fresh": true,
-  "last_pipeline": "2026-06-23T10:19:04.556053+00:00",
+  "last_pipeline": "2026-06-23T11:33:57.201406+00:00",
   "pipeline_pid": 990789,
   "data_ext_pid": 929007,
-  "engine_pid": 1032911,
+  "engine_pid": 1038093,
   "strategies_disabled": 29,
-  "last_klines_ts": 1782209700000,
-  "klines_count": 93034,
+  "last_klines_ts": 1782214200000,
+  "klines_count": 93046,
   "_cross_file_warnings": [
     "RSI_MR_BTC enabled=True in YAML but verdict=PAPER (athena=PAPER, bt=PAPER) → EXCLUDED",
-    "BandMR_BTC enabled=True in YAML but verdict=PAPER (athena=PAPER, bt=PAPER) → EXCLUDED",
     "BandMR_ETH enabled=True in YAML but verdict=PAPER (athena=PAPER, bt=PAPER) → EXCLUDED"
   ],
   "strategies_live": [

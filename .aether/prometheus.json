@@ -5,11 +5,15 @@
     "symbol": "ETH",
     "horizon": "6h",
     "threshold_pct": 1.0,
-    "model_type": "LGBMClassifier",
-    "test_accuracy": 0.6591,
-    "train_accuracy": 0.7216,
-    "train_test_gap": 0.0625,
-    "feature_count": 24,
+    "model_type": "LGBMClassifier_MTF",
+    "test_accuracy": 0.6902,
+    "train_accuracy": 0.6766,
+    "val_accuracy": 0.6272,
+    "train_test_gap": -0.0136,
+    "feature_count": 120,
+    "calibrated": true,
+    "calibration_ece_before": 0.1149,
+    "calibration_ece_after": 0.0686,
     "top_features": [
       "vol_50_norm",
       "vol_50",
@@ -17,9 +21,13 @@
       "vol_20",
       "hl_range_20"
     ],
-    "current_regime": "RANGING",
-    "trend_ratio_30p": 0.167,
-    "file": "ml_alpha/regime_model.pkl"
+    "current_regime": "TRENDING",
+    "trend_ratio_30p": 0.515,
+    "file": "ml_alpha/regime_model_mtf.pkl",
+    "perf_id": "PERF-057",
+    "tuned_with": "optuna",
+    "trained_at": "2026-06-23T04:10:01+00:00",
+    "_upgrade_note": "Switched from 24-feature 1h-only model (65.9% test acc, uncalibrated) to 120-feature MTF model (69.0% test acc, calibrated, ECE 11.5%→6.9%). Train-test gap improved from +6.3% to -1.4% (no overfitting). Auto-detected by PERF-023."
   },
   "live_validation": {
     "TrendFollow_BTC_1h_200p": {
@@ -38,9 +46,9 @@
       "verdict": "STILL_LOSING"
     }
   },
-  "next": "Multi-timeframe regime features (4h/1d data) for improved regime classification accuracy (currently 65.9%). Also: incremental regime feature computation to avoid redundant rolling windows.",
-  "_updated_at": "2026-06-23T09:20:00.000000+00:00",
-  "recommendation": "5 LIVE strategies: RSI_MR_ETH(SR=1.05 DD=8.9%), KeltnerMR_ETH(SR=0.66 DD=17.8%), DonchianMR_ETH(SR=0.55 DD=16.2%), KeltnerMR_BTC(SR=0.52 DD=5.6%), DonchianMR_BTC(SR=0.51 DD=11.6%). 3 PAPER: BandMR_ETH(SR=0.59 DD=30.4%), BandMR_BTC(SR=0.33 DD=19.8%), RSI_MR_BTC(SR=0.47 DD=18.7%). All mean-reversion. RANGING regime (P(Trend)=0.414). No trend-following viable after exhaustive sweeps. ETH-MR correlation=0.878 — RiskManager guards active. Next: multi-timeframe regime features.",
+  "next": "PERF-072 done (MTF regime model deployed: 69.0% test acc, calibrated). Next priorities: (1) Incremental feature computation to avoid 3.3s rolling windows per tick — compute only new bar features and reuse cache. (2) Explore regime-adaptive strategy weights — increase MR allocation when P(Trend) drops, reduce when trending. (3) Clean up 183MB venv __pycache__. (4) Guardian stale paper_strategy_metrics — BandMR_BTC shows null values after retirement.",
+  "_updated_at": "2026-06-23T10:58:00.000000+00:00",
+  "recommendation": "5 LIVE strategies: RSI_MR_ETH(SR=1.05 DD=8.9%), KeltnerMR_ETH(SR=0.66 DD=17.8%), DonchianMR_ETH(SR=0.55 DD=16.2%), KeltnerMR_BTC(SR=0.52 DD=5.6%), DonchianMR_BTC(SR=0.51 DD=11.6%). 2 PAPER: BandMR_ETH(SR=0.59 DD=30.4%), RSI_MR_BTC(SR=0.47 DD=18.7%). 1 RETIRED: BandMR_BTC(365d DSR=-0.32 DD=59.6%, PERF-071). All mean-reversion. TRENDING regime (P(Trend)=0.515). No trend-following viable after exhaustive sweeps. ETH-MR correlation=0.878 — RiskManager guards active. MTF regime model deployed (120-feature, 69.0% test acc).",
   "best_strategies": {
     "by_sharpe": [
       {"name": "RSI_MR_ETH", "sharpe": 1.0547, "dd": 8.88, "wr": 87.5, "trades": 16},
@@ -58,7 +66,7 @@
     ],
     "best_overall": "KeltnerMR_BTC (SR=0.52, DD=5.6%, WR=85.7%) — best risk-adjusted LIVE strategy",
     "live_count": 5,
-    "paper_count": 3
+    "paper_count": 2
   },
   "strategies": {
     "DynamicGrid_BTC": {
@@ -251,11 +259,16 @@
       "max_dd": 17.8
     },
     "BandMR_BTC": {
-      "return_pct": 106.0,
-      "sharpe": 0.333,
+      "return_pct": -32.0,
+      "sharpe": -0.32,
       "win_rate": 54.5,
       "trades": 75,
-      "max_dd": 19.8
+      "max_dd": 59.6,
+      "status": "RETIRED",
+      "retired_by": "PERF-071",
+      "retired_reason": "365d DSR SR=-0.32 DD=59.6% — unprofitable at all horizons. 90d engine metrics (SR=0.333 DD=19.8%) were optimistic due to regime luck. Walk-forward DSR confirms false positive.",
+      "retired_at": "2026-06-23T10:38:00+00:00",
+      "_note": "365d DSR authoritative. Prior 90d engine data (ret=106.0% SR=0.333 DD=19.8%) was stale."
     },
     "BandMR_ETH": {
       "return_pct": 910.08,

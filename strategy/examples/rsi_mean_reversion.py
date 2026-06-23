@@ -68,11 +68,21 @@ class RSIMeanReversionStrategy(BaseStrategy):
         # Cross signals
         oversold = self.params["oversold"]
         overbought = self.params["overbought"]
-
+        # Cross signals (original)
         ind["cross_below_oversold"] = (ind["rsi"] < oversold) & (ind["rsi"].shift(1) >= oversold)
         ind["cross_above_overbought"] = (ind["rsi"] > overbought) & (ind["rsi"].shift(1) <= overbought)
         ind["cross_above_exit"] = (ind["rsi"] > exit_level) & (ind["rsi"].shift(1) <= exit_level)
         ind["cross_below_exit"] = (ind["rsi"] < exit_level) & (ind["rsi"].shift(1) >= exit_level)
+        
+        # Sustained signals: trigger after N consecutive bars in extreme zone
+        sustained_bars = 3
+        ind["below_oversold"] = (ind["rsi"] < oversold).astype(int)
+        ind["sustained_oversold"] = ind["below_oversold"].rolling(sustained_bars).sum() >= sustained_bars
+        ind["sustained_oversold_trigger"] = ind["sustained_oversold"] & ~ind["sustained_oversold"].shift(1).fillna(False)
+        
+        ind["above_overbought"] = (ind["rsi"] > overbought).astype(int)
+        ind["sustained_overbought"] = ind["above_overbought"].rolling(sustained_bars).sum() >= sustained_bars
+        ind["sustained_overbought_trigger"] = ind["sustained_overbought"] & ~ind["sustained_overbought"].shift(1).fillna(False)
 
         self._indicators[key] = ind
 
