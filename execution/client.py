@@ -453,6 +453,13 @@ class BinanceFuturesClient:
     # Orders
     # ------------------------------------------------------------------
 
+    def _normalize_side(self, side: str) -> str:
+        """Normalize side: LONG→buy, SHORT→sell, BUY→buy, SELL→sell."""
+        s = side.upper()
+        if s in ("LONG", "BUY"): return "buy"
+        if s in ("SHORT", "SELL"): return "sell"
+        return side.lower()
+
     def place_order(
         self,
         symbol: str,
@@ -474,12 +481,12 @@ class BinanceFuturesClient:
         params: Dict[str, Any] = dict(kwargs) if kwargs else {}
         if reduce_only:
             params["reduceOnly"] = True
-        return self._exchange.create_order(ccxt_symbol, order_type, side, quantity, price, params)
+        return self._exchange.create_order(ccxt_symbol, order_type, self._normalize_side(side), quantity, price, params)
 
     def _place_order_via_rest(self, symbol, side, order_type, quantity, price, reduce_only):
         params = {
             "symbol": self.to_binance_symbol(symbol),
-            "side": side.upper(),
+            "side": self._normalize_side(side).upper(),
             "type": order_type.upper(),
             "quantity": quantity,
         }
