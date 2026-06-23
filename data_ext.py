@@ -102,7 +102,32 @@ def fetch_and_store():
     now_ts = time.time()
     fetch_funding = (now_ts - _last_funding_fetch[0]) >= FUNDING_INTERVAL
 
-    for sym in ["BTC/USDT", "ETH/USDT"]:
+    # Read symbols from oracle.json (single source of truth, synced with pipeline.py)
+    _oracle_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".aether", "oracle.json")
+    _symbols = ["BTC/USDT", "ETH/USDT"]  # fallback default
+    try:
+        if os.path.exists(_oracle_path):
+            with open(_oracle_path) as _f:
+                _oracle = json.load(_f)
+            _pipeline_cfg = _oracle.get("pipeline", {})
+            _live_strats = _oracle.get("strategies_live", [])
+            # Derive symbols from LIVE strategies in strategies.yaml
+            _strat_yaml = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "strategies.yaml")
+            if os.path.exists(_strat_yaml):
+                import yaml as _yaml
+                with open(_strat_yaml) as _yf:
+                    _yaml_cfg = _yaml.safe_load(_yf)
+                _derived = set()
+                for _s in _yaml_cfg.get("strategies", []):
+                    if _s.get("name") in _live_strats:
+                        for _sym in _s.get("params", {}).get("symbols", []):
+                            _derived.add(_sym)
+                if _derived:
+                    _symbols = sorted(_derived)
+    except Exception:
+        pass  # fallback to hardcoded default above
+
+    for sym in _symbols:
         bin_sym = sym.replace("/", "")
         try:
             # === 1. Order Book ===

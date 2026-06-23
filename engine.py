@@ -19,6 +19,7 @@ warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
 sys.path.insert(0, BASE_DIR)
 from dotenv import load_dotenv; load_dotenv(os.path.join(BASE_DIR, ".env"))
 from data.db import get_market_db
+from strategy import MR_PATTERN_NAMES  # PERF-096: centralized MR detection
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [ENGINE] %(message)s")
 logger = logging.getLogger("engine")
@@ -378,6 +379,31 @@ def run_backtests():
         # destroying all top-level keys written by sweep scripts.
         merged = dict(existing_bt) if isinstance(existing_bt, dict) else {}
         merged["strategies"] = results
+
+        # AUDIT-136 FIX: Normalize field names for QUAD verification compatibility.
+        # engine.py writes sharpe_ratio/total_return_pct/max_drawdown_pct/total_trades
+        # but Argus QUAD expects sharpe/return_pct/max_dd/trades.
+        # Source authoritative metrics from prometheus.json (365d sweep), fallback
+        # to engine's own fields for strategies not in prometheus.json.
+        try:
+            _prom_data = load_json(os.path.join(STATE_DIR, "prometheus.json"))
+            _prom_strategies = _prom_data.get("strategies", {}) if isinstance(_prom_data, dict) else {}
+        except Exception:
+            _prom_strategies = {}
+
+        for _name, _entry in results.items():
+            if not isinstance(_entry, dict):
+                continue
+            _ps = _prom_strategies.get(_name, {})
+            # Prefer prometheus.json authoritative metrics; fallback to engine fields
+            _entry["sharpe"] = _ps.get("sharpe") if _ps.get("sharpe") is not None else (_entry.get("sharpe_ratio") if _entry.get("sharpe_ratio") is not None else _entry.get("metrics", {}).get("sharpe_ratio"))
+            _entry["return_pct"] = _ps.get("return_pct") if _ps.get("return_pct") is not None else (_entry.get("total_return_pct") if _entry.get("total_return_pct") is not None else _entry.get("metrics", {}).get("total_return_pct"))
+            _entry["max_dd"] = _ps.get("max_dd") if _ps.get("max_dd") is not None else (_entry.get("max_drawdown_pct") if _entry.get("max_drawdown_pct") is not None else _entry.get("metrics", {}).get("max_drawdown_pct"))
+            _entry["trades"] = _ps.get("trades") if _ps.get("trades") is not None else (_entry.get("total_trades") if _entry.get("total_trades") is not None else _entry.get("metrics", {}).get("total_trades"))
+            # Also copy win_rate from prometheus if available
+            if not _entry.get("win_rate") and _ps.get("win_rate"):
+                _entry["win_rate"] = _ps["win_rate"]
+
         write_json("backtest_results.json", merged)
         # Summary log
         ok_count = sum(1 for r in results.values() if r.get("status") == "ok")
@@ -634,10 +660,8 @@ def run_signal_check():
 
                 # ── PERF-031: Hard safety gate at extreme trend ──
                 if _regime_label == "TRENDING" and _p_trend > _PERF031_HARD_GATE:
-                    _mr_patterns = ("_MR_", "MR_", "RSI_", "DonchianMR", "KeltnerMR",
-                                    "BBandRSI", "StochRSI", "BBand", "MeanRev")
                     for _en in _enabled_names:
-                        if any(_pat in _en for _pat in _mr_patterns):
+                        if any(_pat in _en for _pat in MR_PATTERN_NAMES):
                             _regime_gated.add(_en)
                     if _regime_gated:
                         logger.warning(
@@ -720,8 +744,7 @@ def run_signal_check():
                     )
                     continue
                 # PERF-049: Pass regime multiplier through signal for downstream sizing
-                _is_mr = any(pat in name for pat in ("_MR_", "MR_", "RSI_", "DonchianMR", "KeltnerMR",
-                                                     "BBandRSI", "StochRSI", "BBand", "MeanRev"))
+                _is_mr = any(pat in name for pat in MR_PATTERN_NAMES)
                 _sig_mult = _regime_multiplier if _is_mr else 1.0
                 signal_data = {
                     "symbol": sym, "timeframe": tf,
@@ -1220,6 +1243,7 @@ def sync_agent_states():
                 pass
         oracle_updates["strategies_enabled"] = sorted(_oracle_live_names)
         oracle_updates["strategies_disabled"] = len(_disabled_in_yaml)
+        oracle_updates["last_heartbeat"] = datetime.now(timezone.utc).isoformat()  # AUDIT-135: refresh heartbeat on every engine tick
         merge_state("oracle", oracle_updates)
         # AUDIT-092: ensure klines_total duplicate is purged from state file
         try:
@@ -1309,17 +1333,22 @@ def sync_agent_states():
                      "regime_model", "regime_monitor", "regime_classifier", "last_optimization",
                      "strategy_landscape_20260622", "rsi_mr_eth_live_confirmed",
                      "donchian_mr_eth_wf_validation", "donchian_mr_eth_365d",
-                     "donchian_mr_btc_optimized", "portfolio_correlation"):
+                     "donchian_mr_btc_optimized", "portfolio_correlation",
+                     "best_sharpe", "best_sharpe_strategy", "best_sharpe_note", "best_sharpe_source",
+                     "best_win_rate", "best_win_rate_strategy",
+                     "best_strategies", "portfolio_concentration", "active_research",
+                     # PERF-088: Preserve Prometheus-authored sweep details and integrity data
+                     "strategy_sweep_details", "_metrics_hash", "_archived_strategies",
+                     "_perf_088", "_history"):
             if key in _prom_data:
                 prom_state[key] = _prom_data[key]
         # NOTE: strategies metrics are ENGINE-DERIVED (from backtest_results.json).
-        # Prometheus-generated metrics live in rsi_mr_eth_live_confirmed etc., NOT
-        # in the strategies section which is overwritten by every engine tick.
+        # Prometheus-generated metrics live in strategy_sweep_details (preserved above),
+        # NOT in the strategies section which is overwritten by every engine tick.
         # Do NOT preserve existing prometheus.json strategies metrics — the engine
         # is the single source of truth for backtest performance data.
-        # Clean up stale hardcoded fake fields (replaced by strategies dict)
-        # PERF-039: Removed dgt_* null writes — dead fields that served no purpose
-        # and bloated prometheus.json on every engine tick
+        # PERF-088: strategy_sweep_details provides avg_win_pct/avg_loss_pct/dsr
+        # for Kelly sizing — these survive engine overwrites via the preservation list.
         merge_state("prometheus", prom_state)
     except Exception as e:
         logger.error("State sync error: %s", e)

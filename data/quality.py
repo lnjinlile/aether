@@ -9,7 +9,7 @@ _PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJ_ROOT not in sys.path:
     sys.path.insert(0, _PROJ_ROOT)
 
-from data.db import get_market_db  # PERF-013: shared WAL + busy_timeout helper
+from data.db import get_market_db, get_db  # PERF-013/PERF-090: shared WAL + busy_timeout helper
 
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "market.db")
 AETHER_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aether.db")
@@ -87,17 +87,19 @@ AUX_FRESHNESS_WARN = {
     "orderbook_snapshots": 15,   # minutes — collected every ~5min, 3 cycles
     "open_interest": 15,          # minutes — collected every ~5min
     "funding_rates": 480,         # minutes (8h) — funding settles every 8h
+    "order_flow": 10,             # minutes — collected every ~5min, 2 cycles (critical for regime detection)
 }
 
 AUX_FRESHNESS_CRIT = {
     "orderbook_snapshots": 30,
     "open_interest": 30,
     "funding_rates": 1440,        # 24h — funding should update at least daily
+    "order_flow": 20,             # 20min — Mercury regime detection needs fresh order flow
 }
 
 
 def check_aux_freshness(conn, now_ts=None):
-    """Check freshness of auxiliary data tables populated by data_ext.py.
+    """Check freshness of auxiliary data tables populated by data_ext.py and pipeline.py.
 
     Returns list of issue strings. Empty list = all healthy.
     """
@@ -108,6 +110,7 @@ def check_aux_freshness(conn, now_ts=None):
         "orderbook_snapshots": "timestamp",   # float seconds
         "open_interest": "timestamp",          # float seconds
         "funding_rates": "funding_time",        # int ms
+        "order_flow": "window_start",           # int ms — critical for Mercury regime detection
     }
     issues = []
     for table, ts_col in TS_COLS.items():
@@ -196,6 +199,106 @@ def full_check():
 
     return status, issues, stats
 
+def log_to_aether(status, issues, stats, now_ts=None):
+    """将质量检查结果写入 aether.db oracle_health 表，供趋势分析。"""
+    if now_ts is None:
+        now_ts = int(time.time() * 1000)
+    aether_conn = None
+    try:
+        aether_conn = get_db(AETHER_DB)
+        aether_conn.execute("""
+            CREATE TABLE IF NOT EXISTS oracle_health (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                checked_at TEXT,
+                status TEXT,
+                total_klines INTEGER,
+                total_gaps INTEGER,
+                duplicates INTEGER,
+                db_size_mb REAL,
+                delay_max_min REAL,
+                integrity_ok INTEGER DEFAULT 1,
+                config_sync_ok INTEGER DEFAULT 1,
+                issues TEXT,
+                stats TEXT
+            )
+        """)
+        # compute summary from stats
+        total_klines = 0
+        delays = []
+        for k, v in stats.items():
+            if isinstance(v, dict) and 'count' in v:
+                total_klines += v['count']
+            if isinstance(v, dict) and 'delay_min' in v:
+                delays.append(v['delay_min'])
+        delay_max = max(delays) if delays else 0
+        checked_at = datetime.fromtimestamp(now_ts / 1000, tz=timezone.utc).isoformat()
+        # Count actual gaps and duplicates from issues (was hardcoded to 0)
+        total_gaps = sum(1 for i in issues if '缺口' in i or 'gap' in i.lower())
+        dup_count = sum(1 for i in issues if '重复' in i or 'dup' in i.lower())
+        aether_conn.execute(
+            "INSERT INTO oracle_health(checked_at,status,total_klines,total_gaps,duplicates,"
+            "db_size_mb,delay_max_min,integrity_ok,config_sync_ok,issues,stats) "
+            "VALUES(?,?,?,?,?,?,?,1,1,?,?)",
+            (checked_at, status, total_klines, total_gaps, dup_count,
+             round(os.path.getsize(DB) / (1024 * 1024), 1),
+             round(delay_max, 2),
+             json.dumps(issues),
+             json.dumps(stats))
+        )
+        aether_conn.commit()
+    except Exception as e:
+        # Non-critical — don't block on aether.db write failure
+        pass
+    finally:
+        if aether_conn:
+            aether_conn.close()
+
+
+def log_data_snapshots(stats, now_ts=None):
+    """Write per-symbol/timeframe snapshots to aether.db for trend analysis."""
+    if now_ts is None:
+        now_ts = int(time.time() * 1000)
+    aether_conn = None
+    try:
+        aether_conn = get_db(AETHER_DB)
+        aether_conn.execute("""
+            CREATE TABLE IF NOT EXISTS oracle_data_snapshots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                snapped_at TEXT,
+                symbol TEXT,
+                timeframe TEXT,
+                count INTEGER,
+                latest_ts INTEGER,
+                delay_min REAL
+            )
+        """)
+        snapped_at = datetime.fromtimestamp(now_ts / 1000, tz=timezone.utc).isoformat()
+        for key, val in stats.items():
+            if not isinstance(val, dict) or '_' not in key:
+                continue
+            parts = key.rsplit('_', 1)
+            if len(parts) != 2:
+                continue
+            symbol, tf = parts[0], parts[1]
+            if '/' not in symbol:
+                # e.g. "BTC/USDT" stored as "BTC/USDT" — already contains /
+                pass
+            if tf not in ('15m', '1h', '4h', '1d'):
+                continue
+            aether_conn.execute(
+                "INSERT INTO oracle_data_snapshots(snapped_at,symbol,timeframe,count,latest_ts,delay_min) "
+                "VALUES(?,?,?,?,?,?)",
+                (snapped_at, symbol, tf, val.get('count', 0),
+                 val.get('latest', 0), round(val.get('delay_min', 0), 2))
+            )
+        aether_conn.commit()
+    except Exception:
+        pass
+    finally:
+        if aether_conn:
+            aether_conn.close()
+
+
 if __name__ == "__main__":
     status, issues, stats = full_check()
     print(f"Status: {status}")
@@ -203,3 +306,7 @@ if __name__ == "__main__":
     for i in issues:
         print(f"  - {i}")
     print(f"Stats: {json.dumps(stats, indent=2)}")
+    # Persist to aether.db
+    log_to_aether(status, issues, stats)
+    log_data_snapshots(stats)
+    print("Logged to aether.db")

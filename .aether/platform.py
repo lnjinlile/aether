@@ -74,6 +74,36 @@ def cmd_write_state(agent, state_json):
     if os.path.exists(path):
         with open(path) as f: current = json.load(f)
     current.update(json.loads(state_json))
+
+    # === HARD GUARD: Guardian prometheus_snapshot.best_sharpe MUST come
+    # from the authoritative prometheus.json, not self-computed by the LLM.
+    # AUDIT-119 10th recurrence — LLM overwrites with stale value 1.0524
+    # when truth is 1.0547 from 365d backtest. ===
+    if agent == "guardian":
+        try:
+            # PERF-089: Read from STATE_DIR (authoritative), NOT parent dir
+            # (stale zombie copy). Was os.path.join(STATE_DIR, "..", "prometheus.json")
+            prom_path = os.path.join(STATE_DIR, "prometheus.json")
+            if os.path.exists(prom_path):
+                with open(prom_path) as pf:
+                    prom = json.load(pf)
+                auth_sharpe = prom.get("best_sharpe")
+                auth_sharpe_strat = prom.get("best_sharpe_strategy")
+                auth_wr = prom.get("best_win_rate")
+                auth_wr_strat = prom.get("best_win_rate_strategy")
+                snap = current.setdefault("prometheus_snapshot", {})
+                if auth_sharpe is not None:
+                    snap["best_sharpe"] = auth_sharpe
+                    snap["source"] = "prometheus.json[best_sharpe] direct (hard guard)"
+                if auth_sharpe_strat is not None:
+                    snap["best_sharpe_strategy"] = auth_sharpe_strat
+                if auth_wr is not None:
+                    snap["best_win_rate"] = auth_wr
+                if auth_wr_strat is not None:
+                    snap["best_win_rate_strategy"] = auth_wr_strat
+        except Exception:
+            pass
+
     current["_updated_at"] = datetime.now(timezone.utc).isoformat()
     save_json(path, current)
     print(f"STATE_WRITTEN:{agent}")

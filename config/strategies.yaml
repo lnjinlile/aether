@@ -289,14 +289,36 @@ strategies:
     - 1h
 - class: strategy.examples.trend_pullback.TrendPullback
   enabled: false
+  name: TrendPullback_BTC
+  params:
+    atr_period: 14
+    atr_sl_mult: 1.5
+    atr_tp_mult: 3.0
+    cooldown_bars: 8
+    ema_fast: 50
+    ema_period: 100
+    leverage: 3
+    rsi_high: 70
+    rsi_low: 30
+    rsi_period: 14
+    symbols:
+    - BTC/USDT
+    timeframes:
+    - 1h
+- class: strategy.examples.trend_pullback.TrendPullback
+  enabled: false
   name: TrendPullback_ETH
   params:
     atr_period: 14
     atr_sl_mult: 1.5
     atr_tp_mult: 3.0
-    cooldown_bars: 5
+    cooldown_bars: 8
+    ema_fast: 50
     ema_period: 100
     leverage: 3
+    rsi_high: 70
+    rsi_low: 30
+    rsi_period: 14
     symbols:
     - ETH/USDT
     timeframes:

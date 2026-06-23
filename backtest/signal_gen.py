@@ -33,6 +33,30 @@ def _compute_rsi(close: np.ndarray, period: int) -> np.ndarray:
     return rsi
 
 
+def _compute_spread_zscore(eth_close: np.ndarray, btc_close: np.ndarray,
+                           lookback: int = 200) -> np.ndarray:
+    """Compute rolling z-score of ETH/BTC ratio for spread MR filter.
+
+    Returns z-score array. Positive = ETH overvalued vs BTC.
+    The spread is mean-reverting (Hurst=0.076, half-life=3.4h on 1h ETH data).
+
+    Usage in signal generators:
+        spread_z = _compute_spread_zscore(eth_close, btc_close)
+        spread_ok = (spread_z[i] <= spread_z_entry)  # for LONG entries
+    """
+    n = len(eth_close)
+    ratio = np.where(btc_close > 0, eth_close / btc_close, 0.0)
+    z = np.zeros(n)
+
+    for i in range(lookback, n):
+        window = ratio[max(0, i - lookback):i]
+        mu = np.mean(window)
+        sigma = np.std(window)
+        if sigma > 1e-6:
+            z[i] = (ratio[i] - mu) / sigma
+    return z
+
+
 def _compute_atr(high: np.ndarray, low: np.ndarray, close: np.ndarray,
                  period: int) -> np.ndarray:
     """Wilder's smoothed ATR — vectorized via pandas ewm for speed.
@@ -248,6 +272,161 @@ def rsi_mr_signals(df: pd.DataFrame, rsi_period: int,
                 entry_price = price
                 signals[i] = -1
                 bars_since_trade = 0
+
+    return pd.Series(signals, index=df.index)
+
+
+def _detect_bullish_divergence(close: np.ndarray, rsi: np.ndarray,
+                                i: int, lookback: int = 30,
+                                rsi_threshold: float = 40.0) -> bool:
+    """Detect bullish RSI divergence: price lower low + RSI higher low.
+
+    Looks back from bar i for two swing lows:
+    - Recent low: lowest close in last lookback//2 bars
+    - Prior low: lowest close in the preceding lookback//2 bars
+    Returns True if price LL but RSI HL (bullish divergence).
+    Only triggers when RSI < rsi_threshold (confirms oversold context).
+    """
+    if i < lookback or np.isnan(rsi[i]):
+        return False
+    if rsi[i] >= rsi_threshold:
+        return False
+
+    half = lookback // 2
+    # Recent window: [i-half, i]
+    recent_start = max(0, i - half)
+    recent_slice = slice(recent_start, i + 1)
+    recent_price_low_idx = recent_start + np.nanargmin(close[recent_slice])
+    recent_rsi_low = rsi[recent_price_low_idx]
+
+    # Prior window: [i-lookback, i-half)
+    prior_start = max(0, i - lookback)
+    prior_end = max(0, i - half)
+    if prior_end <= prior_start:
+        return False
+    prior_slice = slice(prior_start, prior_end)
+    prior_price_low_idx = prior_start + np.nanargmin(close[prior_slice])
+    prior_rsi_low = rsi[prior_price_low_idx]
+
+    price_ll = close[recent_price_low_idx] < close[prior_price_low_idx]
+    rsi_hl = recent_rsi_low > prior_rsi_low
+
+    return bool(price_ll and rsi_hl)
+
+
+def _detect_bearish_divergence(close: np.ndarray, rsi: np.ndarray,
+                                i: int, lookback: int = 30,
+                                rsi_threshold: float = 60.0) -> bool:
+    """Detect bearish RSI divergence: price higher high + RSI lower high."""
+    if i < lookback or np.isnan(rsi[i]):
+        return False
+    if rsi[i] <= rsi_threshold:
+        return False
+
+    half = lookback // 2
+    recent_start = max(0, i - half)
+    recent_slice = slice(recent_start, i + 1)
+    recent_price_high_idx = recent_start + np.nanargmax(close[recent_slice])
+    recent_rsi_high = rsi[recent_price_high_idx]
+
+    prior_start = max(0, i - lookback)
+    prior_end = max(0, i - half)
+    if prior_end <= prior_start:
+        return False
+    prior_slice = slice(prior_start, prior_end)
+    prior_price_high_idx = prior_start + np.nanargmax(close[prior_slice])
+    prior_rsi_high = rsi[prior_price_high_idx]
+
+    price_hh = close[recent_price_high_idx] > close[prior_price_high_idx]
+    rsi_lh = recent_rsi_high < prior_rsi_high
+
+    return bool(price_hh and rsi_lh)
+
+
+def rsi_divergence_mr_signals(df: pd.DataFrame, rsi_period: int,
+                               oversold: float, overbought: float, exit_rsi: float,
+                               sl_pct: float, tp_pct: float,
+                               cooldown_bars: int,
+                               div_lookback: int = 30,
+                               require_divergence: bool = True,
+                               div_rsi_max: float = 40.0) -> pd.Series:
+    """Vectorized RSI Mean Reversion with divergence confirmation.
+
+    Extends rsi_mr_signals with optional RSI divergence filter:
+    - LONG requires bullish divergence (price LL + RSI HL) in oversold zone
+    - SHORT requires bearish divergence (price HH + RSI LH) in overbought zone
+    - When require_divergence=False, falls back to plain RSI MR (divergence adds
+      extra confidence weight but doesn't block entry).
+
+    Signals: 1=LONG, -1=SHORT, 0=FLAT.
+    """
+    close = df['close'].values
+    n = len(close)
+    rsi = _compute_rsi(close, rsi_period)
+
+    cross_below_oversold = (rsi < oversold) & (np.roll(rsi, 1) >= oversold)
+    cross_below_oversold[:1] = False
+    cross_above_overbought = (rsi > overbought) & (np.roll(rsi, 1) <= overbought)
+    cross_above_overbought[:1] = False
+    cross_above_exit = (rsi > exit_rsi) & (np.roll(rsi, 1) <= exit_rsi)
+    cross_above_exit[:1] = False
+    cross_below_exit = (rsi < exit_rsi) & (np.roll(rsi, 1) >= exit_rsi)
+    cross_below_exit[:1] = False
+
+    signals = np.zeros(n, dtype=int)
+    pos = 0
+    entry_price = 0.0
+    bars_since_trade = cooldown_bars + 1
+    min_bars = max(rsi_period * 3, div_lookback + 5)
+
+    for i in range(min_bars, n):
+        bars_since_trade += 1
+        price = close[i]
+
+        # Exit logic (same as rsi_mr_signals)
+        if pos == 1:
+            if cross_above_exit[i] or _check_sl_tp(price, entry_price, pos, sl_pct, tp_pct):
+                signals[i] = 0
+                pos = 0
+                bars_since_trade = 0
+                continue
+        elif pos == -1:
+            if cross_below_exit[i] or _check_sl_tp(price, entry_price, pos, sl_pct, tp_pct):
+                signals[i] = 0
+                pos = 0
+                bars_since_trade = 0
+                continue
+
+        if pos != 0:
+            signals[i] = pos
+
+        # Entry logic
+        if pos == 0 and bars_since_trade > cooldown_bars:
+            if cross_below_oversold[i]:
+                if require_divergence:
+                    if _detect_bullish_divergence(close, rsi, i, div_lookback, div_rsi_max):
+                        pos = 1
+                        entry_price = price
+                        signals[i] = 1
+                        bars_since_trade = 0
+                else:
+                    pos = 1
+                    entry_price = price
+                    signals[i] = 1
+                    bars_since_trade = 0
+            elif cross_above_overbought[i]:
+                if require_divergence:
+                    if _detect_bearish_divergence(close, rsi, i, div_lookback,
+                                                  overbought if overbought > 60 else 60.0):
+                        pos = -1
+                        entry_price = price
+                        signals[i] = -1
+                        bars_since_trade = 0
+                else:
+                    pos = -1
+                    entry_price = price
+                    signals[i] = -1
+                    bars_since_trade = 0
 
     return pd.Series(signals, index=df.index)
 
@@ -1010,7 +1189,8 @@ def donchian_mr_signals(df: pd.DataFrame,
                         stop_loss_pct: float = 0.02,
                         take_profit_pct: float = 0.04,
                         cooldown_bars: int = 5,
-                        volume_filter: float = 0.0) -> pd.Series:
+                        volume_filter: float = 0.0,
+                        spread_z_entry: float = 0.0) -> pd.Series:
     """
     Donchian Channel Mean Reversion — fade the breakout.
 
@@ -1021,6 +1201,11 @@ def donchian_mr_signals(df: pd.DataFrame,
 
     volume_filter: if > 0, requires volume > MA(volume,20) * volume_filter at entry.
                    Default 0.0 (disabled). BandMR uses 1.2.
+
+    spread_z_entry: if < 0, requires ETH/BTC ratio z-score < spread_z_entry for LONG entry.
+                    (ETH undervalued vs BTC). Default 0.0 (disabled).
+                    Only affects ETH/USDT symbols. Adds ~200ms for DB lookup.
+                    PERF-094: Spread MR filter — Hurst=0.076, half-life=3.4h.
 
     Optimized params (from 162-run sweep, ETH 1h 365d):
         DP=10, OS=20, OB=80, CD=5 → +429% SR=0.552 DD=16.2% WR=72%
@@ -1052,6 +1237,56 @@ def donchian_mr_signals(df: pd.DataFrame,
         vol = df['volume'].values.astype(float)
         vol_ma = pd.Series(vol).rolling(20).mean().values
         vol_ok = vol > (vol_ma * volume_filter)
+
+    # Spread z-score filter — ETH/BTC ratio mean-reversion (PERF-094)
+    spread_z = np.zeros(n)
+    spread_ok = np.ones(n, dtype=bool)  # default: all bars pass
+    if spread_z_entry < 0:
+        try:
+            import sqlite3, os
+            # Detect ETH symbol from DataFrame attrs or column metadata
+            is_eth = False
+            for attr_val in [df.attrs.get('symbol', ''), str(df.attrs)]:
+                if 'ETH' in attr_val.upper():
+                    is_eth = True
+                    break
+            if is_eth:
+                # Find market.db
+                candidates = [
+                    os.path.join(os.path.dirname(os.path.dirname(
+                        os.path.abspath(__file__))), 'data', 'market.db'),
+                    'data/market.db',
+                ]
+                db_path = None
+                for c in candidates:
+                    if os.path.exists(c):
+                        db_path = c
+                        break
+                if db_path:
+                    db = sqlite3.connect(db_path)
+                    # Read both BTC and ETH 1h close prices aligned by timestamp.
+                    # DB returns ALL bars; trim to match DataFrame length (covers lookback).
+                    rows = db.execute("""
+                        SELECT b.open_time, e.close as eth_close, b.close as btc_close
+                        FROM klines b
+                        JOIN klines e ON b.open_time = e.open_time
+                            AND e.symbol = 'ETH/USDT' AND e.timeframe = '1h'
+                        WHERE b.symbol = 'BTC/USDT' AND b.timeframe = '1h'
+                        ORDER BY b.open_time
+                    """).fetchall()
+                    db.close()
+                    if rows and len(rows) >= n:
+                        eth_aligned = np.array([r[1] for r in rows], dtype=float)
+                        btc_aligned = np.array([r[2] for r in rows], dtype=float)
+                        full_spread_z = _compute_spread_zscore(eth_aligned, btc_aligned)
+                        # Trim to match DataFrame length (last n bars)
+                        spread_z_full = full_spread_z[-n:]
+                        # Verify alignment via close price match on first valid bar
+                        if abs(eth_aligned[-n] - close[0]) < 0.01:
+                            spread_z = spread_z_full
+                            spread_ok = spread_z <= spread_z_entry
+        except Exception:
+            pass  # fallback: spread filter disabled on error
 
     min_bars = max(donchian_period, rsi_period) + 5
     pos = 0
@@ -1088,7 +1323,7 @@ def donchian_mr_signals(df: pd.DataFrame,
 
         # Entry
         if pos == 0 and bars_since_trade > cooldown_bars and vol_ok[i]:
-            if price < dc_lower[i] and rsi[i] < oversold:
+            if price < dc_lower[i] and rsi[i] < oversold and spread_ok[i]:
                 pos = 1
                 entry_price = price
                 signals[i] = 1

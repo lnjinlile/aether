@@ -36,12 +36,10 @@ class MarketStorage:
         self._init_tables()
 
     def _get_conn(self) -> sqlite3.Connection:
-        """Create and return a new SQLite connection."""
-        conn = sqlite3.connect(self.db_path)
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL")  # safe with WAL, better perf
-        conn.execute("PRAGMA busy_timeout=10000")  # 10s timeout for concurrent access
-        conn.row_factory = sqlite3.Row
+        """Create and return a new SQLite connection via centralized db module."""
+        from data.db import get_market_db
+        conn = get_market_db(self.db_path)
+        conn.execute("PRAGMA synchronous=NORMAL")  # safe with WAL, better perf for heavy writes
         return conn
 
     def _init_tables(self):

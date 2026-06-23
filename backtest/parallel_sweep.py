@@ -94,17 +94,14 @@ class SweepResult:
 
 def _load_data(db_path: str, symbol: str, timeframe: str, lookback_days: int
                ) -> Optional[pd.DataFrame]:
-    """Load klines from market.db, filtered to lookback window."""
-    from data.storage import MarketStorage
-    storage = MarketStorage(db_path)
-    df = storage.load_klines(symbol, timeframe)
-    if df.empty:
-        return None
-    df["open_time"] = pd.to_datetime(df["open_time"], unit="ms")
-    df.set_index("open_time", inplace=True)
-    df.sort_index(inplace=True)
-    cutoff = df.index[-1] - pd.Timedelta(days=lookback_days)
-    return df[df.index >= cutoff]
+    """Load klines from market.db, filtered to lookback window.
+    
+    PERF-081: Migrated to sweep_utils.load_data() — eliminates 12-line
+    duplicate of the same load logic across 4 files (parallel_sweep,
+    trendfollow_sweep, donchian_trend_sweep, vol_breakout_sweep).
+    """
+    from backtest.sweep_utils import load_data as _sw_load
+    return _sw_load(symbol, timeframe, lookback_days, db_path=db_path)
 
 
 def _run_single_combo(args: tuple) -> SweepResult:

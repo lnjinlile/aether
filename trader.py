@@ -9,12 +9,14 @@ Aether AutoTrader v2 — 多时间框架自动交易。
 
 每层独立决策，独立仓位，互不干扰。
 """
-import os, sys, time, logging, json, sqlite3
+import os, sys, time, logging, json
 from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from data.db import get_market_db  # PERF-084: shared WAL + busy_timeout
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [TRADER] %(message)s")
 logger = logging.getLogger("trader")
@@ -22,6 +24,7 @@ logger = logging.getLogger("trader")
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "market.db")
 CHECK_INTERVAL = 30
 MIN_BARS = 100
+RECONNECT_INTERVAL = 300  # Recreate client every 5 min to avoid stale connections
 
 # ====== 时间框架层级 ======
 TIERS = {
@@ -30,9 +33,21 @@ TIERS = {
     "4h":  {"desc": "长线趋势", "sl_pct": 0.03, "tp_pct": 0.08, "cooldown_hours": 12},
 }
 
-SYMBOLS = ["BTC/USDT", "ETH/USDT"]
-QTY = {"BTC/USDT": 0.001, "ETH/USDT": 0.005}
 LEVERAGE = 3
+
+def _load_symbols():
+    """从 Config 读取交易标的和数量，fallback 到硬编码默认."""
+    try:
+        from config.settings import get_config
+        cfg = get_config()
+        syms = cfg.symbols if hasattr(cfg, 'symbols') else ["BTC/USDT", "ETH/USDT"]
+        # Default quantities — can be overridden per-symbol later
+        qtys = {"BTC/USDT": 0.001, "ETH/USDT": 0.005}
+        return syms, qtys
+    except Exception:
+        return ["BTC/USDT", "ETH/USDT"], {"BTC/USDT": 0.001, "ETH/USDT": 0.005}
+
+SYMBOLS, QTY = _load_symbols()
 
 
 def get_client():
@@ -133,17 +148,20 @@ SIGNAL_FNS = {"15m": check_15m_signal, "1h": check_1h_signal, "4h": check_4h_sig
 
 
 def execute(client, symbol, side, qty, tier, price):
-    try: client.set_leverage(symbol, LEVERAGE)
-    except: pass
+    try:
+        client.set_leverage(symbol, LEVERAGE)
+    except Exception as e:
+        logger.warning("Set leverage %s %dx: %s", symbol, LEVERAGE, e)
 
     # Cancel existing orders for this symbol
     try:
         for o in client.get_open_orders():
             if symbol.replace("/","") in o.get("symbol",""):
                 client.cancel_order(o["id"], symbol)
-    except: pass
+    except Exception as e:
+        logger.warning("Cancel orders %s: %s", symbol, e)
 
-    r = client.place_order(symbol, side, qty, order_type="MARKET")
+    r = client.place_order(symbol, side, quantity=qty, order_type="MARKET")
     oid = r.get("order",{}).get("id","?") if r else "?"
     fp = r.get("price", price) if r else price
     if not fp or fp <= 0:
@@ -156,18 +174,23 @@ def execute(client, symbol, side, qty, tier, price):
     sl_s = "SELL" if side=="LONG" else "BUY"
 
     try:
-        client.place_order(symbol, sl_s, qty, order_type="STOP_MARKET", stop_price=sl, reduce_only=True)
-        client.place_order(symbol, sl_s, qty, order_type="TAKE_PROFIT_MARKET", stop_price=tp, reduce_only=True)
-    except: pass
+        client.place_sl_order(symbol, sl_s, quantity=qty, stop_price=sl, order_type="STOP_MARKET")
+        client.place_sl_order(symbol, sl_s, quantity=qty, stop_price=tp, order_type="TAKE_PROFIT_MARKET")
+    except Exception as e:
+        logger.warning("SL/TP %s: %s", symbol, e)
 
     card = {"层": tier, "描述": cfg["desc"], "标的": symbol, "方向": side, "数量": qty,
             "入场": fp, "SL": round(sl,1), "TP": round(tp,1), "杠杆": f"{LEVERAGE}x", "订单ID": oid}
     logger.info("TRADE: %s", json.dumps(card, ensure_ascii=False))
 
-    conn = sqlite3.connect(DB)
-    conn.execute("INSERT INTO trades_log(symbol,side,entry_time,entry_price,quantity,strategy_name,reason,status) VALUES(?,?,?,?,?,?,?,?)",
-               (symbol.split("/")[0]+"USDT", side, time.time(), fp, qty, f"{tier}_{cfg['desc']}", card["方向"], "OPEN"))
-    conn.commit(); conn.close()
+    try:
+        conn = get_market_db(DB)
+        conn.execute("INSERT INTO trades_log(symbol,side,entry_time,entry_price,quantity,strategy_name,reason,status) VALUES(?,?,?,?,?,?,?,?)",
+                   (symbol.split("/")[0]+"USDT", side, time.time(), fp, qty, f"{tier}_{cfg['desc']}", card["方向"], "OPEN"))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error("DB insert trades_log: %s", e)
     return card
 
 
@@ -176,26 +199,38 @@ def close_existing(client, symbol):
         for o in client.get_open_orders():
             if symbol.replace("/","") in o.get("symbol",""):
                 client.cancel_order(o["id"], symbol)
-    except: pass
+    except Exception as e:
+        logger.warning("Cancel orders %s: %s", symbol, e)
     try:
         client.close_position(symbol)
         logger.info("CLOSED: %s", symbol)
     except Exception as e:
-        logger.warning("Close error: %s", e)
+        logger.warning("Close error %s: %s", symbol, e)
 
 
 def main():
     logger.info("AutoTrader v2 多时间框架启动")
-    client = get_client()
     from data.collector import BinanceDataCollector
     from config.settings import get_config
-    cfg = get_config()
-    collector = BinanceDataCollector(cfg.api_key, cfg.api_secret, cfg.testnet)
 
+    def _create_clients():
+        client = get_client()
+        cfg = get_config()
+        collector = BinanceDataCollector(cfg.api_key, cfg.api_secret, cfg.testnet)
+        return client, collector
+
+    client, collector = _create_clients()
+    last_reconnect = time.time()
     last_trade = {}  # (symbol, tier) -> timestamp
 
     while True:
         try:
+            # Periodic client refresh to avoid stale connections
+            if time.time() - last_reconnect > RECONNECT_INTERVAL:
+                logger.info("Recreating Binance clients (age=%.0fs)", time.time() - last_reconnect)
+                client, collector = _create_clients()
+                last_reconnect = time.time()
+
             positions = {p["symbol"]: p for p in client.get_positions()}
 
             for sym in SYMBOLS:
@@ -235,7 +270,12 @@ def main():
                         last_trade[key] = time.time()
 
         except Exception as e:
-            logger.error("Loop: %s", e)
+            logger.error("Loop error: %s — attempting reconnect", e)
+            try:
+                client, collector = _create_clients()
+                last_reconnect = time.time()
+            except Exception as re:
+                logger.error("Reconnect failed: %s", re)
 
         time.sleep(CHECK_INTERVAL)
 

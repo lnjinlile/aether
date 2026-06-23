@@ -56,6 +56,10 @@ def get_market_db(db_path: Optional[str] = None) -> sqlite3.Connection:
     return _open_conn(path)
 
 
+# Generic alias — same implementation, clear name for non-market databases
+get_db = get_market_db
+
+
 @contextmanager
 def market_db(db_path: Optional[str] = None):
     """Context manager for market.db connections. Auto-closes on exit.

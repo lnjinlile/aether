@@ -13,7 +13,7 @@ def is_alive():
             data = json.load(f)
         last = datetime.fromisoformat(data.get("last_run", "2000-01-01"))
         return (datetime.now(timezone.utc) - last) < timedelta(minutes=TIMEOUT_MIN)
-    except:
+    except Exception:
         return False
 
 if not is_alive():

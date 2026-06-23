@@ -184,6 +184,18 @@ def run():
                     ).fetchone()
                     _last_klines_ts = _row[0]
                     _klines_count = _row[1]
+                    # ── Latest kline close time for delay calculation ──
+                    # Use 15m (primary trading TF) close time for accurate delay metric
+                    _tf_ms = {"15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000}
+                    _latest_close_ms = 0
+                    _row_15m = _conn.execute(
+                        "SELECT MAX(open_time) FROM klines WHERE timeframe='15m'"
+                    ).fetchone()
+                    if _row_15m and _row_15m[0]:
+                        # AUDIT-143 fix: use open_time of latest bar as reference (= close_time of
+                        # previous closed bar). Using open_time+15m can yield negative delay when
+                        # the current bar's close_time is still in the future.
+                        _latest_close_ms = _row_15m[0]
                     # ── Refresh data_stats (per-symbol/timeframe) ──
                     for _sym in SYMBOLS:
                         for _tf in TIMEFRAMES:
@@ -319,6 +331,27 @@ def run():
                     # AUDIT-092: purge stale duplicate field (klines_total regressed from AUDIT-090)
                     oracle.pop("klines_total", None)
                     oracle["_updated_at"] = _now_iso
+                    # ── AUDIT-129: refresh heartbeat & data_health on every tick ──
+                    # Prevents Oracle heartbeat staleness (3 prior recurrences: AUDIT-110/116/129)
+                    oracle["last_heartbeat"] = _now_iso
+                    if "data_health" in oracle:
+                        oracle["data_health"]["checked_at"] = _now_iso
+                        oracle["data_health"]["klines_count"] = _klines_count
+                        # ── Compute klines delay (minutes from latest bar to now) ──
+                        if _last_klines_ts:
+                            _now_ms = int(time.time() * 1000)
+                            # Use 15m close time for accurate delay (not open_time of forming candle)
+                            _delay_ref = _latest_close_ms if _latest_close_ms else (_last_klines_ts)
+                            _raw_delay = max(0, round((_now_ms - _delay_ref) / 60000, 1))
+                            oracle["data_health"]["klines_delay_minutes"] = _raw_delay
+                    oracle["last_check"] = _now_iso
+                    # Sync nested pipeline/data_ext objects (AUDIT-129: state drift root cause)
+                    if "pipeline" in oracle:
+                        oracle["pipeline"]["pid"] = _my_pid
+                        oracle["pipeline"]["status"] = "running"
+                    if _data_ext_pid and "data_ext" in oracle:
+                        oracle["data_ext"]["pid"] = _data_ext_pid
+                        oracle["data_ext"]["status"] = "running"
                     if _data_stats:
                         oracle["data_stats"] = _data_stats
                     if _synced_enabled is not None:
@@ -330,8 +363,8 @@ def run():
                     oracle["_cross_file_warnings"] = _cross_file_warnings
                     with open(oracle_path, "w") as f:
                         json.dump(oracle, f, indent=2, ensure_ascii=False)
-            except Exception:
-                pass  # best-effort, don't block pipeline tick
+            except Exception as _e:
+                logger.warning("Oracle state write failed (non-fatal): %s", _e)  # AUDIT-135: surface silent failures
 
             if _cross_file_warnings:
                 # Rate-limit: log at most once per 30 minutes unless warnings change

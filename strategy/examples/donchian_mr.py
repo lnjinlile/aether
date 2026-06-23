@@ -23,11 +23,10 @@ Parameters:
 
 from typing import List, Optional
 import pandas as pd
-from ..base import BaseStrategy, Signal, SignalType
-from ..indicators import compute_rsi
+from ._channel_mr_base import ChannelMRBaseStrategy
 
 
-class DonchianMRStrategy(BaseStrategy):
+class DonchianMRStrategy(ChannelMRBaseStrategy):
     """Donchian Channel mean reversion — fade the breakout."""
 
     def __init__(
@@ -48,135 +47,25 @@ class DonchianMRStrategy(BaseStrategy):
             name=name,
             symbols=symbols or ["ETH/USDT"],
             timeframes=timeframes or ["1h"],
+            rsi_period=rsi_period,
+            oversold=oversold,
+            overbought=overbought,
+            exit_level=exit_level,
+            cooldown_bars=cooldown_bars,
+            stop_loss_pct=stop_loss_pct,
+            take_profit_pct=take_profit_pct,
+            channel_params={"donchian_period": donchian_period},
         )
-        self.params.update({
-            "donchian_period": donchian_period,
-            "rsi_period": rsi_period,
-            "oversold": oversold,
-            "overbought": overbought,
-            "exit_level": exit_level,
-            "cooldown_bars": cooldown_bars,
-            "stop_loss_pct": stop_loss_pct,
-            "take_profit_pct": take_profit_pct,
-        })
-        self._bars_since_last_trade = cooldown_bars + 1
 
-    def _preprocess(self, symbol: str, timeframe: str, df: pd.DataFrame):
-        key = (symbol, timeframe)
-        p = self.params
-        ind = pd.DataFrame(index=df.index)
+    def _compute_channel_bands(self, df: pd.DataFrame, prev_c: pd.Series) -> dict:
+        period = self.params["donchian_period"]
+        upper = prev_c.rolling(window=period).max()
+        lower = prev_c.rolling(window=period).min()
+        mid = (upper + lower) / 2.0
+        return {"upper": upper, "lower": lower, "mid": mid}
 
-        h, l, c = df["high"], df["low"], df["close"]
+    def _get_channel_display_name(self) -> str:
+        return "DC"
 
-        # Donchian Channel — close-based, shifted so current bar can break through.
-        # The channel is computed on the PREVIOUS N bars (shift(1)), then the
-        # current bar's close is compared against it. Without the shift, rolling()
-        # includes the current bar making breakout impossible.
-        prev_c = c.shift(1)
-        ind["dc_upper"] = prev_c.rolling(window=p["donchian_period"]).max()
-        ind["dc_lower"] = prev_c.rolling(window=p["donchian_period"]).min()
-        ind["dc_mid"] = (ind["dc_upper"] + ind["dc_lower"]) / 2.0
-
-        # RSI
-        ind["rsi"] = compute_rsi(c, p["rsi_period"])
-
-        # 突破下轨信号: 前一根收盘价还在通道内，当前bar跌破下轨
-        ind["break_lower"] = (c < ind["dc_lower"]) & (prev_c >= ind["dc_lower"])
-
-        # 突破上轨信号: 前一根bar还在上轨内，当前bar突破上轨
-        ind["break_upper"] = (c > ind["dc_upper"]) & (prev_c <= ind["dc_upper"])
-
-        # 回归中线: 从下方/上方穿回中线附近
-        ind["cross_above_mid"] = (c > ind["dc_mid"]) & (c.shift(1) <= ind["dc_mid"].shift(1))
-        ind["cross_below_mid"] = (c < ind["dc_mid"]) & (c.shift(1) >= ind["dc_mid"].shift(1))
-
-        # RSI 回归中性
-        ind["rsi_above_exit"] = (ind["rsi"] > p["exit_level"]) & (ind["rsi"].shift(1) <= p["exit_level"])
-        ind["rsi_below_exit"] = (ind["rsi"] < p["exit_level"]) & (ind["rsi"].shift(1) >= p["exit_level"])
-
-        self._indicators[key] = ind
-
-    def generate_signal(self, symbol: str) -> Signal:
-        tf = self.timeframes[0]
-        key = (symbol, tf)
-        ind = self._indicators.get(key)
-        df = self._data.get(key)
-
-        min_bars = max(self.params["donchian_period"], self.params["rsi_period"]) + 5
-        if (early := self._check_ready(symbol, min_bars)):
-            return early
-
-        self._bars_since_last_trade += 1
-        latest = ind.iloc[-1]
-        price = float(df["close"].iloc[-1])
-        has_pos = self.has_position(symbol)
-        sl_pct = self.params["stop_loss_pct"]
-        tp_pct = self.params["take_profit_pct"]
-        exit_lvl = self.params["exit_level"]
-
-        # ---- 持仓管理 ----
-        if has_pos:
-            pos = self._positions[symbol]
-            if pos["side"] == "LONG":
-                # 回归中线 → 平多
-                if latest.get("cross_above_mid", False) or latest.get("rsi_above_exit", False):
-                    trigger = "mid" if latest.get("cross_above_mid", False) else "RSI"
-                    return Signal(SignalType.CLOSE_LONG, symbol, price=price,
-                                  reason=f"Price/Reverted above {trigger} — closing long",
-                                  strategy_name=self.name)
-            else:  # SHORT
-                if latest.get("cross_below_mid", False) or latest.get("rsi_below_exit", False):
-                    trigger = "mid" if latest.get("cross_below_mid", False) else "RSI"
-                    return Signal(SignalType.CLOSE_SHORT, symbol, price=price,
-                                  reason=f"Price/Reverted below {trigger} — closing short",
-                                  strategy_name=self.name)
-            return Signal(SignalType.HOLD, symbol, reason="Holding", strategy_name=self.name)
-
-        # ---- 开仓 ----
-        cooldown = self.params["cooldown_bars"]
-        if self._bars_since_last_trade <= cooldown:
-            return Signal(SignalType.HOLD, symbol, reason="Cooldown", strategy_name=self.name)
-
-        rsi = float(latest.get("rsi", 50))
-        dc_upper = float(latest.get("dc_upper", 0))
-        dc_lower = float(latest.get("dc_lower", 0))
-        dc_mid = float(latest.get("dc_mid", 0))
-
-        # 做多: 跌破下轨 + RSI超卖确认
-        # Use sustained condition (price < dc_lower) instead of break_lower
-        # to handle engine restarts where the break happened before startup.
-        if price < dc_lower and rsi < self.params["oversold"]:
-            self._bars_since_last_trade = 0
-            sl = price * (1.0 - sl_pct)
-            tp = price * (1.0 + tp_pct)
-            # confidence based on how far below lower band
-            confidence = min(0.75, 0.55 + (dc_lower - price) / dc_lower * 10)
-            return Signal(SignalType.LONG, symbol, price=price, quantity=0.001,
-                          stop_loss=sl, take_profit=tp,
-                          reason=f"Donchian lower break ({dc_lower:.1f}) + RSI({rsi:.1f}) oversold → LONG reversion",
-                          confidence=confidence, leverage=3, strategy_name=self.name,
-                          timestamp=df.index[-1])
-
-        # 做空: 突破上轨 + RSI超买确认
-        # Use sustained condition (price > dc_upper) instead of break_upper
-        if price > dc_upper and rsi > self.params["overbought"]:
-            self._bars_since_last_trade = 0
-            sl = price * (1.0 + sl_pct)
-            tp = price * (1.0 - tp_pct)
-            confidence = min(0.75, 0.55 + (price - dc_upper) / dc_upper * 10)
-            return Signal(SignalType.SHORT, symbol, price=price, quantity=0.001,
-                          stop_loss=sl, take_profit=tp,
-                          reason=f"Donchian upper break ({dc_upper:.1f}) + RSI({rsi:.1f}) overbought → SHORT reversion",
-                          confidence=confidence, leverage=3, strategy_name=self.name,
-                          timestamp=df.index[-1])
-
-        return Signal(SignalType.HOLD, symbol,
-                      reason=f"RSI={rsi:.1f}, DC=[{dc_lower:.1f},{dc_upper:.1f}], no trigger",
-                      strategy_name=self.name, timestamp=df.index[-1])
-
-    def get_required_data(self) -> dict:
-        return {
-            "symbols": self.symbols,
-            "timeframes": self.timeframes,
-            "lookback_bars": max(self.params["donchian_period"], self.params["rsi_period"]) * 3,
-        }
+    def _min_bars_required(self) -> int:
+        return max(self.params["donchian_period"], self.params["rsi_period"]) + 5
